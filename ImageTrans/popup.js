@@ -12,7 +12,7 @@ btnCheck.onclick = function() {
 };
 
 btnTrans.onclick = function() {
-	connect(true,"translate");
+	connect(false,"translate");
 };
 
 btnTransCheck.onclick = function() {

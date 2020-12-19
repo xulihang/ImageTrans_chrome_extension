@@ -12,8 +12,10 @@ chrome.runtime.onMessage.addListener(
     if (message == "hello"){
 		sendResponse({farewell: "goodbye"});
 	} else if (message=="translate"){
-        var src=getImageSrc(x,y,request.check);
-		alert(src);
+		var src=getImageSrc(x,y,request.check);
+		console.log(src);
+		ajax(src);
+		console.log("done");
 	}else if (message=="getsrconly"){
 		console.log("x: "+x+" y: "+y);
 		console.log("check in display: "+request.check)
@@ -34,7 +36,38 @@ chrome.runtime.onMessage.addListener(
 );
 
 console.log("setuped");
-  
+
+function ajax(src){
+	$.ajax({
+		url: 'http://127.0.0.1:51042/translate?src=' + encodeURI(src),
+		type: "GET",
+		//dataType: "jsonp", //not needed for chrome
+		cache: false,
+		success: function(data) {
+			console.log(data);
+			var base64="data:image/jpeg;base64,"+data["img"]
+			console.log(replaceImgSrc(src,base64,base64))
+		}
+	});
+}
+
+//not functional
+function loadTranslated(src) {
+	var url = 'http://127.0.0.1:51042/translate?src=' + encodeURI(src);
+	var request;
+	request = new XMLHttpRequest();
+	request.open("GET", url, true);
+    request.setRequestHeader('content-type', 'application/json');
+	request.onreadystatechange = function() {
+		if (request.readyState == 4) {
+			var params=JSON.parse(request.responseText);
+			console.log(params);
+		}
+	}
+	request.send();
+	
+}
+
 function mousemove(event){
 var e = event || window.event;//为了兼容ie和火狐
 //console.log(e.clientX);

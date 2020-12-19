@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8"> 
+<title>W3Cschool教程(w3cschool.cn)</title> 
+<script src="//libs.baidu.com/jquery/2.0.0/jquery.min.js">
+</script>
+<script>
+$(document).ready(function(){
+  $("button").click(function(){
+   htmlobj=$.ajax({url:"http://127.0.0.1:51042/translate?src=https://manhua.qpic.cn/manhua_detail/0/25_16_28_f7e62c5b228fe558965190fb82d44302_28576.jpg/0",async:false});
+   console.log(htmlobj);
+  });
+});
+</script>
+</head>
+
+<body>
+<h2>这是一个标题</h2>
+<p>这是一个段落。</p>
+<p>这是另一个段落。</p>
+<button>点我</button>
+</body>
+</html>
