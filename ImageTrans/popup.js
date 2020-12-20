@@ -27,4 +27,5 @@ function connect(check,message) {
 		console.log(response.farewell);
 	  });
 	});
+	window.close();
 }

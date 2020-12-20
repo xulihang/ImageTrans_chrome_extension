@@ -1,5 +1,6 @@
 var x=0;
 var y=0;
+var bodyClassName;
 document.onmousemove = mousemove; 
 
 chrome.runtime.onMessage.addListener(
@@ -12,12 +13,14 @@ chrome.runtime.onMessage.addListener(
     if (message == "hello"){
 		sendResponse({farewell: "goodbye"});
 	} else if (message=="translate"){
-		document.body.style.cursor = "wait";
+		if (!bodyClassName){
+		    bodyClassName=document.body.className;	
+		}
+		document.body.className=bodyClassName+" wait";
 		var src=getImageSrc(x,y,request.check);
 		console.log(src);
 		ajax(src);
 		console.log("done");
-		document.body.style.cursor = "auto";
 	}else if (message=="getsrconly"){
 		console.log("x: "+x+" y: "+y);
 		console.log("check in display: "+request.check)
@@ -47,14 +50,17 @@ function ajax(src){
 		cache: false,
 		success: function(data) {
 			console.log(data);
+			document.body.className=bodyClassName;
 			if (!data["img"]){
 				alert("Bad result. Is ImageTrans running correctly?");
 			}else{
 				var base64="data:image/jpeg;base64,"+data["img"];
 			    console.log(replaceImgSrc(src,base64));
 			}
+			
 		},
 		error: function() {
+			document.body.className=bodyClassName;
 			alert("Failed to connect to ImageTrans server");
         }
 	});
