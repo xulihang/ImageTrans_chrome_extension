@@ -47,8 +47,12 @@ function ajax(src){
 		cache: false,
 		success: function(data) {
 			console.log(data);
-			var base64="data:image/jpeg;base64,"+data["img"];
-			console.log(replaceImgSrc(src,base64));
+			if (!data["img"]){
+				alert("Bad result. Is ImageTrans running correctly?");
+			}else{
+				var base64="data:image/jpeg;base64,"+data["img"];
+			    console.log(replaceImgSrc(src,base64));
+			}
 		},
 		error: function() {
 			alert("Failed to connect to ImageTrans server");
@@ -71,14 +75,19 @@ y = e.clientY;//鼠标所在的y坐标
 function replaceImgSrc(src1,src2){
 	var imgs = document.getElementsByTagName("img");
 	for (i = 0; i <= imgs.length-1; i++){
-		var img=imgs[i];
-		var imgsrc=src1;
-		if (img.hasAttribute("original-src")==true){
-			imgsrc=img.getAttribute("original-src");
+        var imgsrc;
+		if (imgs[i].hasAttribute("original-src")==true){
+			imgsrc=imgs[i].getAttribute("original-src");
+			//console.log("original-src: "+imgsrc);
+		}else{
+			imgsrc=imgs[i].src;
 		}
+		//console.log(i);
+		//console.log(imgsrc);
+        //console.log(src1);
 		if (imgsrc==src1){
-			img.src=src2;
-			img.setAttribute("original-src",src1)
+			imgs[i].src=src2;
+			imgs[i].setAttribute("original-src",src1)
 			return "success"
 		}
 	}
