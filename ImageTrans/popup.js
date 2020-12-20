@@ -2,6 +2,9 @@ let btn = document.getElementById('getimgsrc');
 let btnCheck = document.getElementById('getimgsrc-check');
 let btnTrans = document.getElementById('translate');
 let btnTransCheck = document.getElementById('translate-check');
+let btnAlter = document.getElementById('alterlanguage');
+let btnAlterCheck = document.getElementById('alterlanguage-check');
+
 
 btn.onclick = function() {
 	connect(false,"getsrconly");
@@ -17,6 +20,14 @@ btnTrans.onclick = function() {
 
 btnTransCheck.onclick = function() {
 	connect(true,"translate");
+};
+
+btnAlter.onclick = function() {
+	connect(false,"alterlanguage");
+};
+
+btnAlterCheck.onclick = function() {
+	connect(true,"alterlanguage");
 };
 
 

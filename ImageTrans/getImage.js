@@ -35,6 +35,11 @@ chrome.runtime.onMessage.addListener(
 			// This can happen if the user denies clipboard permissions:
 			console.error('Could not copy text: ', err);
 		});
+	}else if (message=="alterlanguage"){
+		console.log("x: "+x+" y: "+y);
+		var e=getImage(x,y,request.check);
+		console.log(e);
+		alterLanguage(e);
 	}
       
   }
@@ -77,6 +82,27 @@ y = e.clientY;//鼠标所在的y坐标
 
 };
 
+function alterLanguage(e){
+	if (!e){
+		return
+	}
+	console.log("alter");
+	var src=e.src;
+	var targetSrc="";
+	var originalSrc="";
+	if (e.hasAttribute("original-src")==true){
+		originalSrc=e.getAttribute("original-src");
+	}
+	if (e.hasAttribute("target-src")==true){
+		targetSrc=e.getAttribute("target-src");
+	}
+	if (src==targetSrc){
+		e.src=originalSrc;
+	}else if (src==originalSrc){
+		e.src=targetSrc;
+	}
+}
+
 //src1: original src, src2: base64
 function replaceImgSrc(src1,src2){
 	var imgs = document.getElementsByTagName("img");
@@ -94,6 +120,7 @@ function replaceImgSrc(src1,src2){
 		if (imgsrc==src1){
 			imgs[i].src=src2;
 			imgs[i].setAttribute("original-src",src1)
+			imgs[i].setAttribute("target-src",src2);
 			return "success"
 		}
 	}
