@@ -5,8 +5,7 @@
   "permissions": ["contextMenus",
 				"activeTab",
 				"http://*/*",
-				"https://*/*",
-				"http://127.0.0.1:51042"],
+				"https://*/*"],
   "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'",				
    "background":
 	{

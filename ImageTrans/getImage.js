@@ -12,10 +12,12 @@ chrome.runtime.onMessage.addListener(
     if (message == "hello"){
 		sendResponse({farewell: "goodbye"});
 	} else if (message=="translate"){
+		document.body.style.cursor = "wait";
 		var src=getImageSrc(x,y,request.check);
 		console.log(src);
 		ajax(src);
 		console.log("done");
+		document.body.style.cursor = "auto";
 	}else if (message=="getsrconly"){
 		console.log("x: "+x+" y: "+y);
 		console.log("check in display: "+request.check)
@@ -35,7 +37,7 @@ chrome.runtime.onMessage.addListener(
   }
 );
 
-console.log("setuped");
+console.log("loaded");
 
 function ajax(src){
 	$.ajax({
@@ -45,27 +47,13 @@ function ajax(src){
 		cache: false,
 		success: function(data) {
 			console.log(data);
-			var base64="data:image/jpeg;base64,"+data["img"]
-			console.log(replaceImgSrc(src,base64,base64))
-		}
+			var base64="data:image/jpeg;base64,"+data["img"];
+			console.log(replaceImgSrc(src,base64));
+		},
+		error: function() {
+			alert("Failed to connect to ImageTrans server");
+        }
 	});
-}
-
-//not functional
-function loadTranslated(src) {
-	var url = 'http://127.0.0.1:51042/translate?src=' + encodeURI(src);
-	var request;
-	request = new XMLHttpRequest();
-	request.open("GET", url, true);
-    request.setRequestHeader('content-type', 'application/json');
-	request.onreadystatechange = function() {
-		if (request.readyState == 4) {
-			var params=JSON.parse(request.responseText);
-			console.log(params);
-		}
-	}
-	request.send();
-	
 }
 
 function mousemove(event){
@@ -79,11 +67,18 @@ y = e.clientY;//鼠标所在的y坐标
 
 };
 
-function replaceImgSrc(src1,replacedSrc,src2){
+//src1: original src, src2: base64
+function replaceImgSrc(src1,src2){
 	var imgs = document.getElementsByTagName("img");
 	for (i = 0; i <= imgs.length-1; i++){
-		if (imgs[i].src==src1 || imgs[i].src==replacedSrc){
-			imgs[i].src=src2;
+		var img=imgs[i];
+		var imgsrc=src1;
+		if (img.hasAttribute("original-src")==true){
+			imgsrc=img.getAttribute("original-src");
+		}
+		if (imgsrc==src1){
+			img.src=src2;
+			img.setAttribute("original-src",src1)
 			return "success"
 		}
 	}
@@ -106,7 +101,12 @@ function getImageSrc(x,y,checkInDisPlay){
 		return "";
 	}else
 	{
-		return e.src;
+		if (e.hasAttribute("original-src")==true){
+			return e.getAttribute("original-src");
+		}else{
+			return e.src;
+		}
+		
 	}
 }
 
