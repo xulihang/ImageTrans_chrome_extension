@@ -22,3 +22,10 @@ Your browser does not support video element.
 4. In Chrome, move the mouse over the picture which needs to be transated. Press CTRL+SHIFT+F to call the popup and press TAB to alter the buttons. Press Enter to run the desired action like translating the image or getting the image's src.
 
 
+## Video
+
+Demo video on Youtube: [link](https://www.youtube.com/watch?v=R7pv02jwL_k)
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/R7pv02jwL_k" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
+
