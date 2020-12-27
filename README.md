@@ -26,6 +26,3 @@ Your browser does not support video element.
 
 Demo video on Youtube: [link](https://www.youtube.com/watch?v=R7pv02jwL_k)
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/R7pv02jwL_k" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-
-
