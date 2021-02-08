@@ -19,7 +19,7 @@ Your browser does not support video element.
 1. Pin the ImageTrans extension.
 2. Open ImageTrans. Open Server through Tools->Server. Press Start the server button and press Reconnect button. Check silent translation mode if you want ImageTrans to do tasks silently.
 3. Open or create an ImageTrans project. Setup things like its language pair in project setting. Choose params like ocrengine and language.
-4. In Chrome, move the mouse over the picture which needs to be transated. Press CTRL+SHIFT+F to call the popup and press TAB to alter the buttons. Press Enter to run the desired action like translating the image or getting the image's src.
+4. In Chrome, move the mouse over the picture which needs to be transated. Press CTRL+SHIFT+F （CTRL+SHIFT+V on mac） to call the popup and press TAB to alter the buttons. Press Enter to run the desired action like translating the image or getting the image's src.
 
 
 ## Video
