@@ -1,11 +1,9 @@
 {
   "name": "ImageTrans",
   "version": "1.0",
-  "description": "Translate images",
-  "permissions": ["contextMenus",
-				"activeTab",
-				"http://*/*",
-				"https://*/*"],
+  "description": "Translate images on websites",
+  "permissions": ["activeTab",
+				"http://127.0.0.1/*"],
   "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'",
 	"content_scripts": 
 	[
