@@ -22,6 +22,10 @@ The plugin does not work on Chrome 94+ as it restricted the requests in secure c
 4. In Chrome, move the mouse over the picture which needs to be translated. Press CTRL+SHIFT+F （CTRL+SHIFT+V on mac） to call the popup and press TAB to alter the buttons. Press Enter to run the desired action like translating the image or getting the image's src.
 
 
+## Supported Web Sites
+
+If the images on a web site have a unique URL and are downloadable, then the extension can handle it, otherwise, the web site is not supported.
+
 ## Video
 
 Demo video on Youtube: [link](https://www.youtube.com/watch?v=R7pv02jwL_k)
@@ -50,6 +54,9 @@ ImageTrans的Chrome扩展程序。你可以用它来翻译网页上的图像。
 3. 打开或创建一个ImageTrans项目。在项目设置中设置如语言对等项目。选好OCR引擎和语言。
 4. 在Chrome中，将鼠标移到需要翻译的图片上。按下CTRL + SHIFT + F（在Mac上为CTRL + SHIFT + V）调出操作窗口，按TAB键更改按钮。按回车键运行所需的操作，比如翻译图像或获取图像的链接。
 
+## 受支持的网站
+
+如果网站的图片有明确的URL并且可以下载，那这个扩展程序就能处理，如果不是的话，这个网站就不受支持。
 
 ## 视频
 
