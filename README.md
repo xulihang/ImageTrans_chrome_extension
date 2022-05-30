@@ -4,6 +4,10 @@ Chrome Extension for ImageTrans. You can use this to translate images on webpage
 
 It should be used in couple with [ImageTrans](https://www.basiccat.org/imagetrans) and [ImageTrans_wsServer](https://github.com/xulihang/ImageTrans_wsServer).
 
+## Note
+
+The plugin does not work on Chrome 94+ as it restricted the requests in secure context.
+
 ## Installation
 
 1. Currenty, the extension is not available on Chrome Store. You need to download this repository and install the extension through More Tools->Extensions->Load unpacked. Remember to check developer mode.
@@ -28,6 +32,10 @@ Demo video on Youtube: [link](https://www.youtube.com/watch?v=R7pv02jwL_k)
 ImageTrans的Chrome扩展程序。你可以用它来翻译网页上的图像。
 
 它需要与[ImageTrans](https://www.basiccat.org/imagetrans)和[ImageTrans_wsServer](https://github.com/xulihang/ImageTrans_wsServer)配合使用。
+
+## 注意
+
+不适用于Chrome94以上版本，因为新版会限制从http获取请求。
 
 ## 安装
 
