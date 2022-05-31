@@ -10,7 +10,7 @@ The plugin does not work on Chrome 94+ as it restricted the requests in secure c
 
 ## Installation
 
-1. Currenty, the extension is not available on Chrome Store. You need to download this repository and install the extension through More Tools->Extensions->Load unpacked. Remember to check developer mode.
+1. Install from [Chrome Store](https://chrome.google.com/webstore/detail/imagetrans/lkijcgjookpddgfacoankphnpbinmhia?hl=en) or manually install it by downloading this repository and installing the extension through More Tools->Extensions->Load unpacked. Remember to check developer mode.
 2. Purchase ImageTrans and install it.
 3. Download [ImageTrans_wsServer.jar](https://github.com/xulihang/ImageTrans_wsServer/releases/download/builds/ImageTrans_wsServer.jar) and put it with ImageTrans.
 
@@ -43,7 +43,7 @@ ImageTrans的Chrome扩展程序。你可以用它来翻译网页上的图像。
 
 ## 安装
 
-1. 目前，该扩展程序还没有上传到Chrome应用商店。你需要下载这个仓库中的扩展并在Chrome中安装。Chrome中的操作：更多工具->扩展程序->加载已解压的扩展程序。记得勾选开发者模式。
+1. 从[商店](https://chrome.google.com/webstore/detail/imagetrans/lkijcgjookpddgfacoankphnpbinmhia?hl=en)安装或者下载这个仓库中的扩展手动安装。手动安装操作：更多工具->扩展程序->加载已解压的扩展程序。记得勾选开发者模式。
 2. 购买ImageTrans并安装。
 3. 下载[ImageTrans_wsServer.jar](https://github.com/xulihang/ImageTrans_wsServer/releases/download/builds/ImageTrans_wsServer.jar)并将其与ImageTrans放在一起。
 
