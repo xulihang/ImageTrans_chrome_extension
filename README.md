@@ -6,7 +6,7 @@ It should be used in couple with [ImageTrans](https://www.basiccat.org/imagetran
 
 ## Note
 
-The plugin does not work on Chrome 94+ as it restricted the requests in secure context. You can download a portable version of Chrome 93 from [here](https://www.xitongzhijia.net/soft/223907.html).
+The plugin does not work on Chrome 94+ as it restricted the requests in secure context. You can download a portable version of Chrome 93 from [here](https://www.yanlutong.com/pcsoft/7106/).
 
 ## Installation
 
@@ -39,7 +39,7 @@ ImageTrans的Chrome扩展程序。你可以用它来翻译网页上的图像。
 
 ## 注意
 
-不适用于Chrome94以上版本，因为新版会限制从http获取请求。可以从[这里](https://www.xitongzhijia.net/soft/223907.html)下载一个Chrome 93的绿色版。
+不适用于Chrome94以上版本，因为新版会限制从http获取请求。可以从[这里](https://www.yanlutong.com/pcsoft/7106/)下载一个Chrome 93的绿色版。
 
 ## 安装
 
