@@ -4,10 +4,6 @@ Chrome Extension for ImageTrans. You can use this to translate images on webpage
 
 It should be used in couple with [ImageTrans](https://www.basiccat.org/imagetrans) and [ImageTrans_wsServer](https://github.com/xulihang/ImageTrans_wsServer).
 
-## Note
-
-The plugin does not work on Chrome 94+ as it restricted the requests in secure context. You can download a portable version of Chrome 93 from [here](https://www.yanlutong.com/pcsoft/7106/).
-
 ## Installation
 
 1. Install from [Chrome Store](https://chrome.google.com/webstore/detail/imagetrans/lkijcgjookpddgfacoankphnpbinmhia?hl=en) or manually install it by downloading this repository and installing the extension through More Tools->Extensions->Load unpacked. Remember to check developer mode.
@@ -37,10 +33,6 @@ ImageTrans的Chrome扩展程序。你可以用它来翻译网页上的图像。
 
 它需要与[ImageTrans](https://www.basiccat.org/imagetrans)和[ImageTrans_wsServer](https://github.com/xulihang/ImageTrans_wsServer)配合使用。
 
-## 注意
-
-不适用于Chrome94以上版本，因为新版会限制从http获取请求。可以从[这里](https://www.yanlutong.com/pcsoft/7106/)下载一个Chrome 93的绿色版。
-
 ## 安装
 
 1. 从[商店](https://chrome.google.com/webstore/detail/imagetrans/lkijcgjookpddgfacoankphnpbinmhia?hl=en)安装或者下载这个仓库中的扩展手动安装。手动安装操作：更多工具->扩展程序->加载已解压的扩展程序。记得勾选开发者模式。
@@ -63,3 +55,10 @@ ImageTrans的Chrome扩展程序。你可以用它来翻译网页上的图像。
 B站上的演示视频：[链接](https://www.bilibili.com/video/BV1E5411p73K/)
 
 
+## Note using Chrome 94
+
+The plugin does not work on Chrome 94 as it restricted the requests in secure context. You can download a portable version of Chrome 93 from [here](https://www.yanlutong.com/pcsoft/7106/).
+
+## Chrome 94 注意事项
+
+Chrome94会限制从http获取请求。可以从[这里](https://www.yanlutong.com/pcsoft/7106/)下载一个Chrome 93的绿色版。
