@@ -22,6 +22,8 @@ It should be used in couple with [ImageTrans](https://www.basiccat.org/imagetran
 
 If the images on a web site have a unique URL and are downloadable, then the extension can handle it, otherwise, the web site is not supported.
 
+[List of supported sites](./supported-sites.md)
+
 ## Video
 
 Demo video on Youtube: [link](https://www.youtube.com/watch?v=R7pv02jwL_k)
@@ -49,6 +51,8 @@ ImageTrans的Chrome扩展程序。你可以用它来翻译网页上的图像。
 ## 受支持的网站
 
 如果网站的图片有明确的URL并且可以下载，那这个扩展程序就能处理，如果不是的话，这个网站就不受支持。
+
+[支持的网站列表](./supported-sites.md)
 
 ## 视频
 
