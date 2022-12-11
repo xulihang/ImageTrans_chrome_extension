@@ -30,7 +30,8 @@ If the images on a web site have a unique URL and are downloadable, then the ext
 
 ## Video
 
-Demo video on Youtube: [link](https://www.youtube.com/watch?v=R7pv02jwL_k)
+* Demo video on Youtube: [link](https://www.youtube.com/watch?v=R7pv02jwL_k)
+* Tutorial: <https://www.bilibili.com/video/BV1E5411p73K?p=2>
 
 
 <hr/>
@@ -64,7 +65,7 @@ Chrome94以上版本会限制从http获取请求。可以从[这里](https://www
 
 ## 视频
 
-B站上的演示视频：[链接](https://www.bilibili.com/video/BV1E5411p73K/)
+B站上的演示和教程视频：[链接](https://www.bilibili.com/video/BV1E5411p73K/)
 
 
 
