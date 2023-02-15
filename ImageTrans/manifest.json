@@ -2,33 +2,31 @@
   "name": "ImageTrans",
   "version": "1.1",
   "description": "Translate images on websites",
-  "permissions": ["activeTab",
-				"http://127.0.0.1/*"],
-  "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'",
-	"content_scripts": 
-	[
-		{
-			"matches": ["<all_urls>"],
-			"js": ["getImage.js","jquery-3.5.1.min.js"],
-			"css": ["cursor.css"],
-			"run_at": "document_start"
-		}
-	],
-  "browser_action": {
-      "default_popup": "popup.html",
-	  "default_icon": "imagetrans.png",
-	   "icons": {
-		 "128": "imagetrans.png" }
+  "permissions": ["activeTab"],
+  "content_scripts": 
+  [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["getImage.js","jquery-3.5.1.min.js"],
+      "css": ["cursor.css"],
+      "run_at": "document_start"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": "imagetrans.png",
+    "icons": {
+      "128": "imagetrans.png" }
     },
   "commands": {
-      "_execute_browser_action": {
-        "suggested_key": {
-          "default": "Ctrl+Shift+F",
-          "mac": "MacCtrl+Shift+V"
-        },
-        "description": "Opens popup.html"
-      }
-    },
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+F",
+        "mac": "MacCtrl+Shift+V"
+       },
+      "description": "Opens popup.html"
+    }
+  },
   "homepage_url": "https://www.basiccat.org/imagetrans",
-  "manifest_version": 2
+  "manifest_version": 3
 }
