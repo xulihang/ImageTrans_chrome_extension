@@ -17,14 +17,16 @@ chrome.runtime.onMessage.addListener(
             bodyClassName=document.body.className;    
         }
         document.body.className=bodyClassName+" wait";
-        var src=getImageSrc(x,y,request.check);
+        var e=getImage(x,y,request.check);
+        var src=getImageSrc(e);
         console.log(src);
         ajax(src);
         console.log("done");
     }else if (message=="getsrconly"){
         console.log("x: "+x+" y: "+y);
         console.log("check in display: "+request.check)
-        var src=getImageSrc(x,y,request.check);
+        var e=getImage(x,y,request.check);
+        var src=getImageSrc(e);
         console.log(src);
         alert(src + " copied to clipboard.");
         navigator.clipboard.writeText(src)
@@ -137,8 +139,7 @@ function getAllImageSrc(){
     return srcArray;
 }
 
-function getImageSrc(x,y,checkInDisPlay){
-    var e=getImage(x,y,checkInDisPlay);
+function getImageSrc(e){
     if (e==null){
         return "";
     }else
