@@ -50,7 +50,7 @@ console.log("loaded");
 function ajax(src){
     $.ajax({
         url: 'https://local.basiccat.org:51043/translate?src=' + encodeURIComponent(src),
-        type: "GET",
+        type: "POST",
         //dataType: "jsonp", //not needed for chrome
         cache: false,
         success: function(data) {
