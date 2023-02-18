@@ -49,7 +49,7 @@ console.log("loaded");
 
 function ajax(src){
     $.ajax({
-        url: 'http://127.0.0.1:51042/translate?src=' + encodeURIComponent(src),
+        url: 'https://local.basiccat.org:51043/translate?src=' + encodeURIComponent(src),
         type: "GET",
         //dataType: "jsonp", //not needed for chrome
         cache: false,
