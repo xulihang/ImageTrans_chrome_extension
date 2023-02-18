@@ -1,6 +1,8 @@
 var x=0;
 var y=0;
 var bodyClassName;
+var canvas;
+var dataURLMap = {};
 document.onmousemove = mousemove; 
 
 chrome.runtime.onMessage.addListener(
@@ -20,7 +22,7 @@ chrome.runtime.onMessage.addListener(
         var e=getImage(x,y,request.check);
         var src=getImageSrc(e);
         console.log(src);
-        ajax(src);
+        ajax(src,e);
         console.log("done");
     }else if (message=="getsrconly"){
         console.log("x: "+x+" y: "+y);
@@ -49,10 +51,25 @@ chrome.runtime.onMessage.addListener(
 
 console.log("loaded");
 
-function ajax(src){
+function ajax(src,img){
+    let data;
+    if (src.startsWith("blob:")) {
+        let dataURL;
+        if (src in dataURLMap) {
+            dataURL = dataURLMap[src];
+        }else{
+            dataURL = getDataURLFromImg(img);
+            dataURLMap[src] = dataURL;
+        }
+        data = {src:dataURL,saveToFile:"true"};
+    }else{
+        data = {src:src};
+    }
+    console.log(data);
     $.ajax({
-        url: 'https://local.basiccat.org:51043/translate?src=' + encodeURIComponent(src),
+        url: 'https://local.basiccat.org:51043/translate',
         type: "POST",
+        data: data,
         //dataType: "jsonp", //not needed for chrome
         cache: false,
         success: function(data) {
@@ -72,6 +89,18 @@ function ajax(src){
         }
     });
 }
+
+function getDataURLFromImg(img) {
+    if (!canvas) {
+        canvas = document.createElement("canvas");
+    }
+    canvas.width = img.width;
+    canvas.height = img.height;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+    return canvas.toDataURL("image/jpeg");
+};
+
 
 function mousemove(event){
 var e = event || window.event;//为了兼容ie和火狐
