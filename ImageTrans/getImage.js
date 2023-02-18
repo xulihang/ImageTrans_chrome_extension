@@ -23,7 +23,6 @@ chrome.runtime.onMessage.addListener(
         var src=getImageSrc(e);
         console.log(src);
         ajax(src,e);
-        console.log("done");
     }else if (message=="getsrconly"){
         console.log("x: "+x+" y: "+y);
         console.log("check in display: "+request.check)
