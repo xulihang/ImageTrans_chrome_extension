@@ -29,6 +29,12 @@ If the images on a web site have a unique URL and are downloadable, then the ext
 * Demo video on Youtube: [link](https://www.youtube.com/watch?v=R7pv02jwL_k)
 * Tutorial: <https://www.bilibili.com/video/BV1E5411p73K?p=2>
 
+## FAQ
+
+Why it says "Failed to connect to ImageTrans server"?
+
+Please check if you are running the server. You can visit <http://127.0.0.1:51042/translator> to see if it is running.
+
 
 <hr/>
 
@@ -59,5 +65,9 @@ ImageTrans的Chrome扩展程序。你可以用它来翻译网页上的图像。
 
 B站上的演示和教程视频：[链接](https://www.bilibili.com/video/BV1E5411p73K/)
 
+## 常见问题
 
+提示"Failed to connect to ImageTrans server"?
+
+检查下是不是正确运行了服务器。可以访问<http://127.0.0.1:51042/translator>以检查它是不是在运行。
 
