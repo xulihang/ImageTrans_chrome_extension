@@ -31,9 +31,13 @@ If the images on a web site have a unique URL and are downloadable, then the ext
 
 ## FAQ
 
-Why it says "Failed to connect to ImageTrans server"?
+* Why it says "Failed to connect to ImageTrans server"?
 
-Please check if you are running the server. You can visit <http://127.0.0.1:51042/translator> to see if it is running.
+   Please check if you are running the server. You can visit <http://127.0.0.1:51042/translator> to see if it is running.
+   
+* What are the differences from other image translation extensions?
+
+   This extension works on your own device. No subscription to an online service is required which saves you money.
 
 
 <hr/>
@@ -67,7 +71,11 @@ B站上的演示和教程视频：[链接](https://www.bilibili.com/video/BV1E54
 
 ## 常见问题
 
-提示"Failed to connect to ImageTrans server"?
+* 提示"Failed to connect to ImageTrans server"?
 
-检查下是不是正确运行了服务器。可以访问<http://127.0.0.1:51042/translator>以检查它是不是在运行。
+   检查下是不是正确运行了服务器。可以访问<http://127.0.0.1:51042/translator>以检查它是不是在运行。
+   
+* 和其它的图片翻译插件有什么不同？
+
+   这个插件在本地电脑上完成处理，不需要花额外的钱订阅在线服务。
 
