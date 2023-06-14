@@ -33,7 +33,7 @@ If the images on a web site have a unique URL and are downloadable, then the ext
 
 * Why it says "Failed to connect to ImageTrans server"?
 
-   Please check if you are running the server. You can visit <https://127.0.0.1:51043/translator> to see if it is running.
+   Please check if you are running the server. You can visit <https://local.basiccat.org:51043/translator> to see if it is running.
    
 * What are the differences from other image translation extensions?
 
@@ -73,7 +73,7 @@ B站上的演示和教程视频：[链接](https://www.bilibili.com/video/BV1E54
 
 * 提示"Failed to connect to ImageTrans server"?
 
-   检查下是不是正确运行了服务器。可以访问<https://127.0.0.1:51043/translator>以检查它是不是在运行。
+   检查下是不是正确运行了服务器。可以访问<https://local.basiccat.org:51043/translator>以检查它是不是在运行。
    
 * 和其它的图片翻译插件有什么不同？
 
