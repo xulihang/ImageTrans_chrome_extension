@@ -38,7 +38,14 @@ If the images on a web site have a unique URL and are downloadable, then the ext
 * What are the differences from other image translation extensions?
 
    This extension works on your own device. No subscription to an online service is required which saves you money.
+   
+* Why it cannot connect to the server on macOS?
 
+   Please make sure that the system's Java version is above 11.
+   
+   If not, you need to upgrade it. You can download one from [here](https://bell-sw.com/pages/downloads/).
+   
+   You also use a [portable version](https://download.bell-sw.com/java/11.0.19+7/bellsoft-jre11.0.19+7-macos-amd64-full.zip) of Java to start the server with the following command: `./java -jar /Applications/ImageTrans.app/Contents/Java/ImageTrans_wsServer.jar`.
 
 <hr/>
 
@@ -79,3 +86,10 @@ B站上的演示和教程视频：[链接](https://www.bilibili.com/video/BV1E54
 
    这个插件在本地电脑上完成处理，不需要花额外的钱订阅在线服务。
 
+* 在macOS上为什么不能连接到服务器？
+
+   请确保系统的Java版本大于11。
+   
+   如果低于11，请进行升级。可以在[这里](https://bell-sw.com/pages/downloads/)下载安装文件。
+   
+   你也可以使用一个[绿色版本](https://download.bell-sw.com/java/11.0.19+7/bellsoft-jre11.0.19+7-macos-amd64-full.zip)的Java来启动服务器。所需命令：`./java -jar /Applications/ImageTrans.app/Contents/Java/ImageTrans_wsServer.jar`。
