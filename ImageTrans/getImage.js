@@ -22,9 +22,15 @@ chrome.runtime.onMessage.addListener(
         var e=getImage(x,y,request.check);
         var src=getImageSrc(e);
         console.log(src);
-        ajax(src,e);
+        ajax(src,e,true);
     }else if (message == "translateWithMenu") {
-        ajax(request.info.srcUrl);
+        ajax(request.info.srcUrl,undefined,false);
+    }else if (message == "alterWithMenu") {
+        console.log("alter")
+        console.log(request.info)
+        var e = getImageBySrc(request.info.srcUrl)
+        console.log(e)
+        alterLanguage(e);
     }else if (message == "getsrconly"){
         console.log("x: "+x+" y: "+y);
         console.log("check in display: "+request.check)
@@ -41,9 +47,7 @@ chrome.runtime.onMessage.addListener(
             console.error('Could not copy text: ', err);
         });
     }else if (message=="alterlanguage"){
-        console.log("x: "+x+" y: "+y);
         var e=getImage(x,y,request.check);
-        console.log(e);
         alterLanguage(e);
     }
       
@@ -52,7 +56,7 @@ chrome.runtime.onMessage.addListener(
 
 console.log("loaded");
 
-function ajax(src,img){
+function ajax(src,img,checkData){
     let data = {src:src};
     if (src.startsWith("blob:") && img) {
         try {
@@ -82,7 +86,7 @@ function ajax(src,img){
                 alert("Bad result. Is ImageTrans running correctly?");
             }else{
                 var base64="data:image/jpeg;base64,"+data["img"];
-                console.log(replaceImgSrc(src,base64));
+                console.log(replaceImgSrc(src,base64,checkData));
             }
             
         },
@@ -138,27 +142,32 @@ function alterLanguage(e){
 }
 
 //src1: original src, src2: base64
-function replaceImgSrc(src1,src2){
-    var imgs = document.getElementsByTagName("img");
-    for (i = 0; i <= imgs.length-1; i++){
-        var imgsrc;
-        if (imgs[i].hasAttribute("original-src")==true){
-            imgsrc=imgs[i].getAttribute("original-src");
-            //console.log("original-src: "+imgsrc);
-        }else{
-            imgsrc=imgs[i].src;
-        }
-        //console.log(i);
-        //console.log(imgsrc);
-        //console.log(src1);
-        if (imgsrc==src1){
-            imgs[i].src=src2;
-            imgs[i].setAttribute("original-src",src1)
-            imgs[i].setAttribute("target-src",src2);
-            return "success"
-        }
+function replaceImgSrc(src1,src2,checkData){
+    let img = getImageBySrc(src1,checkData)
+    if (img) {
+        img.src=src2;
+        img.setAttribute("original-src",src1)
+        img.setAttribute("target-src",src2);
+        return "success"
     }
     return "fail"
+}
+
+function getImageBySrc(src1,checkData) {
+    var imgs = document.getElementsByTagName("img");
+    for (i = 0; i <= imgs.length-1; i++){
+        var imgsrc = imgs[i].src;
+        if (checkData) {
+            if (imgs[i].hasAttribute("original-src")==true){
+                imgsrc=imgs[i].getAttribute("original-src");
+                //console.log("original-src: "+imgsrc);
+            }
+        }
+        if (imgsrc === src1){
+            return imgs[i];
+        }
+    }
+    return undefined;
 }
 
 
