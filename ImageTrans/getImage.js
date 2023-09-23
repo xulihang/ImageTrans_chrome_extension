@@ -23,7 +23,9 @@ chrome.runtime.onMessage.addListener(
         var src=getImageSrc(e);
         console.log(src);
         ajax(src,e);
-    }else if (message=="getsrconly"){
+    }else if (message == "translateWithMenu") {
+        ajax(request.info.srcUrl);
+    }else if (message == "getsrconly"){
         console.log("x: "+x+" y: "+y);
         console.log("check in display: "+request.check)
         var e=getImage(x,y,request.check);
@@ -51,18 +53,20 @@ chrome.runtime.onMessage.addListener(
 console.log("loaded");
 
 function ajax(src,img){
-    let data;
-    if (src.startsWith("blob:")) {
-        let dataURL;
-        if (src in dataURLMap) {
-            dataURL = dataURLMap[src];
-        }else{
-            dataURL = getDataURLFromImg(img);
-            dataURLMap[src] = dataURL;
+    let data = {src:src};
+    if (src.startsWith("blob:") && img) {
+        try {
+            let dataURL;
+            if (src in dataURLMap) {
+                dataURL = dataURLMap[src];
+            }else{
+                dataURL = getDataURLFromImg(img);
+                dataURLMap[src] = dataURL;
+            }
+            data = {src:dataURL,saveToFile:"true"};
+        } catch (error) {
+            console.log(error);
         }
-        data = {src:dataURL,saveToFile:"true"};
-    }else{
-        data = {src:src};
     }
     console.log(data);
     $.ajax({

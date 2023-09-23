@@ -2,7 +2,10 @@
   "name": "ImageTrans",
   "version": "1.2",
   "description": "Translate images on websites",
-  "permissions": ["activeTab"],
+  "permissions": ["activeTab","contextMenus"],
+  "background": {
+    "service_worker": "background.js"
+  },
   "content_scripts": 
   [
     {
@@ -26,6 +29,11 @@
        },
       "description": "Opens popup.html"
     }
+  },
+  "icons": {
+    "16": "imagetrans.png",
+    "48": "imagetrans.png",
+    "128": "imagetrans.png"
   },
   "homepage_url": "https://www.basiccat.org/imagetrans",
   "manifest_version": 3
