@@ -15,7 +15,8 @@ It should be used in couple with [ImageTrans](https://www.basiccat.org/imagetran
 1. Pin the ImageTrans extension.
 2. Open ImageTrans. Open Server through Tools->Server. Press Start the server button and press Reconnect button. Check silent translation mode if you want ImageTrans to do tasks silently.
 3. Open or create an ImageTrans project. Setup things like its language pair in project setting. Choose params like ocrengine and language.
-4. In Chrome, move the mouse over the picture which needs to be translated. Press CTRL+SHIFT+F （CTRL+SHIFT+V on mac） to call the popup and press TAB to alter the buttons. Press Enter to run the desired action like translating the image or getting the image's src.
+4. In Chrome, right click on the image to translate it.
+5. If the context menu is disabled, you can use the popup menu to translate the image in the center of the screen. You can also set it to translate the image bebind the mouse cursor. After the setup, you can press CTRL+SHIFT+F （CTRL+SHIFT+V on mac） to call the popup and press TAB to alter the buttons. Then press Enter to run the desired action like translating the image or getting the image's src.
 
 
 ## Supported Web Sites
@@ -62,7 +63,8 @@ ImageTrans的Chrome扩展程序。你可以用它来翻译网页上的图像。
 1. 固定ImageTrans扩展到工具栏。
 2. 打开ImageTrans。点击菜单栏->工具->服务器，打开服务器程序。点击“启动服务器”按钮，然后点击“重新连接”按钮。如果希望ImageTrans以静默方式执行任务，勾选静默翻译。
 3. 打开或创建一个ImageTrans项目。在项目设置中设置如语言对等项目。选好OCR引擎和语言。
-4. 在Chrome中，将鼠标移到需要翻译的图片上。按下CTRL + SHIFT + F（在Mac上为CTRL + SHIFT + V）调出操作窗口，按TAB键更改按钮。按回车键运行所需的操作，比如翻译图像或获取图像的链接。
+4. 在Chrome中，在图片上右键进行翻译。
+5. 如果右键菜单被禁用了，可以点击工具栏上的图标唤出弹窗进行操作，翻译屏幕中央的图片。你也可以设置翻译鼠标下方的图片。设置完成后将鼠标移到需要翻译的图片上。按下CTRL + SHIFT + F（在Mac上为CTRL + SHIFT + V）调出操作窗口，按TAB键更改按钮。之后按回车键运行所需的操作，比如翻译图像或获取图像的链接。
 
 ## 受支持的网站
 
