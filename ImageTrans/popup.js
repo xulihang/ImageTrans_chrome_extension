@@ -4,6 +4,7 @@ let btnTrans = document.getElementById('translate');
 let btnTransCheck = document.getElementById('translate-check');
 let btnAlter = document.getElementById('alterlanguage');
 let btnAlterCheck = document.getElementById('alterlanguage-check');
+let help = document.getElementsByClassName('help')[0];
 
 
 btn.onclick = function() {
@@ -28,6 +29,10 @@ btnAlter.onclick = function() {
 
 btnAlterCheck.onclick = function() {
 	connect(true,"alterlanguage");
+};
+
+help.onclick = function() {
+	window.open("https://github.com/xulihang/ImageTrans_chrome_extension","_blank");
 };
 
 
