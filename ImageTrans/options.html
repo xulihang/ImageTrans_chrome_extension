@@ -6,10 +6,20 @@
     </style>
   </head>
   <body>
-    <label for="serverURL">
-      Server URL:
-      <input id="serverURL" type="text" value=""/>
-    </label>
+    <div>
+      <label for="serverURL">
+        Server URL:
+        <input id="serverURL" type="text" value=""/>
+      </label>
+    </div>
+    <div>
+      <label for="serverURL">The way to pick an image:
+        <select id="pickingWay">
+            <option value="0">Behind Mouse Cursor</option>
+            <option value="1">Center of the Screen</option>
+        </select>
+      </label>
+    </div>
     <button id="saveButton">Save</button>
     <script src="options.js"></script>
   </body>

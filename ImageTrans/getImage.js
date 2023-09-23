@@ -4,14 +4,19 @@ var bodyClassName;
 var canvas;
 var dataURLMap = {};
 var URL = "https://local.basiccat.org:51043";
+var pickingWay = "1";
 
 chrome.storage.sync.get({
-    serverURL: URL
-  }, async function(items) {
+    serverURL: URL,
+    pickingWay: pickingWay  
+}, async function(items) {
     if (items.serverURL) {
         URL = items.serverURL;
     }
-  });
+    if (items.serverURL) {
+        pickingWay = items.pickingWay;
+    }
+});
 
 document.addEventListener("mousemove",function(e){
     mousemove(e);
@@ -31,7 +36,12 @@ chrome.runtime.onMessage.addListener(
             bodyClassName=document.body.className;    
         }
         document.body.className=bodyClassName+" wait";
-        var e=getImage(x,y,request.check);
+        var e;
+        if (pickingWay === "0"){
+            e=getImage(x,y,request.check);
+        }else{
+            e=getImage(window.innerWidth/2,window.innerHeight/2,request.check);
+        }
         var src=getImageSrc(e);
         console.log(src);
         ajax(src,e,true);
