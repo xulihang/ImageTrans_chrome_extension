@@ -3,6 +3,16 @@ var y=0;
 var bodyClassName;
 var canvas;
 var dataURLMap = {};
+var URL = "https://local.basiccat.org:51043";
+
+chrome.storage.sync.get({
+    serverURL: URL
+  }, async function(items) {
+    if (items.serverURL) {
+        URL = items.serverURL;
+    }
+  });
+
 document.addEventListener("mousemove",function(e){
     mousemove(e);
 })
@@ -76,7 +86,7 @@ function ajax(src,img,checkData){
     }
     console.log(data);
     $.ajax({
-        url: 'https://local.basiccat.org:51043/translate',
+        url: URL+'/translate',
         type: "POST",
         data: data,
         //dataType: "jsonp", //not needed for chrome

@@ -2,7 +2,8 @@
   "name": "ImageTrans",
   "version": "1.2",
   "description": "Translate images on websites",
-  "permissions": ["activeTab","contextMenus"],
+  "permissions": ["storage","activeTab","contextMenus"],
+  "options_page": "options.html",
   "background": {
     "service_worker": "background.js"
   },
