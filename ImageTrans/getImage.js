@@ -29,6 +29,13 @@ chrome.runtime.onMessage.addListener(
                 "from the extension");
     var message =request.message;
     console.log(message);
+
+    var coordinate = {x:x,y:y};
+    if (pickingWay === "1"){
+        coordinate.x = window.innerWidth/2;
+        coordinate.y = window.innerHeight/2;
+    }
+
     if (message == "hello"){
         sendResponse({farewell: "goodbye"});
     } else if (message=="translate"){
@@ -36,12 +43,7 @@ chrome.runtime.onMessage.addListener(
             bodyClassName=document.body.className;    
         }
         document.body.className=bodyClassName+" wait";
-        var e;
-        if (pickingWay === "0"){
-            e=getImage(x,y,request.check);
-        }else{
-            e=getImage(window.innerWidth/2,window.innerHeight/2,request.check);
-        }
+        var e=getImage(coordinate.x, coordinate.y, request.check);
         var src=getImageSrc(e);
         console.log(src);
         ajax(src,e,true);
@@ -56,7 +58,7 @@ chrome.runtime.onMessage.addListener(
     }else if (message == "getsrconly"){
         console.log("x: "+x+" y: "+y);
         console.log("check in display: "+request.check)
-        var e=getImage(x,y,request.check);
+        var e=getImage(coordinate.x,coordinate.y,request.check);
         var src=getImageSrc(e);
         console.log(src);
         alert(src + " copied to clipboard.");
@@ -69,7 +71,7 @@ chrome.runtime.onMessage.addListener(
             console.error('Could not copy text: ', err);
         });
     }else if (message=="alterlanguage"){
-        var e=getImage(x,y,request.check);
+        var e=getImage(coordinate.x,coordinate.y,request.check);
         alterLanguage(e);
     }
       
