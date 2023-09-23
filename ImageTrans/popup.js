@@ -5,7 +5,9 @@ let btnTransCheck = document.getElementById('translate-check');
 let btnAlter = document.getElementById('alterlanguage');
 let btnAlterCheck = document.getElementById('alterlanguage-check');
 let help = document.getElementsByClassName('help')[0];
-
+document.getElementsByClassName('options')[0].addEventListener("click",function(){
+	chrome.runtime.openOptionsPage();
+});
 
 btn.onclick = function() {
 	connect(false,"getsrconly");
