@@ -14,9 +14,9 @@ It should be used in couple with [ImageTrans](https://www.basiccat.org/imagetran
 
 1. Pin the ImageTrans extension.
 2. Open ImageTrans. Open Server through Tools->Server. Press Start the server button and press Reconnect button. Check silent translation mode if you want ImageTrans to do tasks silently.
-3. Open or create an ImageTrans project. Setup things like its language pair in project setting. Choose params like ocrengine and language.
+3. Open or create an ImageTrans project. Set up things like its language pair in project setting. Choose params like ocrengine and language.
 4. In Chrome, right click on the image to translate it.
-5. If the context menu is disabled, you can use the popup menu to translate the image in the center of the screen. You can also set it to translate the image bebind the mouse cursor. After the setup, you can press CTRL+SHIFT+F （CTRL+SHIFT+V on mac） to call the popup and press TAB to alter the buttons. Then press Enter to run the desired action like translating the image or getting the image's src.
+5. If the context menu is disabled, you can use the popup menu to translate the image in the center of the screen. You can also set it to translate the image behind the mouse cursor. After the setup, you can press CTRL+SHIFT+F (CTRL+SHIFT+V on mac) to call the popup and press TAB to alter the buttons. Then press Enter to run the desired action like translating the image or getting the image's src.
 
 
 ## Supported Web Sites
