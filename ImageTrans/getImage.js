@@ -3,7 +3,9 @@ var y=0;
 var bodyClassName;
 var canvas;
 var dataURLMap = {};
-document.onmousemove = mousemove; 
+document.addEventListener("mousemove",function(e){
+    mousemove(e);
+})
 
 chrome.runtime.onMessage.addListener(
   function(request, sender, sendResponse) {
@@ -110,14 +112,11 @@ function getDataURLFromImg(img) {
 
 
 function mousemove(event){
-var e = event || window.event;//为了兼容ie和火狐
-//console.log(e.clientX);
-//console.log(e.clientY);
-
-x = e.clientX;//鼠标所在的x坐标
-
-y = e.clientY;//鼠标所在的y坐标
-
+    var e = event || window.event;//为了兼容ie和火狐
+    //console.log(e.clientX);
+    //console.log(e.clientY);
+    x = e.clientX;//鼠标所在的x坐标
+    y = e.clientY;//鼠标所在的y坐标
 };
 
 function alterLanguage(e){
