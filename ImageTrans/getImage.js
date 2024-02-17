@@ -48,7 +48,8 @@ chrome.runtime.onMessage.addListener(
         console.log(src);
         ajax(src,e,true);
     }else if (message == "translateWithMenu") {
-        ajax(request.info.srcUrl,undefined,false);
+        var e = getImageBySrc(request.info.srcUrl)
+        ajax(request.info.srcUrl,e,true);
     }else if (message == "alterWithMenu") {
         console.log("alter")
         console.log(request.info)
