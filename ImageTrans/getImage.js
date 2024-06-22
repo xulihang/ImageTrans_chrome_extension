@@ -115,7 +115,7 @@ async function ajax(src,img,checkData){
                 alert("Bad result. Is ImageTrans running correctly?");
             }else{
                 var dataURL="data:image/jpeg;base64,"+data["img"];
-                console.log(replaceImgSrc(src,dataURL,checkData));
+                console.log(replaceImgSrc(src,dataURL,checkData,img));
             }
             
         },
@@ -174,8 +174,10 @@ function alterLanguage(e){
 }
 
 //src1: original src, src2: dataURL
-function replaceImgSrc(src1,src2,checkData){
-    let img = getImageBySrc(src1,checkData)
+function replaceImgSrc(src1,src2,checkData,img){
+    if (!img) {
+        img = getImageBySrc(src1,checkData)
+    }
     if (img) {
         img.src=src2;
         img.setAttribute("original-src",src1)
