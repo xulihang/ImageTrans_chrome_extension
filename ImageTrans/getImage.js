@@ -5,16 +5,20 @@ var canvas;
 var dataURLMap = {};
 var URL = "https://local.basiccat.org:51043";
 var pickingWay = "1";
-
+var useCanvas = true;
 chrome.storage.sync.get({
     serverURL: URL,
-    pickingWay: pickingWay  
+    pickingWay: pickingWay,
+    useCanvas: true
 }, async function(items) {
     if (items.serverURL) {
         URL = items.serverURL;
     }
     if (items.serverURL) {
         pickingWay = items.pickingWay;
+    }
+    if (items.useCanvas != undefined) {
+        useCanvas = items.useCanvas;
     }
 });
 
@@ -81,15 +85,15 @@ chrome.runtime.onMessage.addListener(
 
 console.log("loaded");
 
-function ajax(src,img,checkData){
+async function ajax(src,img,checkData){
     let data = {src:src};
-    if (src.startsWith("blob:") && img) {
+    if ((src.startsWith("blob:") || useCanvas) && img) {
         try {
             let dataURL;
             if (src in dataURLMap) {
                 dataURL = dataURLMap[src];
             }else{
-                dataURL = getDataURLFromImg(img);
+                dataURL = await getDataURLFromImg(img);
                 dataURLMap[src] = dataURL;
             }
             data = {src:dataURL,saveToFile:"true"};
@@ -123,14 +127,20 @@ function ajax(src,img,checkData){
 }
 
 function getDataURLFromImg(img) {
-    if (!canvas) {
-        canvas = document.createElement("canvas");
-    }
-    canvas.width = img.naturalWidth;
-    canvas.height = img.naturalHeight;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(img, 0, 0);
-    return canvas.toDataURL("image/jpeg");
+    return new Promise((resolve, reject) => {
+        if (!canvas) {
+            canvas = document.createElement("canvas");
+        }
+        img.setAttribute('crossorigin', 'anonymous');
+        img.onload = function () {
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            resolve(canvas.toDataURL("image/jpeg"));
+        }
+    })
+    
 };
 
 
