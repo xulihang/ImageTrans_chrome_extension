@@ -6,7 +6,8 @@ It should be used in couple with [ImageTrans](https://www.basiccat.org/imagetran
 
 
 
-https://github.com/xulihang/ImageTrans_chrome_extension/assets/5462205/a37bd2bc-4af1-46aa-a30a-27d2704c5604
+
+https://github.com/xulihang/ImageTrans_chrome_extension/assets/5462205/e3cf01e9-9545-483b-b1d1-c488c775d72f
 
 
 
