@@ -1,9 +1,11 @@
 function save() {
   const URL = document.getElementById("serverURL").value;
   const pickingWay = document.getElementById("pickingWay").selectedOptions[0].value;
+  const useCanvas = document.getElementById("useCanvas").checked;
   chrome.storage.sync.set({
     serverURL: URL,
-    pickingWay: pickingWay
+    pickingWay: pickingWay,
+    useCanvas: useCanvas
   }, function() {
     // Update status to let user know options were saved.
     alert("saved");
@@ -13,7 +15,8 @@ function save() {
 function load() {
   chrome.storage.sync.get({
     serverURL: 'https://local.basiccat.org:51043',
-    pickingWay: '1'
+    pickingWay: '1',
+    useCanvas: true
   }, function(items) {
     if (items.serverURL) {
         document.getElementById("serverURL").value = items.serverURL;
@@ -29,6 +32,7 @@ function load() {
     }else{
       document.getElementById("pickingWay").selectedIndex = 1;
     }
+    document.getElementById("useCanvas").checked = items.useCanvas;
   });
 }
 
