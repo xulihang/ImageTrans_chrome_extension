@@ -54,6 +54,13 @@ If the images on a web site have a unique URL and are downloadable, then the ext
    
    If not, you need to upgrade it. You can download one from [here](https://download.bell-sw.com/java/11.0.19+7/bellsoft-jdk11.0.19+7-macos-amd64-full.pkg).
 
+* Why it says the connection is not private?
+
+    This is because I haven't updated the certificate. Please click advanced and continue to visit the site.
+
+    ![image](https://github.com/xulihang/ImageTrans_chrome_extension/assets/5462205/434f26b3-f621-4273-9444-7f8a145109e0)
+
+
 <hr/>
 
 ImageTrans的Chrome扩展程序。你可以用它来翻译网页上的图像。
@@ -100,3 +107,10 @@ B站上的演示和教程视频：[链接](https://www.bilibili.com/video/BV1E54
    请确保系统的Java版本大于11。
    
    如果低于11，请进行升级。可以使用[这个](https://download.bell-sw.com/java/11.0.19+7/bellsoft-jdk11.0.19+7-macos-amd64-full.pkg)安装文件。
+
+* 为什么显示连接问题？
+
+    因为我没有及时更新证书。请先点高级选项继续访问页面。
+
+    ![image](https://github.com/xulihang/ImageTrans_chrome_extension/assets/5462205/434f26b3-f621-4273-9444-7f8a145109e0)
+  
