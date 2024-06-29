@@ -58,7 +58,8 @@ If the images on a web site have a unique URL and are downloadable, then the ext
 
     This is because I haven't updated the certificate. Please click advanced and continue to visit the site.
 
-    ![image](https://github.com/xulihang/ImageTrans_chrome_extension/assets/5462205/434f26b3-f621-4273-9444-7f8a145109e0)
+    ![image](https://github.com/xulihang/ImageTrans_chrome_extension/assets/5462205/99734b8a-c04c-46b6-8154-4cb46ec62f27)
+
 
 
 <hr/>
@@ -112,5 +113,6 @@ B站上的演示和教程视频：[链接](https://www.bilibili.com/video/BV1E54
 
     因为我没有及时更新证书。请先点高级选项继续访问页面。
 
-    ![image](https://github.com/xulihang/ImageTrans_chrome_extension/assets/5462205/434f26b3-f621-4273-9444-7f8a145109e0)
+    ![image](https://github.com/xulihang/ImageTrans_chrome_extension/assets/5462205/4cf0d4da-f1d7-4942-b1a2-dfac7703fc95)
+
   
