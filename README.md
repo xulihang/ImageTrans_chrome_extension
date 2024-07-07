@@ -52,7 +52,7 @@ If the images on a web site have a unique URL and are downloadable, then the ext
 
    Please make sure that the system's Java version is above 11.
    
-   If not, you need to upgrade it. You can download one from [here](https://download.bell-sw.com/java/11.0.19+7/bellsoft-jdk11.0.19+7-macos-amd64-full.pkg).
+   If not, you need to upgrade it. You can download one from [here](https://bell-sw.com/pages/downloads/#jdk-11-lts).
 
 * Why it says the connection is not private?
 
@@ -107,7 +107,7 @@ B站上的演示和教程视频：[链接](https://www.bilibili.com/video/BV1E54
 
    请确保系统的Java版本大于11。
    
-   如果低于11，请进行升级。可以使用[这个](https://download.bell-sw.com/java/11.0.19+7/bellsoft-jdk11.0.19+7-macos-amd64-full.pkg)安装文件。
+   如果低于11，请进行升级。可以使用在[此处](https://bell-sw.com/pages/downloads/#jdk-11-lts)下载安装包。
 
 * 为什么显示连接问题？
 
