@@ -107,7 +107,7 @@ B站上的演示和教程视频：[链接](https://www.bilibili.com/video/BV1E54
 
    请确保系统的Java版本大于11。
    
-   如果低于11，请进行升级。可以使用在[此处](https://bell-sw.com/pages/downloads/#jdk-11-lts)下载安装包。
+   如果低于11，请进行升级。可以在[此处](https://bell-sw.com/pages/downloads/#jdk-11-lts)下载安装包。
 
 * 为什么显示连接问题？
 
