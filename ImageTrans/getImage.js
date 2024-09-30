@@ -66,15 +66,18 @@ chrome.runtime.onMessage.addListener(
         var e=getImage(coordinate.x,coordinate.y,request.check);
         var src=getImageSrc(e);
         console.log(src);
-        alert(src + " copied to clipboard.");
-        navigator.clipboard.writeText(src)
-          .then(() => {
-            console.log('Text copied to clipboard');
-          })
-          .catch(err => {
-            // This can happen if the user denies clipboard permissions:
-            console.error('Could not copy text: ', err);
-        });
+        setTimeout(function(){
+          navigator.clipboard.writeText(src)
+            .then(() => {
+              console.log('Text copied to clipboard');
+              alert(src + " copied to clipboard.");
+            })
+            .catch(err => {
+              // This can happen if the user denies clipboard permissions:
+              console.error('Could not copy text: ', err);
+              alert(err);
+          });
+        },500);
     }else if (message=="alterlanguage"){
         var e=getImage(coordinate.x,coordinate.y,request.check);
         alterLanguage(e);
