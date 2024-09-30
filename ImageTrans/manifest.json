@@ -1,6 +1,6 @@
 {
   "name": "ImageTrans",
-  "version": "1.5",
+  "version": "1.6",
   "description": "Translate images on websites",
   "permissions": ["storage","activeTab","contextMenus","clipboardWrite"],
   "options_page": "options.html",
