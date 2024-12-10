@@ -3,11 +3,13 @@ function save() {
   const pickingWay = document.getElementById("pickingWay").selectedOptions[0].value;
   const useCanvas = document.getElementById("useCanvas").checked;
   const imagetransInstanceDisplayName = document.getElementById("imagetransInstanceInput").value;
+  const password = document.getElementById("imagetransPasswordInput").value;
   chrome.storage.sync.set({
     serverURL: URL,
     pickingWay: pickingWay,
     useCanvas: useCanvas,
-    displayName: imagetransInstanceDisplayName
+    displayName: imagetransInstanceDisplayName,
+    password: password
   }, function() {
     // Update status to let user know options were saved.
     alert("saved");
@@ -20,6 +22,7 @@ function load() {
     pickingWay: '1',
     useCanvas: true,
     displayName: "",
+    password:"",
   }, function(items) {
     if (items.serverURL) {
         document.getElementById("serverURL").value = items.serverURL;
@@ -36,7 +39,8 @@ function load() {
       document.getElementById("pickingWay").selectedIndex = 1;
     }
     document.getElementById("useCanvas").checked = items.useCanvas;
-    document.getElementById("imagetransInstanceInput").value = displayName;
+    document.getElementById("imagetransInstanceInput").value = items.displayName;
+    document.getElementById("imagetransPasswordInput").value = items.password;
   });
 }
 
@@ -50,5 +54,14 @@ window.onload = function (){
   })
   document.getElementById("localServerButton").addEventListener("click",function(){
     document.getElementById("serverURL").value = "https://local.basiccat.org:51043";
+  })
+  document.getElementById("checkInstanceButton").addEventListener("click",function(){
+    let serverURL = document.getElementById("serverURL").value;
+    if (serverURL) {
+      window.open(serverURL + "/list");
+    }else{
+      alert("Server URL is not set. Will use go to the local address.");
+      window.open("https://local.basiccat.org:51043/list");
+    }
   })
 }
