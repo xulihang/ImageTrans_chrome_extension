@@ -8,12 +8,16 @@ var pickingWay = "1";
 var useCanvas = true;
 var password = "";
 var displayName = "";
+var sourceLang = "auto";
+var targetLang = "auto";
 chrome.storage.sync.get({
     serverURL: serverURL,
     pickingWay: pickingWay,
     password: password,
     displayName: displayName,
-    useCanvas: true
+    useCanvas: true,
+    sourceLang: sourceLang,
+    targetLang: targetLang
 }, async function(items) {
     if (items.serverURL) {
         serverURL = items.serverURL;
@@ -26,6 +30,12 @@ chrome.storage.sync.get({
     }
     if (items.displayName) {
         displayName = items.displayName;
+    }
+    if (items.sourceLang) {
+        sourceLang = items.sourceLang;
+    }
+    if (items.targetLang) {
+        targetLang = items.targetLang;
     }
     if (items.useCanvas != undefined) {
         useCanvas = items.useCanvas;
@@ -113,6 +123,12 @@ async function ajax(src,img,checkData){
         } catch (error) {
             console.log(error);
         }
+    }
+    if (sourceLang != "auto") {
+        data["sourceLang"] = sourceLang;
+    }
+    if (targetLang != "auto") {
+        data["targetLang"] = targetLang;
     }
     console.log(data);
     $.ajax({
