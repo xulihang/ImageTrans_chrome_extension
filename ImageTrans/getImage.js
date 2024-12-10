@@ -6,16 +6,26 @@ var dataURLMap = {};
 var URL = "https://local.basiccat.org:51043";
 var pickingWay = "1";
 var useCanvas = true;
+var password = "";
+var displayName = "";
 chrome.storage.sync.get({
     serverURL: URL,
     pickingWay: pickingWay,
+    password: password,
+    displayName: displayName,
     useCanvas: true
 }, async function(items) {
     if (items.serverURL) {
         URL = items.serverURL;
     }
-    if (items.serverURL) {
+    if (items.pickingWay) {
         pickingWay = items.pickingWay;
+    }
+    if (items.password) {
+        password = items.password;
+    }
+    if (items.displayName) {
+        displayName = items.displayName;
     }
     if (items.useCanvas != undefined) {
         useCanvas = items.useCanvas;
