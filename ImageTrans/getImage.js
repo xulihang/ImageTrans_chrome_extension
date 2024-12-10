@@ -130,6 +130,11 @@ async function ajax(src,img,checkData){
     if (targetLang != "auto") {
         data["targetLang"] = targetLang;
     }
+    if (!displayName) {
+        displayName = "default";
+    }
+    data["displayName"] = displayName;
+    data["password"] = password;
     console.log(data);
     $.ajax({
         url: serverURL+'/translate',
