@@ -3,20 +3,20 @@ var y=0;
 var bodyClassName;
 var canvas;
 var dataURLMap = {};
-var URL = "https://local.basiccat.org:51043";
+var serverURL = "https://local.basiccat.org:51043";
 var pickingWay = "1";
 var useCanvas = true;
 var password = "";
 var displayName = "";
 chrome.storage.sync.get({
-    serverURL: URL,
+    serverURL: serverURL,
     pickingWay: pickingWay,
     password: password,
     displayName: displayName,
     useCanvas: true
 }, async function(items) {
     if (items.serverURL) {
-        URL = items.serverURL;
+        serverURL = items.serverURL;
     }
     if (items.pickingWay) {
         pickingWay = items.pickingWay;
@@ -116,7 +116,7 @@ async function ajax(src,img,checkData){
     }
     console.log(data);
     $.ajax({
-        url: URL+'/translate',
+        url: serverURL+'/translate',
         type: "POST",
         data: data,
         //dataType: "jsonp", //not needed for chrome
@@ -134,7 +134,14 @@ async function ajax(src,img,checkData){
         },
         error: function() {
             document.body.className=bodyClassName;
-            alert("Failed to connect to ImageTrans server");
+            if (serverURL === "https://local.basiccat.org:51043") {
+                serverURL = "https://service.basiccat.org:51043";
+                alert("Failed to connect to ImageTrans server. Will try to use the public server. You can configure it in the options page.");
+                document.body.className=bodyClassName+" wait";
+                ajax(src,img,checkData);
+            }else{
+                alert("Failed to connect to ImageTrans server.");
+            }
         }
     });
 }
