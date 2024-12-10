@@ -136,15 +136,40 @@ function getDataURLFromImg(img) {
         }
         img.setAttribute('crossorigin', 'anonymous');
         img.onload = function () {
-            canvas.width = img.naturalWidth;
-            canvas.height = img.naturalHeight;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0);
-            resolve(canvas.toDataURL("image/jpeg"));
+            let width = img.naturalWidth;
+            let height = img.naturalHeight;
+            let context = canvas.getContext('2d');
+            let maxWidth = 1500;
+            if (maxWidth && img.naturalWidth > maxWidth) {
+                width = maxWidth;
+                height = img.naturalHeight * maxWidth / img.naturalWidth;
+            }
+            canvas.width = width;
+            canvas.height = height;
+            let imageFormat = "image/webp";
+            if (!isSupportWebp(canvas)) {
+                imageFormat = "image/jpeg";
+            }
+            let quality = 0.8;
+            context.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL(imageFormat,quality));
         }
     })
-    
 };
+
+function isSupportWebp(elem) {
+    let _isSupportWebp = true;
+  
+    if (!!(elem.getContext && elem.getContext('2d'))) {
+      // was able or not to get WebP representation
+      _isSupportWebp = elem.toDataURL('image/webp').indexOf('data:image/webp') == 0;
+    }
+    else {
+      // very old browser like IE 8, canvas not supported
+      _isSupportWebp = false;
+    }
+    return _isSupportWebp;
+}
 
 
 function mousemove(event){
