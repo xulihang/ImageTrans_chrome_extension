@@ -16,11 +16,15 @@ document.getElementsByClassName('local')[0].addEventListener("click",function(){
 		if (items.serverURL) {
 			URL = items.serverURL;
 		}
-		try {
-			await fetch(URL);
-		}catch (e) {
+		if (URL === "https://service.basiccat.org:51043"){
 			URL = "https://www.basiccat.org/online-image-translator";
-		} 
+		}else{
+			try {
+				await fetch(URL);
+			}catch (e) {
+				URL = "https://www.basiccat.org/online-image-translator";
+			}
+		}
 		window.open(URL,"_blank");
 	});
 });
