@@ -60,7 +60,6 @@ function load() {
 }
 
 let languageCodes = [
-  {name:"Auto",code:"auto"},
   {name:"Arabic",code:"ar"},
   {name:"English",code:"en"},
   {name:"Chinese",code:"zh"},
@@ -73,7 +72,8 @@ let languageCodes = [
   {name:"Portuguese",code:"pt"},
   {name:"Indonesian",code:"id"},
   {name:"Vietnamese",code:"vi"},
-  {name:"Thai",code:"ti"}
+  {name:"Thai",code:"th"},
+  {name:"Auto",code:"auto"}
 ]
 
 function loadLanguageCodes(){
