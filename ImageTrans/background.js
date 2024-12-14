@@ -24,3 +24,9 @@ chrome.contextMenus.onClicked.addListener(function (info, tab) {
 		
   });
 });
+
+chrome.runtime.onMessage.addListener((request) => {
+  if (request === "showOptions") {
+    chrome.runtime.openOptionsPage();
+  }
+});

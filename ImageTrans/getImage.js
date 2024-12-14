@@ -109,6 +109,14 @@ chrome.runtime.onMessage.addListener(
 console.log("loaded");
 
 async function ajax(src,img,checkData){
+    if (serverURL === "https://service.basiccat.org:51043") {
+      if (!sourceLang || !targetLang || sourceLang === "auto" || targetLang === "auto") {
+        alert("Please set the language pair in the options first (do not choose auto) and then refresh the page.");
+        chrome.runtime.sendMessage("showOptions");
+        document.body.className=bodyClassName;
+        return;
+      }
+    }
     let data = {src:src};
     if ((src.startsWith("blob:") || useCanvas) && img) {
         try {
@@ -136,6 +144,7 @@ async function ajax(src,img,checkData){
     data["displayName"] = displayName;
     data["password"] = password;
     console.log(data);
+
     $.ajax({
         url: serverURL+'/translate',
         type: "POST",
