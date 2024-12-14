@@ -9,7 +9,7 @@ It should be used in couple with [ImageTrans](https://www.basiccat.org/imagetran
 
 https://github.com/xulihang/ImageTrans_chrome_extension/assets/5462205/e3cf01e9-9545-483b-b1d1-c488c775d72f
 
-
+[Web version (online image translator)](https://www.basiccat.org/online-image-translator/)
 
 ## Installation
 
@@ -67,6 +67,8 @@ If the images on a web site have a unique URL and are downloadable, then the ext
 ImageTrans的Chrome扩展程序。你可以用它来翻译网页上的图像。
 
 它需要与[ImageTrans](https://www.basiccat.org/imagetrans)和[ImageTrans_wsServer](https://github.com/xulihang/ImageTrans_wsServer)配合使用。
+
+[网页版（在线图片翻译器）](https://www.basiccat.org/zh/online-image-translator/)
 
 ## 安装
 
