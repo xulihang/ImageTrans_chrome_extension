@@ -3,7 +3,7 @@ var y=0;
 var bodyClassName;
 var canvas;
 var dataURLMap = {};
-var serverURL = "https://local.basiccat.org:51043";
+var serverURL = "http://127.0.0.1:51042";
 var pickingWay = "1";
 var useCanvas = true;
 var password = "";
@@ -164,7 +164,7 @@ async function ajax(src,img,checkData){
         },
         error: function() {
             document.body.className=bodyClassName;
-            if (serverURL === "https://local.basiccat.org:51043") {
+            if (serverURL === "http://127.0.0.1:51042") {
                 serverURL = "https://service.basiccat.org:51043";
                 alert("Failed to connect to ImageTrans server. Will try to use the public server. You can configure it in the options page.");
                 document.body.className=bodyClassName+" wait";
