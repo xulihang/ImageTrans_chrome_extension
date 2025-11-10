@@ -22,7 +22,7 @@ function save() {
 
 function load() {
   chrome.storage.sync.get({
-    serverURL: 'http://127.0.0.1:51042',
+    serverURL: 'https://local.basiccat.org:51043',
     pickingWay: '1',
     useCanvas: true,
     displayName: "",
@@ -33,7 +33,7 @@ function load() {
     if (items.serverURL) {
         document.getElementById("serverURL").value = items.serverURL;
     }else{
-        document.getElementById("serverURL").value = 'http://127.0.0.1:51042';
+        document.getElementById("serverURL").value = 'https://local.basiccat.org:51043';
     }
     if (items.pickingWay) {
       if (items.pickingWay === "0") {
@@ -110,7 +110,7 @@ window.onload = function (){
     document.getElementById("serverURL").value = "https://service.basiccat.org:51043";
   })
   document.getElementById("localServerButton").addEventListener("click",function(){
-    document.getElementById("serverURL").value = "http://127.0.0.1:51042";
+    document.getElementById("serverURL").value = "https://local.basiccat.org:51043";
   })
   document.getElementById("checkInstanceButton").addEventListener("click",function(){
     let serverURL = document.getElementById("serverURL").value;
