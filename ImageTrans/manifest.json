@@ -11,7 +11,7 @@
   [
     {
       "matches": ["<all_urls>"],
-      "js": ["getImage.js","jquery-3.5.1.min.js"],
+      "js": ["getImage.js"],
       "css": ["cursor.css"],
       "run_at": "document_start"
     }

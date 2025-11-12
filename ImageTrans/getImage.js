@@ -109,14 +109,6 @@ chrome.runtime.onMessage.addListener(
 console.log("loaded");
 
 async function ajax(src,img,checkData){
-    if (serverURL === "https://service.basiccat.org:51043") {
-      if (!sourceLang || !targetLang || sourceLang === "auto" || targetLang === "auto") {
-        alert("Please set the language pair in the options first (do not choose auto) and then refresh the page.");
-        chrome.runtime.sendMessage("showOptions");
-        document.body.className=bodyClassName;
-        return;
-      }
-    }
     let data = {src:src};
     if ((src.startsWith("blob:") || useCanvas) && img) {
         try {
@@ -144,36 +136,79 @@ async function ajax(src,img,checkData){
     data["displayName"] = displayName;
     data["password"] = password;
     console.log(data);
-
-    $.ajax({
-        url: serverURL+'/translate',
-        type: "POST",
-        data: data,
-        //dataType: "jsonp", //not needed for chrome
-        cache: false,
-        success: function(data) {
-            console.log(data);
-            document.body.className=bodyClassName;
-            if (!data["img"]){
-                alert("Bad result. Is ImageTrans running correctly?");
-            }else{
-                var dataURL="data:image/jpeg;base64,"+data["img"];
-                console.log(replaceImgSrc(src,dataURL,checkData,img));
+    try {
+        const post = async (url, payload) => {
+            if (url.indexOf("https://service.basiccat.org:51043") != -1) {
+              if (!sourceLang || !targetLang || sourceLang === "auto" || targetLang === "auto") {
+                alert("Please set the language pair in the options first (do not choose auto) and then refresh the page.");
+                chrome.runtime.sendMessage("showOptions");
+                document.body.className=bodyClassName;
+                return;
+              }
             }
-            
-        },
-        error: function() {
-            document.body.className=bodyClassName;
+            // Convert payload to application/x-www-form-urlencoded to match jQuery's default behavior
+            const params = new URLSearchParams();
+            for (const k in payload) {
+                if (!Object.prototype.hasOwnProperty.call(payload, k)) continue;
+                const v = payload[k];
+                // Skip undefined/null to avoid sending "undefined" strings
+                if (v === undefined || v === null) continue;
+                params.append(k, v);
+            }
+            console.log(fetch);
+            const resp = await fetch(url + '/translate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+                },
+                body: params.toString(),
+                cache: 'no-store'
+            });
+            if (!resp.ok) {
+                throw new Error('Network response was not ok: ' + resp.status);
+            }
+            return await resp.json();
+        };
+
+        try {
+            const respData = await post(serverURL, data);
+            console.log(respData);
+            document.body.className = bodyClassName;
+            if (!respData["img"]) {
+                alert("Bad result. Is ImageTrans running correctly?");
+            } else {
+                var dataURL = "data:image/jpeg;base64," + respData["img"];
+                console.log(replaceImgSrc(src, dataURL, checkData, img));
+            }
+        } catch (err) {
+            document.body.className = bodyClassName;
+            console.log('Request failed:', err);
             if (serverURL === "https://local.basiccat.org:51043") {
                 serverURL = "https://service.basiccat.org:51043";
                 alert("Failed to connect to ImageTrans server. Will try to use the public server. You can configure it in the options page.");
-                document.body.className=bodyClassName+" wait";
-                ajax(src,img,checkData);
-            }else{
+                document.body.className = bodyClassName + " wait";
+                try {
+                    const respData = await post(serverURL, data);
+                    console.log(respData);
+                    document.body.className = bodyClassName;
+                    if (!respData["img"]) {
+                        alert("Bad result. Is ImageTrans running correctly?");
+                    } else {
+                        var dataURL = "data:image/jpeg;base64," + respData["img"];
+                        console.log(replaceImgSrc(src, dataURL, checkData, img));
+                    }
+                } catch (err2) {
+                    document.body.className = bodyClassName;
+                    alert("Failed to connect to ImageTrans server.");
+                }
+            } else {
                 alert("Failed to connect to ImageTrans server.");
             }
         }
-    });
+    } catch (e) {
+        document.body.className = bodyClassName;
+        console.log(e);
+    }
 }
 
 function getDataURLFromImg(img) {
