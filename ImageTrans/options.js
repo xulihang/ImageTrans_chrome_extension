@@ -2,6 +2,7 @@ function save() {
   const URL = document.getElementById("serverURL").value;
   const pickingWay = document.getElementById("pickingWay").selectedOptions[0].value;
   const useCanvas = document.getElementById("useCanvas").checked;
+  const useCORS = document.getElementById("useCORS").checked;
   const imagetransInstanceDisplayName = document.getElementById("imagetransInstanceInput").value;
   const password = document.getElementById("imagetransPasswordInput").value;
   const sourceLang = document.getElementById("sourceLangSelect").selectedOptions[0].value;
@@ -10,6 +11,7 @@ function save() {
     serverURL: URL,
     pickingWay: pickingWay,
     useCanvas: useCanvas,
+    useCORS: useCORS,
     displayName: imagetransInstanceDisplayName,
     password: password,
     sourceLang: sourceLang,
@@ -17,6 +19,9 @@ function save() {
   }, function() {
     // Update status to let user know options were saved.
     alert("saved");
+    
+    // 通知background.js更新CORS规则状态
+    chrome.runtime.sendMessage({action: "updateCORSStatus", enabled: useCORS});
   });
 }
 
@@ -25,6 +30,7 @@ function load() {
     serverURL: 'https://local.basiccat.org:51043',
     pickingWay: '1',
     useCanvas: true,
+    useCORS: true,
     displayName: "",
     password:"",
     sourceLang:"auto",
@@ -54,6 +60,7 @@ function load() {
       setSelectedLang(targetSelect, items.targetLang);
     }
     document.getElementById("useCanvas").checked = items.useCanvas;
+    document.getElementById("useCORS").checked = items.useCORS;
     document.getElementById("imagetransInstanceInput").value = items.displayName;
     document.getElementById("imagetransPasswordInput").value = items.password;
   });
