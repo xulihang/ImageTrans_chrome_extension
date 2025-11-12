@@ -1,4 +1,8 @@
+
+
+// 扩展安装时输出日志
 chrome.runtime.onInstalled.addListener(() => {
+  console.log('ImageTrans扩展已安装或更新');
   let parent = chrome.contextMenus.create({
     "id": "imagetrans-menu",
     "title": "ImageTrans",
@@ -21,7 +25,7 @@ chrome.runtime.onInstalled.addListener(() => {
 chrome.contextMenus.onClicked.addListener(function (info, tab) {
   let message = info.menuItemId+"WithMenu";
   chrome.tabs.sendMessage(tab.id, {message:message,info:info}, function(response) {
-		
+    
   });
 });
 

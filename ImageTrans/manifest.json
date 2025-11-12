@@ -2,7 +2,15 @@
   "name": "ImageTrans",
   "version": "2.1",
   "description": "Translate images on websites",
-  "permissions": ["storage","activeTab","contextMenus","clipboardWrite"],
+  "permissions": ["storage","activeTab","contextMenus","clipboardWrite","declarativeNetRequest"],
+  "host_permissions": ["<all_urls>"],
+  "declarative_net_request": {
+    "rule_resources": [{
+      "id": "cors_rules",
+      "enabled": true,
+      "path": "cors_rules.json"
+    }]
+  },
   "options_page": "options.html",
   "background": {
     "service_worker": "background.js"
