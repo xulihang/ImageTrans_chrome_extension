@@ -29,7 +29,7 @@
     },
     "condition": {
       "urlFilter": "*",
-      "resourceTypes": ["image", "xmlhttprequest"]
+      "resourceTypes": ["image"]
     }
   }
 ]
