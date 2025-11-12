@@ -18,7 +18,7 @@ Other versions:
 1. Install from [Chrome Store](https://chromewebstore.google.com/detail/imagetrans/lkijcgjookpddgfacoankphnpbinmhia?hl=en) or manually install it by downloading this repository and installing the extension through More Tools->Extensions->Load unpacked. Remember to check developer mode.
 2. Purchase ImageTrans and install it.
 3. Download [ImageTrans_wsServer.jar](https://github.com/xulihang/ImageTrans_wsServer/releases/download/builds/ImageTrans_wsServer.jar) and put it with ImageTrans.
-4. Install and enable [Allow CORS](https://chromewebstore.google.com/detail/allow-cors-access-control/lhobafahddgcelffkeicbaginigeejlf) to remove restrictions on downloading images for some websites (optional).
+4. (Optional. The function is already built into the extension.) Install and enable [Allow CORS](https://chromewebstore.google.com/detail/allow-cors-access-control/lhobafahddgcelffkeicbaginigeejlf) to remove restrictions on downloading images for some websites.
 
 ## Usage
 
@@ -49,19 +49,12 @@ If the images on a web site have a unique URL and are downloadable, then the ext
 * What are the differences from other image translation extensions?
 
    This extension works on your own device. No subscription to an online service is required which saves you money.
-   
-* Why it cannot connect to the server on macOS?
-
-   Please make sure that the system's Java version is above 11.
-   
-   If not, you need to upgrade it. You can download one from [here](https://bell-sw.com/pages/downloads/#jdk-11-lts).
 
 * Why it says the connection is not private?
 
     This is because I haven't updated the certificate. Please click advanced and continue to visit the site.
 
     ![image](https://github.com/xulihang/ImageTrans_chrome_extension/assets/5462205/99734b8a-c04c-46b6-8154-4cb46ec62f27)
-
 
 
 <hr/>
@@ -79,7 +72,7 @@ ImageTrans的Chrome扩展程序。你可以用它来翻译网页上的图像。
 1. 从[商店](https://chromewebstore.google.com/detail/imagetrans/lkijcgjookpddgfacoankphnpbinmhia?hl=en)安装或者下载这个仓库中的扩展手动安装。手动安装操作：更多工具->扩展程序->加载已解压的扩展程序。记得勾选开发者模式。
 2. 购买ImageTrans并安装。
 3. 下载[ImageTrans_wsServer.jar](https://github.com/xulihang/ImageTrans_wsServer/releases/download/builds/ImageTrans_wsServer.jar)并将其与ImageTrans放在一起。
-4. 安装并启用[Allow CORS](https://chromewebstore.google.com/detail/allow-cors-access-control/lhobafahddgcelffkeicbaginigeejlf)以移除某些站点对下载图片的限制（可选）。
+4. （可选，本插件已经包含该功能）安装并启用[Allow CORS](https://chromewebstore.google.com/detail/allow-cors-access-control/lhobafahddgcelffkeicbaginigeejlf)以移除某些站点对下载图片的限制。
 
 ## 用法
 
@@ -109,11 +102,6 @@ B站上的演示和教程视频：[链接](https://www.bilibili.com/video/BV1E54
 
    这个插件在本地电脑上完成处理，不需要花额外的钱订阅在线服务。
 
-* 在macOS上为什么不能连接到服务器？
-
-   请确保系统的Java版本大于11。
-   
-   如果低于11，请进行升级。可以在[此处](https://bell-sw.com/pages/downloads/#jdk-11-lts)下载安装包。
 
 * 为什么显示连接问题？
 
