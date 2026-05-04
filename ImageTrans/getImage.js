@@ -178,7 +178,10 @@ async function ajax(src,img,checkData){
                 alert("Bad result. Is ImageTrans running correctly?");
             } else {
                 var dataURL = "data:image/jpeg;base64," + respData["img"];
-                console.log(replaceImgSrc(src, dataURL, checkData, img));
+                renderTranslatedImage(respData["img"], respData["imgMap"]["boxes"]).then(translatedDataURL => {
+                    console.log(replaceImgSrc(src, translatedDataURL, checkData, img));
+                });
+                // console.log(replaceImgSrc(src, dataURL, checkData, img));
             }
         } catch (err) {
             document.body.className = bodyClassName;
@@ -238,6 +241,104 @@ function getDataURLFromImg(img) {
         }
     })
 };
+
+async function renderTranslatedImage(base64Image, boxes) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = function() {
+            const c = document.createElement("canvas");
+            c.width = img.naturalWidth;
+            c.height = img.naturalHeight;
+            const ctx = c.getContext('2d');
+
+            ctx.drawImage(img, 0, 0);
+
+            for (const box of boxes) {
+                const geo = box.geometry || {};
+                const x = geo.X || geo.x || 0;
+                const y = geo.Y || geo.y || 0;
+                const w = geo.width || geo.Width || 0;
+                const h = geo.height || geo.Height || 0;
+                const targetText = box.target || '';
+
+                if (w <= 0 || h <= 0 || !targetText) continue;
+
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(x, y, w, h);
+
+                const fontSize = calcFontSize(ctx, targetText, w, h);
+                ctx.font = `${fontSize}px sans-serif`;
+                ctx.fillStyle = '#000000';
+                ctx.textBaseline = 'top';
+
+                drawTextBox(ctx, targetText, x, y, w, h, fontSize);
+            }
+
+            resolve(c.toDataURL('image/png'));
+        };
+        img.onerror = function() {
+            reject(new Error('Failed to load translated image'));
+        };
+        img.src = 'data:image/jpeg;base64,' + base64Image;
+    });
+}
+
+function calcFontSize(ctx, text, maxWidth, maxHeight) {
+    const padding = 4;
+    const availWidth = maxWidth - padding * 2;
+    const availHeight = maxHeight - padding * 2;
+    if (availWidth <= 0 || availHeight <= 0) return 6;
+
+    const lineHeightRatio = 1.3;
+    let lo = 6;
+    let hi = Math.min(availHeight, 200);
+
+    // Binary search for the largest font size that fits
+    let bestSize = lo;
+    for (let i = 0; i < 15; i++) {
+        const mid = (lo + hi) / 2;
+        ctx.font = `${mid}px sans-serif`;
+        const lines = wrapLines(ctx, text, availWidth);
+        const totalHeight = lines.length * mid * lineHeightRatio;
+        if (totalHeight <= availHeight) {
+            bestSize = mid;
+            lo = mid;
+        } else {
+            hi = mid;
+        }
+        if (hi - lo < 1) break;
+    }
+    return Math.floor(bestSize);
+}
+
+function wrapLines(ctx, text, maxWidth) {
+    const lines = [];
+    let line = '';
+    for (const char of text) {
+        const testLine = line + char;
+        if (ctx.measureText(testLine).width > maxWidth && line.length > 0) {
+            lines.push(line);
+            line = char;
+        } else {
+            line = testLine;
+        }
+    }
+    if (line.length > 0) lines.push(line);
+    return lines;
+}
+
+function drawTextBox(ctx, text, x, y, maxWidth, maxHeight, fontSize) {
+    const padding = 2;
+    ctx.font = `${fontSize}px sans-serif`;
+    const lineHeight = fontSize * 1.3;
+    const lines = wrapLines(ctx, text, maxWidth - padding * 2);
+    let lineY = y + padding;
+    for (const line of lines) {
+        if (lineY + lineHeight > y + maxHeight) break;
+        ctx.fillText(line, x + padding, lineY);
+        lineY += lineHeight;
+    }
+}
 
 function isSupportWebp(elem) {
     let _isSupportWebp = true;
