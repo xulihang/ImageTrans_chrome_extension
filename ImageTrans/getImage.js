@@ -11,6 +11,11 @@ var password = "";
 var displayName = "";
 var sourceLang = "auto";
 var targetLang = "auto";
+var useOpenAI = false;
+var openaiURL = "https://api.openai.com/v1";
+var openaiKey = "";
+var openaiModel = "gpt-4o";
+var openaiPrompt = "";
 chrome.storage.sync.get({
     serverURL: serverURL,
     pickingWay: pickingWay,
@@ -19,7 +24,12 @@ chrome.storage.sync.get({
     useCanvas: true,
     renderTextInFrontend: true,
     sourceLang: sourceLang,
-    targetLang: targetLang
+    targetLang: targetLang,
+    useOpenAI: false,
+    openaiURL: 'https://api.openai.com/v1',
+    openaiKey: '',
+    openaiModel: 'gpt-4o',
+    openaiPrompt: ''
 }, async function(items) {
     if (items.serverURL) {
         serverURL = items.serverURL;
@@ -44,6 +54,24 @@ chrome.storage.sync.get({
     }
     if (items.renderTextInFrontend != undefined) {
         renderTextInFrontend = items.renderTextInFrontend;
+    }
+    if (items.useOpenAI != undefined) {
+        useOpenAI = items.useOpenAI;
+        if (useOpenAI) {
+            renderTextInFrontend = true;
+        }
+    }
+    if (items.openaiURL) {
+        openaiURL = items.openaiURL;
+    }
+    if (items.openaiKey) {
+        openaiKey = items.openaiKey;
+    }
+    if (items.openaiModel) {
+        openaiModel = items.openaiModel;
+    }
+    if (items.openaiPrompt) {
+        openaiPrompt = items.openaiPrompt;
     }
 });
 
@@ -114,6 +142,9 @@ chrome.runtime.onMessage.addListener(
 console.log("loaded");
 
 async function ajax(src,img,checkData){
+    if (useOpenAI) {
+        return ajaxOpenAI(src, img, checkData);
+    }
     let data = {src:src};
     if ((src.startsWith("blob:") || useCanvas || renderTextInFrontend) && img) {
         try {
@@ -224,6 +255,150 @@ async function ajax(src,img,checkData){
     } catch (e) {
         document.body.className = bodyClassName;
         console.log(e);
+    }
+}
+
+async function ajaxOpenAI(src, img, checkData) {
+    console.log("Using OpenAI for translation");
+    if (!openaiURL || !openaiKey) {
+        alert("OpenAI API URL or Key is not configured. Please set them in the options page.");
+        document.body.className = bodyClassName;
+        return;
+    }
+    if (!bodyClassName) {
+        bodyClassName = document.body.className;
+    }
+    document.body.className = bodyClassName + " wait";
+
+    try {
+        // Step 1: Get image dataURL
+        let dataURL;
+        if (src in dataURLMap) {
+            dataURL = dataURLMap[src];
+        } else if (img) {
+            dataURL = await getDataURLFromImg(img);
+            dataURLMap[src] = dataURL;
+        } else {
+            throw new Error("Cannot get image data for OCR");
+        }
+
+        // Step 2: Call ImageTrans server for OCR (text detection + coordinates)
+        const ocrData = {
+            src: dataURL,
+            saveToFile: "true",
+            displayName: displayName || "default",
+            password: password,
+            withoutImage: "true"
+        };
+        if (sourceLang !== "auto") ocrData["sourceLang"] = sourceLang;
+        if (targetLang !== "auto") ocrData["targetLang"] = targetLang;
+
+        const ocrParams = new URLSearchParams();
+        for (const k in ocrData) {
+            if (ocrData[k] !== undefined && ocrData[k] !== null) {
+                ocrParams.append(k, ocrData[k]);
+            }
+        }
+
+        const ocrResponse = await fetch(serverURL + '/translate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+            body: ocrParams.toString(),
+            cache: 'no-store'
+        });
+
+        if (!ocrResponse.ok) {
+            throw new Error('ImageTrans OCR failed: HTTP ' + ocrResponse.status);
+        }
+
+        const ocrResult = await ocrResponse.json();
+        if (!ocrResult["imgMap"] || !ocrResult["imgMap"]["boxes"]) {
+            throw new Error('ImageTrans did not return text boxes. Is it running correctly?');
+        }
+
+        const boxes = ocrResult["imgMap"]["boxes"];
+
+        // Step 3: Extract source texts from boxes
+        const sourceTexts = [];
+        for (const box of boxes) {
+            const sourceText = box.source || box.text || box.target || '';
+            sourceTexts.push(sourceText);
+        }
+
+        if (sourceTexts.length === 0 || sourceTexts.every(function(t) { return !t; })) {
+            document.body.className = bodyClassName;
+            alert("No text detected in the image.");
+            return;
+        }
+
+        // Step 4: Call OpenAI API for translation
+        let prompt = openaiPrompt
+            .replace(/\{sourceLang\}/g, sourceLang)
+            .replace(/\{targetLang\}/g, targetLang)
+            .replace(/\{texts\}/g, JSON.stringify(sourceTexts));
+
+        const apiUrl = openaiURL.replace(/\/+$/, '') + '/chat/completions';
+
+        const openaiResponse = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + openaiKey
+            },
+            body: JSON.stringify({
+                model: openaiModel,
+                messages: [{ role: 'user', content: prompt }]
+            })
+        });
+        console.log(prompt);
+        console.log(openaiResponse);
+        if (!openaiResponse.ok) {
+            const errText = await openaiResponse.text();
+            throw new Error('OpenAI API error HTTP ' + openaiResponse.status + ': ' + errText);
+        }
+
+        const openaiResult = await openaiResponse.json();
+        console.log(openaiResult);
+        const content = openaiResult.choices[0].message.content;
+
+        // Step 5: Parse translated texts
+        let translatedTexts;
+        try {
+            translatedTexts = JSON.parse(content);
+        } catch (e) {
+            const match = content.match(/```(?:json)?\s*([\s\S]*?)```/);
+            if (match) {
+                translatedTexts = JSON.parse(match[1]);
+            } else {
+                throw new Error('Failed to parse translation response as JSON. Response: ' + content.substring(0, 200));
+            }
+        }
+
+        if (!Array.isArray(translatedTexts)) {
+            if (translatedTexts && translatedTexts.translations) {
+                translatedTexts = translatedTexts.translations;
+            } else if (translatedTexts && translatedTexts.texts) {
+                translatedTexts = translatedTexts.texts;
+            } else {
+                throw new Error('Expected a JSON array of translated texts. Got: ' + content.substring(0, 200));
+            }
+        }
+
+        // Step 6: Map translations back to boxes
+        for (let i = 0; i < boxes.length && i < translatedTexts.length; i++) {
+            boxes[i].target = translatedTexts[i];
+        }
+
+        document.body.className = bodyClassName;
+
+        // Step 7: Render on canvas
+        const translatedDataURL = await renderTranslatedImage(dataURL, boxes);
+        console.log(replaceImgSrc(src, translatedDataURL, checkData, img));
+
+    } catch (err) {
+        document.body.className = bodyClassName;
+        console.error('Translation failed:', err);
+        alert("Translation failed: " + err.message);
     }
 }
 

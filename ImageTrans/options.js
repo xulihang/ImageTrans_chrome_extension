@@ -1,3 +1,6 @@
+const DEFAULT_OPENAI_PROMPT = `Translate the following texts from {sourceLang} to {targetLang}. Return ONLY a JSON array of translated strings in the same order (no markdown, no code fences).
+Texts: {texts}`;
+
 function save() {
   const URL = document.getElementById("serverURL").value;
   const pickingWay = document.getElementById("pickingWay").selectedOptions[0].value;
@@ -8,6 +11,11 @@ function save() {
   const password = document.getElementById("imagetransPasswordInput").value;
   const sourceLang = document.getElementById("sourceLangSelect").selectedOptions[0].value;
   const targetLang = document.getElementById("targetLangSelect").selectedOptions[0].value;
+  const useOpenAI = document.getElementById("useOpenAI").checked;
+  const openaiURL = document.getElementById("openaiURL").value;
+  const openaiKey = document.getElementById("openaiKey").value;
+  const openaiModel = document.getElementById("openaiModel").value;
+  const openaiPrompt = document.getElementById("openaiPrompt").value;
   chrome.storage.sync.set({
     serverURL: URL,
     pickingWay: pickingWay,
@@ -17,12 +25,14 @@ function save() {
     displayName: imagetransInstanceDisplayName,
     password: password,
     sourceLang: sourceLang,
-    targetLang: targetLang
+    targetLang: targetLang,
+    useOpenAI: useOpenAI,
+    openaiURL: openaiURL,
+    openaiKey: openaiKey,
+    openaiModel: openaiModel,
+    openaiPrompt: openaiPrompt
   }, function() {
-    // Update status to let user know options were saved.
     alert("saved");
-    
-    // 通知background.js更新CORS规则状态
     chrome.runtime.sendMessage({action: "updateCORSStatus", enabled: useCORS});
   });
 }
@@ -38,6 +48,11 @@ function load() {
     password:"",
     sourceLang:"auto",
     targetLang:"auto",
+    useOpenAI: false,
+    openaiURL: 'https://api.openai.com/v1',
+    openaiKey: '',
+    openaiModel: 'gpt-4o',
+    openaiPrompt: DEFAULT_OPENAI_PROMPT
   }, function(items) {
     if (items.serverURL) {
         document.getElementById("serverURL").value = items.serverURL;
@@ -67,6 +82,11 @@ function load() {
     document.getElementById("renderTextInFrontend").checked = items.renderTextInFrontend;
     document.getElementById("imagetransInstanceInput").value = items.displayName;
     document.getElementById("imagetransPasswordInput").value = items.password;
+    document.getElementById("useOpenAI").checked = items.useOpenAI;
+    document.getElementById("openaiURL").value = items.openaiURL;
+    document.getElementById("openaiKey").value = items.openaiKey;
+    document.getElementById("openaiModel").value = items.openaiModel;
+    document.getElementById("openaiPrompt").value = items.openaiPrompt;
   });
 }
 
@@ -130,6 +150,11 @@ window.onload = function (){
     }else{
       alert("Server URL is not set. Will use go to the local address.");
       window.open("https://local.basiccat.org:51043/list");
+    }
+  })
+  document.getElementById("useOpenAI").addEventListener("change",function(){
+    if (this.checked) {
+      document.getElementById("renderTextInFrontend").checked = true;
     }
   })
 }

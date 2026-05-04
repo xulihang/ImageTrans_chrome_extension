@@ -66,6 +66,39 @@
         <input id="renderTextInFrontend" type="checkbox" checked/>
       </label>
     </div>
+    <hr/>
+    <h3>OpenAI-Compatible API (optional)</h3>
+    <div>
+      <label for="useOpenAI">
+        Enable OpenAI-compatible API for translation:
+        <input id="useOpenAI" type="checkbox"/>
+      </label>
+    </div>
+    <div>
+      <label for="openaiURL">
+        API URL:
+        <input id="openaiURL" type="text" value="https://api.openai.com/v1" style="width:300px;"/>
+      </label>
+    </div>
+    <div>
+      <label for="openaiKey">
+        API Key:
+        <input id="openaiKey" type="password" style="width:300px;"/>
+      </label>
+    </div>
+    <div>
+      <label for="openaiModel">
+        Model:
+        <input id="openaiModel" type="text" value="gpt-4o"/>
+      </label>
+    </div>
+    <div>
+      <label for="openaiPrompt">
+        Prompt (placeholders: {sourceLang}, {targetLang}, {texts}):
+        <br/>
+        <textarea id="openaiPrompt" rows="6" cols="50"></textarea>
+      </label>
+    </div>
     <button id="saveButton">Save</button>
     <div style="margin-top:20px;">
       For more info, please visit ImageTrans's <a href="https://www.basiccat.org/imagetrans">homepage</a>.
