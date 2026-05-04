@@ -525,11 +525,14 @@ function wrapLines(ctx, text, maxWidth) {
 function drawTextBox(ctx, text, x, y, maxWidth, maxHeight, fontSize) {
     const padding = 2;
     ctx.font = `${fontSize}px sans-serif`;
+    ctx.lineWidth = Math.max(2, fontSize * 0.15);
+    ctx.strokeStyle = '#FFFFFF';
     const lineHeight = fontSize * 1.3;
     const lines = wrapLines(ctx, text, maxWidth - padding * 2);
     let lineY = y + padding;
     for (const line of lines) {
         if (lineY + lineHeight > y + maxHeight) break;
+        ctx.strokeText(line, x + padding, lineY);
         ctx.fillText(line, x + padding, lineY);
         lineY += lineHeight;
     }
