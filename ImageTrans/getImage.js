@@ -505,12 +505,15 @@ function calcFontSize(ctx, text, maxWidth, maxHeight) {
 
 function wrapLines(ctx, text, maxWidth) {
     const lines = [];
+    // Use word-based wrapping for space-separated languages, char-based for CJK
+    const hasSpaces = /\s/.test(text);
+    const tokens = hasSpaces ? text.split(/(\s+)/) : text.split('');
     let line = '';
-    for (const char of text) {
-        const testLine = line + char;
+    for (const token of tokens) {
+        const testLine = line + token;
         if (ctx.measureText(testLine).width > maxWidth && line.length > 0) {
             lines.push(line);
-            line = char;
+            line = hasSpaces ? token.trimStart() : token;
         } else {
             line = testLine;
         }
