@@ -43,7 +43,7 @@ function load() {
     pickingWay: '1',
     useCanvas: true,
     useCORS: true,
-    renderTextInFrontend: true,
+    renderTextInFrontend: false,
     displayName: "",
     password:"",
     sourceLang:"auto",

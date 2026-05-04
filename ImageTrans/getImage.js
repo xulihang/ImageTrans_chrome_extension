@@ -6,7 +6,7 @@ var dataURLMap = {};
 var serverURL = "https://local.basiccat.org:51043";
 var pickingWay = "1";
 var useCanvas = true;
-var renderTextInFrontend = true;
+var renderTextInFrontend = false;
 var password = "";
 var displayName = "";
 var sourceLang = "auto";
@@ -22,7 +22,7 @@ chrome.storage.sync.get({
     password: password,
     displayName: displayName,
     useCanvas: true,
-    renderTextInFrontend: true,
+    renderTextInFrontend: false,
     sourceLang: sourceLang,
     targetLang: targetLang,
     useOpenAI: false,
