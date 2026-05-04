@@ -66,6 +66,28 @@
         <input id="renderTextInFrontend" type="checkbox" checked/>
       </label>
     </div>
+    <div>
+      <label for="ocrMode">
+        OCR mode:
+        <select id="ocrMode">
+          <option value="remote">Remote Server</option>
+          <option value="local">Local (ONNX)</option>
+        </select>
+      </label>
+    </div>
+    <div>
+      <label for="translationMode">
+        Translation mode:
+        <select id="translationMode">
+          <option value="mymemory">MyMemory (Free)</option>
+          <option value="remote">Remote Server</option>
+        </select>
+      </label>
+    </div>
+    <div id="localOcrNote" style="display:none; color:#666; margin-top:8px; max-width:400px;">
+      Local OCR runs ONNX models in the browser. First use will be slow while models load (~123MB).
+      Subsequent translations will be faster.
+    </div>
     <button id="saveButton">Save</button>
     <div style="margin-top:20px;">
       For more info, please visit ImageTrans's <a href="https://www.basiccat.org/imagetrans">homepage</a>.

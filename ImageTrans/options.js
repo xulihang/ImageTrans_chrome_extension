@@ -8,6 +8,8 @@ function save() {
   const password = document.getElementById("imagetransPasswordInput").value;
   const sourceLang = document.getElementById("sourceLangSelect").selectedOptions[0].value;
   const targetLang = document.getElementById("targetLangSelect").selectedOptions[0].value;
+  const ocrMode = document.getElementById("ocrMode").selectedOptions[0].value;
+  const translationMode = document.getElementById("translationMode").selectedOptions[0].value;
   chrome.storage.sync.set({
     serverURL: URL,
     pickingWay: pickingWay,
@@ -17,12 +19,11 @@ function save() {
     displayName: imagetransInstanceDisplayName,
     password: password,
     sourceLang: sourceLang,
-    targetLang: targetLang
+    targetLang: targetLang,
+    ocrMode: ocrMode,
+    translationMode: translationMode
   }, function() {
-    // Update status to let user know options were saved.
     alert("saved");
-    
-    // 通知background.js更新CORS规则状态
     chrome.runtime.sendMessage({action: "updateCORSStatus", enabled: useCORS});
   });
 }
@@ -38,6 +39,8 @@ function load() {
     password:"",
     sourceLang:"auto",
     targetLang:"auto",
+    ocrMode: "remote",
+    translationMode: "mymemory"
   }, function(items) {
     if (items.serverURL) {
         document.getElementById("serverURL").value = items.serverURL;
@@ -67,7 +70,25 @@ function load() {
     document.getElementById("renderTextInFrontend").checked = items.renderTextInFrontend;
     document.getElementById("imagetransInstanceInput").value = items.displayName;
     document.getElementById("imagetransPasswordInput").value = items.password;
+    if (items.ocrMode) setSelectValue("ocrMode", items.ocrMode);
+    if (items.translationMode) setSelectValue("translationMode", items.translationMode);
+    toggleLocalOcrNote();
   });
+}
+
+function setSelectValue(id, value) {
+  var select = document.getElementById(id);
+  for (var i = 0; i < select.options.length; i++) {
+    if (select.options[i].value === value) {
+      select.selectedIndex = i;
+      return;
+    }
+  }
+}
+
+function toggleLocalOcrNote() {
+  var ocrMode = document.getElementById("ocrMode").value;
+  document.getElementById("localOcrNote").style.display = ocrMode === "local" ? "block" : "none";
 }
 
 let languageCodes = [
@@ -131,5 +152,8 @@ window.onload = function (){
       alert("Server URL is not set. Will use go to the local address.");
       window.open("https://local.basiccat.org:51043/list");
     }
+  })
+  document.getElementById("ocrMode").addEventListener("change", function(){
+    toggleLocalOcrNote();
   })
 }

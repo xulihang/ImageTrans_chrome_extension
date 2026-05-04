@@ -11,6 +11,8 @@ var password = "";
 var displayName = "";
 var sourceLang = "auto";
 var targetLang = "auto";
+var ocrMode = "remote";
+var translationMode = "mymemory";
 chrome.storage.sync.get({
     serverURL: serverURL,
     pickingWay: pickingWay,
@@ -19,7 +21,9 @@ chrome.storage.sync.get({
     useCanvas: true,
     renderTextInFrontend: true,
     sourceLang: sourceLang,
-    targetLang: targetLang
+    targetLang: targetLang,
+    ocrMode: "remote",
+    translationMode: "mymemory"
 }, async function(items) {
     if (items.serverURL) {
         serverURL = items.serverURL;
@@ -45,6 +49,12 @@ chrome.storage.sync.get({
     if (items.renderTextInFrontend != undefined) {
         renderTextInFrontend = items.renderTextInFrontend;
     }
+    if (items.ocrMode) {
+        ocrMode = items.ocrMode;
+    }
+    if (items.translationMode) {
+        translationMode = items.translationMode;
+    }
 });
 
 document.addEventListener("mousemove",function(e){
@@ -69,16 +79,24 @@ chrome.runtime.onMessage.addListener(
         sendResponse({farewell: "goodbye"});
     } else if (message=="translate"){
         if (!bodyClassName){
-            bodyClassName=document.body.className;    
+            bodyClassName=document.body.className;
         }
         document.body.className=bodyClassName+" wait";
         var e=getImage(coordinate.x, coordinate.y, request.check);
         var src=getImageSrc(e);
         console.log(src);
-        ajax(src,e,true);
+        if (ocrMode === "local") {
+            handleLocalTranslate(src, e, true);
+        } else {
+            ajax(src,e,true);
+        }
     }else if (message == "translateWithMenu") {
-        var e = getImageBySrc(request.info.srcUrl)
-        ajax(request.info.srcUrl,e,true);
+        if (ocrMode === "local") {
+            handleLocalTranslate(request.info.srcUrl, null, true);
+        } else {
+            var e = getImageBySrc(request.info.srcUrl)
+            ajax(request.info.srcUrl,e,true);
+        }
     }else if (message == "alterWithMenu") {
         console.log("alter")
         console.log(request.info)
@@ -225,6 +243,163 @@ async function ajax(src,img,checkData){
         document.body.className = bodyClassName;
         console.log(e);
     }
+}
+
+function reflowText(sourceLang, text) {
+    // Remove line breaks within sentences for CJK languages
+    if (sourceLang === "ja" || sourceLang === "zh" || sourceLang === "ko") {
+        text = text.replace(/[\r\n]/g, "");
+    }
+    return text;
+}
+
+async function translateUsingMyMemory(source, sourceLang, targetLang) {
+    try {
+        source = reflowText(sourceLang, source);
+        let url = "https://api.mymemory.translated.net/get?";
+        url = url + "q=" + encodeURIComponent(source);
+        url = url + "&langpair=" + sourceLang + "|" + targetLang;
+        let response = await fetch(url);
+        let o = await response.json();
+        return o.responseData.translatedText;
+    } catch (error) {
+        console.error(error);
+        return "";
+    }
+}
+
+function getLanguageCode(lang) {
+    // Map ImageTrans language codes to MyMemory language codes
+    var codeMap = {
+        "auto": "en",
+        "ar": "ar",
+        "en": "en",
+        "zh": "zh-CN",
+        "ja": "ja",
+        "ko": "ko",
+        "fr": "fr",
+        "it": "it",
+        "es": "es",
+        "ru": "ru",
+        "pt": "pt",
+        "id": "id",
+        "vi": "vi",
+        "th": "th"
+    };
+    return codeMap[lang] || lang;
+}
+
+async function handleLocalTranslate(src, img, checkData) {
+    try {
+        var dataURL;
+        if (src.startsWith("blob:") || useCanvas) {
+            if (!img) {
+                img = getImageBySrc(src, checkData);
+            }
+            if (!img) {
+                alert("Could not find image element.");
+                document.body.className = bodyClassName;
+                return;
+            }
+            if (src in dataURLMap) {
+                dataURL = dataURLMap[src];
+            } else {
+                dataURL = await getDataURLFromImg(img);
+                dataURLMap[src] = dataURL;
+            }
+        } else {
+            dataURL = src;
+        }
+        await localOcrAndTranslate(dataURL, img, checkData);
+    } catch (e) {
+        console.error(e);
+        document.body.className = bodyClassName;
+        alert("Local OCR failed: " + e.message);
+    }
+}
+
+async function localOcrAndTranslate(dataURL, img, checkData) {
+    // Ensure LocalOCR is ready
+    if (typeof LocalOCR === "undefined") {
+        alert("Local OCR module is not loaded. Please make sure localOcr.js is included and refresh the page.");
+        document.body.className = bodyClassName;
+        return;
+    }
+
+    if (!LocalOCR.isInitialized()) {
+        await LocalOCR.initialize(function (msg) {
+            console.log("LocalOCR: " + msg);
+        });
+    }
+
+    // Run detection + OCR
+    var boxes = await LocalOCR.detectAndRecognize(dataURL, function (msg) {
+        console.log("LocalOCR: " + msg);
+    });
+
+    if (!boxes || boxes.length === 0) {
+        alert("No text detected by local OCR.");
+        document.body.className = bodyClassName;
+        return;
+    }
+
+    // Translate each box using MyMemory if needed
+    if (translationMode === "mymemory" && sourceLang !== targetLang && sourceLang !== "auto" && targetLang !== "auto") {
+        var srcLangCode = getLanguageCode(sourceLang);
+        var tgtLangCode = getLanguageCode(targetLang);
+
+        for (var i = 0; i < boxes.length; i++) {
+            if (boxes[i].source) {
+                boxes[i].target = await translateUsingMyMemory(boxes[i].source, srcLangCode, tgtLangCode);
+            }
+        }
+    } else if (translationMode === "remote" && boxes.length > 0) {
+        // Send OCR results to the remote server for translation only
+        // Build an imgMap-like request
+        try {
+            var srcLangCode = sourceLang !== "auto" ? sourceLang : "";
+            var tgtLangCode = targetLang !== "auto" ? targetLang : "";
+            var displayNameVal = displayName || "default";
+
+            var params = new URLSearchParams();
+            params.append("src", dataURL);
+            params.append("saveToFile", "true");
+            if (srcLangCode) params.append("sourceLang", srcLangCode);
+            if (tgtLangCode) params.append("targetLang", tgtLangCode);
+            params.append("displayName", displayNameVal);
+            params.append("password", password);
+
+            var resp = await fetch(serverURL + "/translate", {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
+                body: params.toString(),
+                cache: "no-store"
+            });
+
+            if (resp.ok) {
+                var respData = await resp.json();
+                if (respData.imgMap && respData.imgMap.boxes) {
+                    // Use the server's translated boxes instead
+                    boxes = respData.imgMap.boxes;
+                }
+            }
+        } catch (e) {
+            console.error("Remote translation failed, using untranslated text:", e);
+        }
+    }
+
+    // If no translation was done, show original OCR text
+    for (var j = 0; j < boxes.length; j++) {
+        if (!boxes[j].target && boxes[j].source) {
+            boxes[j].target = boxes[j].source;
+        }
+    }
+
+    // Render the translated result
+    renderTranslatedImage(dataURL, boxes).then(function (translatedDataURL) {
+        replaceImgSrc(dataURL, translatedDataURL, checkData, img);
+        document.body.className = bodyClassName;
+    });
 }
 
 function getDataURLFromImg(img) {

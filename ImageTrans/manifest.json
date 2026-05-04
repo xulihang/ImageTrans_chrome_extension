@@ -15,13 +15,33 @@
   "background": {
     "service_worker": "background.js"
   },
-  "content_scripts": 
+  "content_scripts":
   [
     {
       "matches": ["<all_urls>"],
-      "js": ["getImage.js"],
+      "js": ["lib/ort.all.min.js", "localOcr.js", "getImage.js"],
       "css": ["cursor.css"],
       "run_at": "document_start"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "lib/ort.all.min.js",
+        "lib/ort-wasm-simd-threaded.mjs",
+        "lib/ort-wasm-simd-threaded.wasm",
+        "lib/ort-wasm-simd-threaded.jsep.mjs",
+        "lib/ort-wasm-simd-threaded.jsep.wasm",
+        "lib/ort-wasm-simd-threaded.jspi.mjs",
+        "lib/ort-wasm-simd-threaded.jspi.wasm",
+        "lib/ort-wasm-simd-threaded.asyncify.mjs",
+        "lib/ort-wasm-simd-threaded.asyncify.wasm",
+        "yolov8-lines-model/model.onnx",
+        "mangaocr/encoder.onnx",
+        "mangaocr/decoder.onnx",
+        "mangaocr/vocab.txt"
+      ],
+      "matches": ["<all_urls>"]
     }
   ],
   "action": {
