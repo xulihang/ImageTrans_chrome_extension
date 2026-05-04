@@ -6,6 +6,7 @@ var dataURLMap = {};
 var serverURL = "https://local.basiccat.org:51043";
 var pickingWay = "1";
 var useCanvas = true;
+var renderTextInFrontend = true;
 var password = "";
 var displayName = "";
 var sourceLang = "auto";
@@ -16,6 +17,7 @@ chrome.storage.sync.get({
     password: password,
     displayName: displayName,
     useCanvas: true,
+    renderTextInFrontend: true,
     sourceLang: sourceLang,
     targetLang: targetLang
 }, async function(items) {
@@ -39,6 +41,9 @@ chrome.storage.sync.get({
     }
     if (items.useCanvas != undefined) {
         useCanvas = items.useCanvas;
+    }
+    if (items.renderTextInFrontend != undefined) {
+        renderTextInFrontend = items.renderTextInFrontend;
     }
 });
 
@@ -110,7 +115,7 @@ console.log("loaded");
 
 async function ajax(src,img,checkData){
     let data = {src:src};
-    if ((src.startsWith("blob:") || useCanvas) && img) {
+    if ((src.startsWith("blob:") || useCanvas || renderTextInFrontend) && img) {
         try {
             let dataURL;
             if (src in dataURLMap) {
@@ -135,6 +140,9 @@ async function ajax(src,img,checkData){
     }
     data["displayName"] = displayName;
     data["password"] = password;
+    if (renderTextInFrontend) {
+        data["withoutImage"] = "true";
+    }
     console.log(data);
     try {
         const post = async (url, payload) => {
@@ -174,14 +182,15 @@ async function ajax(src,img,checkData){
             const respData = await post(serverURL, data);
             console.log(respData);
             document.body.className = bodyClassName;
-            if (!respData["img"]) {
+            if (!respData["imgMap"]) {
                 alert("Bad result. Is ImageTrans running correctly?");
-            } else {
-                var dataURL = "data:image/jpeg;base64," + respData["img"];
-                renderTranslatedImage(respData["img"], respData["imgMap"]["boxes"]).then(translatedDataURL => {
+            } else if (renderTextInFrontend && respData["imgMap"] && respData["imgMap"]["boxes"]) {
+                renderTranslatedImage(data.src, respData["imgMap"]["boxes"]).then(translatedDataURL => {
                     console.log(replaceImgSrc(src, translatedDataURL, checkData, img));
                 });
-                // console.log(replaceImgSrc(src, dataURL, checkData, img));
+            } else {
+                var dataURL = "data:image/jpeg;base64," + respData["img"];
+                console.log(replaceImgSrc(src, dataURL, checkData, img));
             }
         } catch (err) {
             document.body.className = bodyClassName;
@@ -196,6 +205,10 @@ async function ajax(src,img,checkData){
                     document.body.className = bodyClassName;
                     if (!respData["img"]) {
                         alert("Bad result. Is ImageTrans running correctly?");
+                    } else if (renderTextInFrontend && respData["imgMap"] && respData["imgMap"]["boxes"]) {
+                        renderTranslatedImage(respData["img"], respData["imgMap"]["boxes"]).then(translatedDataURL => {
+                            console.log(replaceImgSrc(src, translatedDataURL, checkData, img));
+                        });
                     } else {
                         var dataURL = "data:image/jpeg;base64," + respData["img"];
                         console.log(replaceImgSrc(src, dataURL, checkData, img));
@@ -279,7 +292,11 @@ async function renderTranslatedImage(base64Image, boxes) {
         img.onerror = function() {
             reject(new Error('Failed to load translated image'));
         };
-        img.src = 'data:image/jpeg;base64,' + base64Image;
+        if (base64Image.startsWith("data:")) {
+            img.src = base64Image;
+        } else {        
+            img.src = 'data:image/jpeg;base64,' + base64Image;
+        }
     });
 }
 

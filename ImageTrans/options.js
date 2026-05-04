@@ -3,6 +3,7 @@ function save() {
   const pickingWay = document.getElementById("pickingWay").selectedOptions[0].value;
   const useCanvas = document.getElementById("useCanvas").checked;
   const useCORS = document.getElementById("useCORS").checked;
+  const renderTextInFrontend = document.getElementById("renderTextInFrontend").checked;
   const imagetransInstanceDisplayName = document.getElementById("imagetransInstanceInput").value;
   const password = document.getElementById("imagetransPasswordInput").value;
   const sourceLang = document.getElementById("sourceLangSelect").selectedOptions[0].value;
@@ -12,6 +13,7 @@ function save() {
     pickingWay: pickingWay,
     useCanvas: useCanvas,
     useCORS: useCORS,
+    renderTextInFrontend: renderTextInFrontend,
     displayName: imagetransInstanceDisplayName,
     password: password,
     sourceLang: sourceLang,
@@ -31,6 +33,7 @@ function load() {
     pickingWay: '1',
     useCanvas: true,
     useCORS: true,
+    renderTextInFrontend: true,
     displayName: "",
     password:"",
     sourceLang:"auto",
@@ -61,6 +64,7 @@ function load() {
     }
     document.getElementById("useCanvas").checked = items.useCanvas;
     document.getElementById("useCORS").checked = items.useCORS;
+    document.getElementById("renderTextInFrontend").checked = items.renderTextInFrontend;
     document.getElementById("imagetransInstanceInput").value = items.displayName;
     document.getElementById("imagetransPasswordInput").value = items.password;
   });
