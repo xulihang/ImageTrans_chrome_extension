@@ -74,6 +74,15 @@
         <input id="useOpenAI" type="checkbox"/>
       </label>
     </div>
+    <div id="ocrMethodSection" style="margin-left:20px; display:none;">
+      <label for="ocrMethod">
+        OCR method:
+        <select id="ocrMethod">
+          <option value="imagetrans">ImageTrans (remote)</option>
+          <option value="paddleocr">PaddleOCR (local)</option>
+        </select>
+      </label>
+    </div>
     <div>
       <label for="openaiURL">
         API URL:

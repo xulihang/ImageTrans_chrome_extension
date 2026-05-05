@@ -45,5 +45,21 @@
     "128": "imagetrans.png"
   },
   "homepage_url": "https://www.basiccat.org/imagetrans",
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "paddleocr/opencv.js",
+        "paddleocr/ort.min.js",
+        "paddleocr/esearch-ocr/dist/esearch-ocr.umd.cjs",
+        "paddleocr/page-ocr.js",
+        "paddleocr/ppocr_v5_mobile_det.onnx",
+        "paddleocr/ppocr_v5_mobile_rec.onnx",
+        "paddleocr/ppocrv5_dict.txt",
+        "paddleocr/ort-wasm-simd-threaded.jsep.mjs",
+        "paddleocr/ort-wasm-simd-threaded.jsep.wasm"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ],
   "manifest_version": 3
 }

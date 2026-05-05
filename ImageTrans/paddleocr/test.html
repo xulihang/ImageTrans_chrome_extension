@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PaddleOCR 测试</title>
+<style>
+  body { font-family: sans-serif; max-width: 900px; margin: 0 auto; padding: 20px; }
+  #status { color: #666; margin: 10px 0; }
+  #container { display: flex; gap: 20px; margin-top: 20px; }
+  #image-area { flex: 1; }
+  #image-area img { max-width: 100%; border: 1px solid #ccc; }
+  #result-area { flex: 1; }
+  .box-item { border: 1px solid #ddd; padding: 8px; margin-bottom: 8px; border-radius: 4px; }
+  .box-item .text { font-size: 14px; }
+  .box-item .coord { font-size: 11px; color: #999; }
+  canvas { border: 1px solid #ccc; max-width: 100%; }
+  #file-input { margin: 10px 0; }
+</style>
+</head>
+<body>
+<h1>PaddleOCR 本地测试</h1>
+<div id="status">正在加载依赖库...</div>
+<input type="file" id="file-input" accept="image/*" disabled>
+<div id="container">
+  <div id="image-area">
+    <canvas id="canvas"></canvas>
+  </div>
+  <div id="result-area">
+    <h3>识别结果</h3>
+    <div id="boxes"></div>
+  </div>
+</div>
+
+<!-- 本地依赖库 -->
+<script src="opencv.js"></script>
+<script src="ort.min.js"></script>
+<script src="esearch-ocr/dist/esearch-ocr.umd.cjs"></script>
+
+<script>
+const statusEl = document.getElementById('status');
+const fileInput = document.getElementById('file-input');
+const canvas = document.getElementById('canvas');
+const boxesEl = document.getElementById('boxes');
+const ctx = canvas.getContext('2d');
+
+const Paddle = window['esearch-ocr'];
+
+// 配置 ONNX Runtime WASM 路径
+if (ort.env && ort.env.wasm) {
+  ort.env.wasm.wasmPaths = './';
+}
+
+const DET_PATH = 'ppocr_v5_mobile_det.onnx';
+const REC_PATH = 'ppocr_v5_mobile_rec.onnx';
+const DIC_PATH = 'ppocrv5_dict.txt';
+
+let paddleReady = false;
+
+async function init() {
+  try {
+    statusEl.textContent = '正在加载字典...';
+    const res = await fetch(DIC_PATH);
+    const dic = await res.text();
+
+    statusEl.textContent = '正在初始化 PaddleOCR...';
+    await Paddle.init({
+      detPath: DET_PATH,
+      recPath: REC_PATH,
+      dic: dic,
+      ort: ort,
+      node: false,
+      cv: cv
+    });
+
+    paddleReady = true;
+    statusEl.textContent = 'PaddleOCR 初始化完成，请选择图片';
+    fileInput.disabled = false;
+  } catch (err) {
+    statusEl.textContent = '初始化失败: ' + err.message;
+    console.error(err);
+  }
+}
+
+fileInput.addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  statusEl.textContent = '正在加载图片...';
+  const img = new Image();
+  img.src = URL.createObjectURL(file);
+  await new Promise(resolve => { img.onload = resolve; });
+
+  canvas.width = img.naturalWidth;
+  canvas.height = img.naturalHeight;
+  ctx.drawImage(img, 0, 0);
+
+  statusEl.textContent = '正在识别...';
+  try {
+    const result = await Paddle.ocr(img);
+    console.log(result);
+
+    boxesEl.innerHTML = '';
+
+    result.columns.forEach(column => {
+      const box = column.outerBox;
+      const text = column.src.map(s => s.text).join('');
+
+      // 绘制识别框
+      ctx.strokeStyle = 'red';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(box[0][0], box[0][1]);
+      ctx.lineTo(box[1][0], box[1][1]);
+      ctx.lineTo(box[2][0], box[2][1]);
+      ctx.lineTo(box[3][0], box[3][1]);
+      ctx.closePath();
+      ctx.stroke();
+
+      // 显示文字
+      const boxEl = document.createElement('div');
+      boxEl.className = 'box-item';
+      boxEl.innerHTML = `<div class="text">${text}</div><div class="coord">[${box[0].join(',')}] [${box[2].join(',')}]</div>`;
+      boxesEl.appendChild(boxEl);
+    });
+
+    statusEl.textContent = `识别完成，共 ${result.columns.length} 个文本区域`;
+  } catch (err) {
+    statusEl.textContent = '识别失败: ' + err.message;
+    console.error(err);
+  }
+});
+
+init();
+</script>
+</body>
+</html>

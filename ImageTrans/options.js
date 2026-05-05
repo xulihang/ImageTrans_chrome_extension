@@ -16,6 +16,7 @@ function save() {
   const openaiKey = document.getElementById("openaiKey").value;
   const openaiModel = document.getElementById("openaiModel").value;
   const openaiPrompt = document.getElementById("openaiPrompt").value;
+  const ocrMethod = document.getElementById("ocrMethod").value;
   chrome.storage.sync.set({
     serverURL: URL,
     pickingWay: pickingWay,
@@ -30,7 +31,8 @@ function save() {
     openaiURL: openaiURL,
     openaiKey: openaiKey,
     openaiModel: openaiModel,
-    openaiPrompt: openaiPrompt
+    openaiPrompt: openaiPrompt,
+    ocrMethod: ocrMethod
   }, function() {
     alert("saved");
     chrome.runtime.sendMessage({action: "updateCORSStatus", enabled: useCORS});
@@ -52,7 +54,8 @@ function load() {
     openaiURL: 'https://api.openai.com/v1',
     openaiKey: '',
     openaiModel: 'gpt-4o',
-    openaiPrompt: DEFAULT_OPENAI_PROMPT
+    openaiPrompt: DEFAULT_OPENAI_PROMPT,
+    ocrMethod: 'imagetrans'
   }, function(items) {
     if (items.serverURL) {
         document.getElementById("serverURL").value = items.serverURL;
@@ -87,6 +90,11 @@ function load() {
     document.getElementById("openaiKey").value = items.openaiKey;
     document.getElementById("openaiModel").value = items.openaiModel;
     document.getElementById("openaiPrompt").value = items.openaiPrompt;
+    if (items.ocrMethod) {
+      document.getElementById("ocrMethod").value = items.ocrMethod;
+    }
+    // Show/hide OCR method section based on useOpenAI
+    document.getElementById("ocrMethodSection").style.display = items.useOpenAI ? 'block' : 'none';
   });
 }
 
@@ -155,6 +163,9 @@ window.onload = function (){
   document.getElementById("useOpenAI").addEventListener("change",function(){
     if (this.checked) {
       document.getElementById("renderTextInFrontend").checked = true;
+      document.getElementById("ocrMethodSection").style.display = 'block';
+    } else {
+      document.getElementById("ocrMethodSection").style.display = 'none';
     }
   })
 }

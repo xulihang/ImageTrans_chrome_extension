@@ -16,6 +16,7 @@ var openaiURL = "https://api.openai.com/v1";
 var openaiKey = "";
 var openaiModel = "gpt-4o";
 var openaiPrompt = "";
+var ocrMethod = "imagetrans";
 chrome.storage.sync.get({
     serverURL: serverURL,
     pickingWay: pickingWay,
@@ -29,7 +30,8 @@ chrome.storage.sync.get({
     openaiURL: 'https://api.openai.com/v1',
     openaiKey: '',
     openaiModel: 'gpt-4o',
-    openaiPrompt: ''
+    openaiPrompt: '',
+    ocrMethod: 'imagetrans'
 }, async function(items) {
     if (items.serverURL) {
         serverURL = items.serverURL;
@@ -72,6 +74,9 @@ chrome.storage.sync.get({
     }
     if (items.openaiPrompt) {
         openaiPrompt = items.openaiPrompt;
+    }
+    if (items.ocrMethod) {
+        ocrMethod = items.ocrMethod;
     }
 });
 
@@ -282,41 +287,46 @@ async function ajaxOpenAI(src, img, checkData) {
             throw new Error("Cannot get image data for OCR");
         }
 
-        // Step 2: Call ImageTrans server for OCR (text detection + coordinates)
-        const ocrData = {
-            src: dataURL,
-            saveToFile: "true",
-            displayName: displayName || "default",
-            password: password,
-            withoutImage: "true"
-        };
-        if (sourceLang !== "auto") ocrData["sourceLang"] = sourceLang;
-        if (targetLang !== "auto") ocrData["targetLang"] = targetLang;
+        // Step 2: OCR (text detection + coordinates)
+        let boxes;
+        if (ocrMethod === "paddleocr") {
+            boxes = await paddleOCR(dataURL);
+        } else {
+            const ocrData = {
+                src: dataURL,
+                saveToFile: "true",
+                displayName: displayName || "default",
+                password: password,
+                withoutImage: "true"
+            };
+            if (sourceLang !== "auto") ocrData["sourceLang"] = sourceLang;
+            if (targetLang !== "auto") ocrData["targetLang"] = targetLang;
 
-        const ocrParams = new URLSearchParams();
-        for (const k in ocrData) {
-            if (ocrData[k] !== undefined && ocrData[k] !== null) {
-                ocrParams.append(k, ocrData[k]);
+            const ocrParams = new URLSearchParams();
+            for (const k in ocrData) {
+                if (ocrData[k] !== undefined && ocrData[k] !== null) {
+                    ocrParams.append(k, ocrData[k]);
+                }
             }
+
+            const ocrResponse = await fetch(serverURL + '/translate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                body: ocrParams.toString(),
+                cache: 'no-store'
+            });
+
+            if (!ocrResponse.ok) {
+                throw new Error('ImageTrans OCR failed: HTTP ' + ocrResponse.status);
+            }
+
+            const ocrResult = await ocrResponse.json();
+            if (!ocrResult["imgMap"] || !ocrResult["imgMap"]["boxes"]) {
+                throw new Error('ImageTrans did not return text boxes. Is it running correctly?');
+            }
+
+            boxes = ocrResult["imgMap"]["boxes"];
         }
-
-        const ocrResponse = await fetch(serverURL + '/translate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
-            body: ocrParams.toString(),
-            cache: 'no-store'
-        });
-
-        if (!ocrResponse.ok) {
-            throw new Error('ImageTrans OCR failed: HTTP ' + ocrResponse.status);
-        }
-
-        const ocrResult = await ocrResponse.json();
-        if (!ocrResult["imgMap"] || !ocrResult["imgMap"]["boxes"]) {
-            throw new Error('ImageTrans did not return text boxes. Is it running correctly?');
-        }
-
-        const boxes = ocrResult["imgMap"]["boxes"];
 
         // Step 3: Extract source texts from boxes
         const sourceTexts = [];
@@ -571,6 +581,104 @@ function mousemove(event){
     x = e.clientX;//鼠标所在的x坐标
     y = e.clientY;//鼠标所在的y坐标
 };
+
+// PaddleOCR page-context bridge
+var paddleInjected = false;
+var paddleInitDone = false;
+var paddlePendingRequests = {};
+
+function loadLibrary(src, type, id) {
+    return new Promise(function(resolve, reject) {
+        var scriptEle = document.createElement("script");
+        scriptEle.setAttribute("type", type);
+        scriptEle.setAttribute("src", src);
+        if (id) scriptEle.id = id;
+        document.body.appendChild(scriptEle);
+        scriptEle.addEventListener("load", function() {
+            console.log(src + " loaded");
+            resolve(true);
+        });
+        scriptEle.addEventListener("error", function(ev) {
+            console.log("Error on loading " + src, ev);
+            reject(ev);
+        });
+    });
+}
+
+function ensurePaddleOCR() {
+    if (paddleInjected) return Promise.resolve();
+    paddleInjected = true;
+
+    return new Promise(function(resolve, reject) {
+        // Listen for responses from page-ocr.js
+        function messageListener(event) {
+            if (event.source !== window) return;
+            var data = event.data;
+            if (!data || data.source !== 'imagetrans-extension') return;
+
+            if (data.type === 'PADDLE_INIT_RESULT') {
+                if (data.success) {
+                    paddleInitDone = true;
+                    resolve(true);
+                } else {
+                    reject(new Error('PaddleOCR init failed: ' + data.error));
+                }
+            } else if (data.type === 'PADDLE_OCR_RESULT') {
+                var pending = paddlePendingRequests[data.requestId];
+                if (pending) {
+                    delete paddlePendingRequests[data.requestId];
+                    if (data.success) {
+                        pending.resolve(data.boxes);
+                    } else {
+                        pending.reject(new Error(data.error));
+                    }
+                }
+            }
+        }
+        window.addEventListener('message', messageListener);
+
+        var detUrl = chrome.runtime.getURL('paddleocr/ppocr_v5_mobile_det.onnx');
+        var recUrl = chrome.runtime.getURL('paddleocr/ppocr_v5_mobile_rec.onnx');
+        var dicUrl = chrome.runtime.getURL('paddleocr/ppocrv5_dict.txt');
+
+        Promise.all([
+            loadLibrary(chrome.runtime.getURL('paddleocr/opencv.js'), 'text/javascript'),
+            loadLibrary(chrome.runtime.getURL('paddleocr/ort.min.js'), 'text/javascript')
+        ]).then(function() {
+            return loadLibrary(chrome.runtime.getURL('paddleocr/esearch-ocr/dist/esearch-ocr.umd.cjs'), 'text/javascript');
+        }).then(function() {
+            return loadLibrary(chrome.runtime.getURL('paddleocr/page-ocr.js'), 'text/javascript');
+        }).then(function() {
+            window.postMessage({
+                source: 'imagetrans-extension',
+                type: 'PADDLE_INIT',
+                detPath: detUrl,
+                recPath: recUrl,
+                dicPath: dicUrl,
+                requestId: 'init'
+            }, '*');
+        }).catch(function(err) {
+            paddleInjected = false;
+            window.removeEventListener('message', messageListener);
+            reject(err);
+        });
+    });
+}
+
+function paddleOCR(imageDataURL) {
+    return ensurePaddleOCR().then(function() {
+        return new Promise(function(resolve, reject) {
+            var requestId = 'ocr_' + Date.now() + '_' + Math.random();
+            paddlePendingRequests[requestId] = { resolve: resolve, reject: reject };
+            window.postMessage({
+                source: 'imagetrans-extension',
+                type: 'PADDLE_OCR',
+                imageDataURL: imageDataURL,
+                requestId: requestId
+            }, '*');
+        });
+    });
+}
 
 function alterLanguage(e){
     if (!e){
