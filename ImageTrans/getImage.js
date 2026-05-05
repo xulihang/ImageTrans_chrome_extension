@@ -240,7 +240,7 @@ async function ajax(src,img,checkData){
             document.body.className = bodyClassName;
             console.log('Request failed:', err);
             if (serverURL === "https://local.basiccat.org:51043") {
-                var usePublic = confirm("Failed to connect to local ImageTrans server.\n\nClick OK to use the public server, or Cancel to use local PaddleOCR instead.\n\nNote: PaddleOCR quality is lower than ImageTrans.");
+                var usePublic = confirm("Failed to connect to local ImageTrans server.\n\nClick OK to use the public server, or Cancel to use local PaddleOCR instead.\n\nNote: PaddleOCR quality is lower than ImageTrans. You can configure which one to use in options.");
                 if (usePublic) {
                     serverURL = "https://service.basiccat.org:51043";
                     document.body.className = bodyClassName + " wait";
