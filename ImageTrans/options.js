@@ -17,6 +17,7 @@ function save() {
   const openaiModel = document.getElementById("openaiModel").value;
   const openaiPrompt = document.getElementById("openaiPrompt").value;
   const ocrMethod = document.getElementById("ocrMethod").value;
+  const translationMode = document.getElementById("translationMode").value;
   chrome.storage.sync.set({
     serverURL: URL,
     pickingWay: pickingWay,
@@ -32,7 +33,8 @@ function save() {
     openaiKey: openaiKey,
     openaiModel: openaiModel,
     openaiPrompt: openaiPrompt,
-    ocrMethod: ocrMethod
+    ocrMethod: ocrMethod,
+    translationMode: translationMode
   }, function() {
     alert("saved");
     chrome.runtime.sendMessage({action: "updateCORSStatus", enabled: useCORS});
@@ -55,7 +57,8 @@ function load() {
     openaiKey: '',
     openaiModel: 'gpt-4o',
     openaiPrompt: DEFAULT_OPENAI_PROMPT,
-    ocrMethod: 'imagetrans'
+    ocrMethod: 'paddleocr',
+    translationMode: 'local'
   }, function(items) {
     if (items.serverURL) {
         document.getElementById("serverURL").value = items.serverURL;
@@ -92,6 +95,9 @@ function load() {
     document.getElementById("openaiPrompt").value = items.openaiPrompt;
     if (items.ocrMethod) {
       document.getElementById("ocrMethod").value = items.ocrMethod;
+    }
+    if (items.translationMode) {
+      document.getElementById("translationMode").value = items.translationMode;
     }
     // Show/hide OCR method section based on useOpenAI
     document.getElementById("ocrMethodSection").style.display = items.useOpenAI ? 'block' : 'none';

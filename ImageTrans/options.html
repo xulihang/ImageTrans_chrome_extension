@@ -3,115 +3,285 @@
   <head>
     <title>Options</title>
     <style>
+      :root {
+        --bg: #f5f7fa;
+        --card-bg: #ffffff;
+        --primary: #4a6cf7;
+        --primary-hover: #3b5de7;
+        --text: #2d3748;
+        --text-secondary: #718096;
+        --border: #e2e8f0;
+        --danger: #e53e3e;
+        --radius: 8px;
+        --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+      }
+
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        padding: 24px;
+        max-width: 680px;
+        margin: 0 auto;
+        line-height: 1.6;
+      }
+
+      .header {
+        text-align: center;
+        margin-bottom: 28px;
+      }
+      .header h2 {
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--primary);
+      }
+
+      .card {
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 20px 24px;
+        margin-bottom: 16px;
+      }
+      .card-title {
+        font-size: 15px;
+        font-weight: 600;
+        margin-bottom: 14px;
+        color: var(--text);
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .form-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+      }
+      .form-row:last-child { margin-bottom: 0; }
+
+      label {
+        font-size: 13px;
+        color: var(--text-secondary);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+      }
+      label.checkbox-label {
+        min-width: 0;
+      }
+
+      select, input[type="text"], input[type="password"] {
+        padding: 7px 10px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        font-size: 13px;
+        background: #fff;
+        color: var(--text);
+        outline: none;
+        transition: border-color 0.2s;
+      }
+      select:focus, input:focus, textarea:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(74,108,247,0.1);
+      }
+      input[type="text"], input[type="password"] { width: 240px; }
+      input.wide { width: 100%; }
+      textarea {
+        width: 100%;
+        padding: 8px 10px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        font-size: 13px;
+        font-family: monospace;
+        outline: none;
+        resize: vertical;
+        transition: border-color 0.2s;
+      }
+
+      button {
+        padding: 7px 14px;
+        border: none;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.2s, transform 0.1s;
+      }
+      button:active { transform: scale(0.97); }
+      .btn-primary {
+        background: var(--primary);
+        color: #fff;
+      }
+      .btn-primary:hover { background: var(--primary-hover); }
+      .btn-secondary {
+        background: #edf2f7;
+        color: var(--text);
+        border: 1px solid var(--border);
+      }
+      .btn-secondary:hover { background: #e2e8f0; }
+      .btn-save {
+        display: block;
+        width: 100%;
+        padding: 10px;
+        font-size: 15px;
+        font-weight: 600;
+        margin-top: 20px;
+      }
+
+      .inline-group {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      .inline-group > label {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .divider {
+        border: none;
+        border-top: 1px solid var(--border);
+        margin: 8px 0 16px;
+      }
+
+      .footer {
+        text-align: center;
+        margin-top: 24px;
+        font-size: 12px;
+        color: var(--text-secondary);
+      }
+      .footer a { color: var(--primary); text-decoration: none; }
+      .footer a:hover { text-decoration: underline; }
+
+      input[type="checkbox"] {
+        accent-color: var(--primary);
+        width: 16px;
+        height: 16px;
+      }
     </style>
   </head>
   <body>
-    <div>
-      <label for="serverURL">
-        Server URL:
-        <input id="serverURL" type="text" value=""/>
-      </label>
-      <button id="publicServerButton">Use public server</button>
-      <button id="localServerButton">Use local server</button>
+    <div class="header">
+      <h2>ImageTrans Options</h2>
     </div>
-    <div>
-      <label id="imagetransInstanceLabel">
-        Display name of ImageTrans instance:
+
+    <!-- Translation -->
+    <div class="card">
+      <div class="card-title">Translation</div>
+      <div class="form-row">
+        <label for="translationMode">Translation Mode</label>
+        <select id="translationMode">
+          <option value="local">Local (PaddleOCR + MyMemory or OpenAI)</option>
+          <option value="imagetrans">ImageTrans (local or remote server)</option>
+        </select>
+      </div>
+      <div class="inline-group">
+        <label>Source lang <select id="sourceLangSelect"></select></label>
+        <label>Target lang <select id="targetLangSelect"></select></label>
+      </div>
+    </div>
+
+    <!-- Server -->
+    <div class="card">
+      <div class="card-title">Server Connection</div>
+      <div class="form-row">
+        <label for="serverURL">Server URL</label>
+        <input id="serverURL" type="text" value="" class="wide" />
+      </div>
+      <div class="form-row">
+        <button id="publicServerButton" class="btn-secondary">Use public server</button>
+        <button id="localServerButton" class="btn-secondary">Use local server</button>
+      </div>
+      <div class="form-row">
+        <label id="imagetransInstanceLabel">Instance display name</label>
         <input id="imagetransInstanceInput" type="text" placeholder="default" />
-      </label>
-      <button id="checkInstanceButton">Check existing instances</button>
-    </div>
-    <div>
-      <label id="imagetransPasswordLabel">
-        Password for ImageTrans instance (optional):
+        <button id="checkInstanceButton" class="btn-secondary">Check existing instances</button>
+      </div>
+      <div class="form-row">
+        <label id="imagetransPasswordLabel">Password (optional)</label>
         <input id="imagetransPasswordInput" type="password" />
-      </label>
+      </div>
     </div>
-    <div>
-      <label>
-        Source lang:
-        <select id="sourceLangSelect">
-        </select>
-      </label>
-      <br/>
-      <label>
-        Target lang:
-        <select id="targetLangSelect">
-        </select>
-      </label>
-    </div>
-    <div>
-      <label for="serverURL">The way to pick an image:
-        <select id="pickingWay">
+
+    <!-- Image Capture -->
+    <div class="card">
+      <div class="card-title">Image Capture</div>
+      <div class="form-row">
+        <label>Pick image from
+          <select id="pickingWay">
             <option value="0">Behind Mouse Cursor</option>
             <option value="1">Center of the Screen</option>
-        </select>
-      </label>
+          </select>
+        </label>
+      </div>
+      <div class="form-row">
+        <label class="checkbox-label">
+          <input id="useCanvas" type="checkbox" checked />
+          Use Canvas to get image data by default
+        </label>
+      </div>
+      <div class="form-row">
+        <label class="checkbox-label">
+          <input id="useCORS" type="checkbox" checked />
+          Enable CORS headers for cross-domain images
+        </label>
+      </div>
+      <div class="form-row">
+        <label class="checkbox-label">
+          <input id="renderTextInFrontend" type="checkbox" checked />
+          Render text in the front-end
+        </label>
+      </div>
     </div>
-    <div>
-      <label for="useCanvas">
-        Use Canvas to get image data by default:
-        <input id="useCanvas" type="checkbox" checked/>
-      </label>
-    </div>
-    <div>
-      <label for="useCORS">
-        Enable CORS headers for images (allow translating cross-domain images):
-        <input id="useCORS" type="checkbox" checked/>
-      </label>
-    </div>
-    <div>
-      <label for="renderTextInFrontend">
-        Render text in the front-end:
-        <input id="renderTextInFrontend" type="checkbox" checked/>
-      </label>
-    </div>
-    <hr/>
-    <h3>OpenAI-Compatible API (optional)</h3>
-    <div>
-      <label for="useOpenAI">
-        Enable OpenAI-compatible API for translation:
-        <input id="useOpenAI" type="checkbox"/>
-      </label>
-    </div>
-    <div id="ocrMethodSection" style="margin-left:20px; display:none;">
-      <label for="ocrMethod">
-        OCR method:
+
+    <!-- OpenAI API -->
+    <div class="card">
+      <div class="card-title">OpenAI-Compatible API (optional)</div>
+      <div class="form-row">
+        <label class="checkbox-label">
+          <input id="useOpenAI" type="checkbox" />
+          Enable OpenAI-compatible API for translation
+        </label>
+      </div>
+      <div id="ocrMethodSection" style="margin-bottom:12px; display:none;">
+        <label for="ocrMethod">OCR method</label>
         <select id="ocrMethod">
-          <option value="imagetrans">ImageTrans (remote)</option>
           <option value="paddleocr">PaddleOCR (local)</option>
+          <option value="imagetrans">ImageTrans (remote)</option>
         </select>
-      </label>
+      </div>
+      <div class="form-row">
+        <label for="openaiURL">API URL</label>
+        <input id="openaiURL" type="text" value="https://api.openai.com/v1" class="wide" />
+      </div>
+      <div class="form-row">
+        <label for="openaiKey">API Key</label>
+        <input id="openaiKey" type="password" class="wide" />
+      </div>
+      <div class="form-row">
+        <label for="openaiModel">Model</label>
+        <input id="openaiModel" type="text" value="gpt-4o" />
+      </div>
+      <div class="form-row">
+        <label for="openaiPrompt">Prompt <span style="font-weight:400;color:var(--text-secondary)">({sourceLang}, {targetLang}, {texts})</span></label>
+      </div>
+      <textarea id="openaiPrompt" rows="5"></textarea>
     </div>
-    <div>
-      <label for="openaiURL">
-        API URL:
-        <input id="openaiURL" type="text" value="https://api.openai.com/v1" style="width:300px;"/>
-      </label>
+
+    <button id="saveButton" class="btn-primary btn-save">Save Settings</button>
+
+    <div class="footer">
+      For more info, visit ImageTrans's <a href="https://www.basiccat.org/imagetrans" target="_blank">homepage</a>.
     </div>
-    <div>
-      <label for="openaiKey">
-        API Key:
-        <input id="openaiKey" type="password" style="width:300px;"/>
-      </label>
-    </div>
-    <div>
-      <label for="openaiModel">
-        Model:
-        <input id="openaiModel" type="text" value="gpt-4o"/>
-      </label>
-    </div>
-    <div>
-      <label for="openaiPrompt">
-        Prompt (placeholders: {sourceLang}, {targetLang}, {texts}):
-        <br/>
-        <textarea id="openaiPrompt" rows="6" cols="50"></textarea>
-      </label>
-    </div>
-    <button id="saveButton">Save</button>
-    <div style="margin-top:20px;">
-      For more info, please visit ImageTrans's <a href="https://www.basiccat.org/imagetrans">homepage</a>.
-    </div>
+
     <script src="options.js"></script>
   </body>
 </html>

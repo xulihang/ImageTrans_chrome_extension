@@ -16,7 +16,8 @@ var openaiURL = "https://api.openai.com/v1";
 var openaiKey = "";
 var openaiModel = "gpt-4o";
 var openaiPrompt = "";
-var ocrMethod = "imagetrans";
+var ocrMethod = "paddleocr";
+var translationMode = "local";
 chrome.storage.sync.get({
     serverURL: serverURL,
     pickingWay: pickingWay,
@@ -31,7 +32,8 @@ chrome.storage.sync.get({
     openaiKey: '',
     openaiModel: 'gpt-4o',
     openaiPrompt: '',
-    ocrMethod: 'imagetrans'
+    ocrMethod: 'paddleocr',
+    translationMode: 'local'
 }, async function(items) {
     if (items.serverURL) {
         serverURL = items.serverURL;
@@ -77,6 +79,9 @@ chrome.storage.sync.get({
     }
     if (items.ocrMethod) {
         ocrMethod = items.ocrMethod;
+    }
+    if (items.translationMode) {
+        translationMode = items.translationMode;
     }
 });
 
@@ -149,6 +154,9 @@ console.log("loaded");
 async function ajax(src,img,checkData){
     if (useOpenAI) {
         return ajaxOpenAI(src, img, checkData);
+    }
+    if (translationMode === "local") {
+        return ajaxMyMemory(src, img, checkData);
     }
     let data = {src:src};
     if ((src.startsWith("blob:") || useCanvas || renderTextInFrontend) && img) {
@@ -261,6 +269,82 @@ async function ajax(src,img,checkData){
         document.body.className = bodyClassName;
         console.log(e);
     }
+}
+
+async function ajaxMyMemory(src, img, checkData) {
+    console.log("Using PaddleOCR + MyMemory for translation");
+    if (!bodyClassName) {
+        bodyClassName = document.body.className;
+    }
+    document.body.className = bodyClassName + " wait";
+
+    try {
+        let dataURL;
+        if (src in dataURLMap) {
+            dataURL = dataURLMap[src];
+        } else if (img) {
+            dataURL = await getDataURLFromImg(img);
+            dataURLMap[src] = dataURL;
+        } else {
+            throw new Error("Cannot get image data for OCR");
+        }
+
+        let boxes = await paddleOCR(dataURL);
+
+        const sourceTexts = [];
+        for (const box of boxes) {
+            const sourceText = box.source || box.text || box.target || '';
+            sourceTexts.push(sourceText);
+        }
+
+        if (sourceTexts.length === 0 || sourceTexts.every(function(t) { return !t; })) {
+            document.body.className = bodyClassName;
+            alert("No text detected in the image.");
+            return;
+        }
+
+        for (let i = 0; i < boxes.length; i++) {
+            if (sourceTexts[i]) {
+                boxes[i].target = await translateUsingMyMemory(sourceTexts[i]);
+            } else {
+                boxes[i].target = '';
+            }
+        }
+
+        document.body.className = bodyClassName;
+
+        const translatedDataURL = await renderTranslatedImage(dataURL, boxes);
+        console.log(replaceImgSrc(src, translatedDataURL, checkData, img));
+
+    } catch (err) {
+        document.body.className = bodyClassName;
+        console.error('Translation failed:', err);
+        alert("Translation failed: " + err.message);
+    }
+}
+
+async function translateUsingMyMemory(source) {
+    try {
+        let sl = sourceLang === "auto" ? "ja" : sourceLang;
+        let tl = targetLang === "auto" ? "en" : targetLang;
+        source = reflowText(sl, source);
+        let url = "https://api.mymemory.translated.net/get?";
+        url = url + "q=" + encodeURIComponent(source);
+        url = url + "&langpair=" + sl + "|" + tl;
+        let response = await fetch(url);
+        let o = await response.json();
+        return o.responseData.translatedText;
+    } catch (error) {
+        console.error(error);
+        return "";
+    }
+}
+
+function reflowText(sourceLang, source) {
+    if (sourceLang === "ja" || sourceLang === "zh") {
+        return source.replace(/\n/g, "");
+    }
+    return source.replace(/\n/g, " ");
 }
 
 async function ajaxOpenAI(src, img, checkData) {
