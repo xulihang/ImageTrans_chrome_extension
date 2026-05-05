@@ -117,6 +117,15 @@ function mergeTextBoxes(items) {
     return aY - bY;
   });
 
+  // 检测是否为竖排文字（多数 box 高度 > 宽度）
+  var tallCount = 0;
+  items.forEach(function(item) {
+    var w = item.box[1][0] - item.box[0][0];
+    var h = item.box[2][1] - item.box[0][1];
+    if (h > w) tallCount++;
+  });
+  var isVertical = tallCount > items.length / 2;
+
   var groups = [];
   var used = new Array(sorted.length).fill(false);
 
@@ -131,7 +140,6 @@ function mergeTextBoxes(items) {
       for (var j = 0; j < sorted.length; j++) {
         if (used[j]) continue;
         for (var k = 0; k < group.length; k++) {
-          // 必须 X 重叠比例 ≥ 30% AND Y 重叠比例 ≥ 30%
           if (xOverlapRatio(group[k].box, sorted[j].box) >= 0.3) {
             if (yOverlapRatio(group[k].box, sorted[j].box) >= 0.3) {
               group.push(sorted[j]);
@@ -146,12 +154,22 @@ function mergeTextBoxes(items) {
     groups.push(group);
   }
 
-  return groups.map(function(group) {
-    // 组内文本合并（去除重复/空白）
+  var merged = groups.map(function(group) {
+    // 竖排文字：组内从右往左排列；横排：从上到下
+    if (isVertical) {
+      group.sort(function(a, b) { return b.box[0][0] - a.box[0][0]; });
+    }
     var texts = group.map(function(item) { return item.text; });
     var box = unionBox(group);
     return { text: texts.join(''), box: box };
   });
+
+  // 竖排文字：组间也从右往左排列
+  if (isVertical) {
+    merged.sort(function(a, b) { return b.box[0][0] - a.box[0][0]; });
+  }
+
+  return merged;
 }
 
 var _colorIdx = 0;
@@ -226,7 +244,8 @@ fileInput.addEventListener('change', async (e) => {
         }
       });
     });
-
+    console.log(srcItems);
+    console.log(result);
     const mergedGroups = mergeTextBoxes(srcItems);
 
     mergedGroups.forEach(function(group) {
