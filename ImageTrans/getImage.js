@@ -535,36 +535,46 @@ async function renderTranslatedImage(base64Image, boxes) {
 
             ctx.drawImage(img, 0, 0);
 
+            const clampBox = function(x, y, w, h) {
+                x = Math.max(0, x);
+                y = Math.max(0, y);
+                w = Math.min(w, c.width - x);
+                h = Math.min(h, c.height - y);
+                return { x: x, y: y, w: w, h: h };
+            };
+
             for (const box of boxes) {
                 const geo = box.geometry || {};
-                const x = geo.X || geo.x || 0;
-                const y = geo.Y || geo.y || 0;
-                const w = geo.width || geo.Width || 0;
-                const h = geo.height || geo.Height || 0;
+                const bx = geo.X || geo.x || 0;
+                const by = geo.Y || geo.y || 0;
+                const bw = geo.width || geo.Width || 0;
+                const bh = geo.height || geo.Height || 0;
                 const targetText = box.target || '';
 
-                if (w <= 0 || h <= 0 || !targetText) continue;
+                if (bw <= 0 || bh <= 0 || !targetText) continue;
 
+                const c1 = clampBox(bx, by, bw, bh);
                 ctx.fillStyle = '#FFFFFF';
-                ctx.fillRect(x, y, w, h);
+                ctx.fillRect(c1.x, c1.y, c1.w, c1.h);
             }
 
             for (const box of boxes) {
                 const geo = box.geometry || {};
-                const x = geo.X || geo.x || 0;
-                const y = geo.Y || geo.y || 0;
-                const w = geo.width || geo.Width || 0;
-                const h = geo.height || geo.Height || 0;
+                const bx = geo.X || geo.x || 0;
+                const by = geo.Y || geo.y || 0;
+                const bw = geo.width || geo.Width || 0;
+                const bh = geo.height || geo.Height || 0;
                 const targetText = box.target || '';
-                
-                if (w <= 0 || h <= 0 || !targetText) continue;
 
-                const fontSize = calcFontSize(ctx, targetText, w, h);
+                if (bw <= 0 || bh <= 0 || !targetText) continue;
+                const c2 = clampBox(bx, by, bw, bh);
+
+                const fontSize = calcFontSize(ctx, targetText, c2.w, c2.h);
                 ctx.font = `${fontSize}px sans-serif`;
                 ctx.fillStyle = '#000000';
                 ctx.textBaseline = 'top';
 
-                drawTextBox(ctx, targetText, x, y, w, h, fontSize);
+                drawTextBox(ctx, targetText, c2.x, c2.y, c2.w, c2.h, fontSize);
             }
 
             resolve(c.toDataURL('image/png'));
@@ -581,7 +591,7 @@ async function renderTranslatedImage(base64Image, boxes) {
 }
 
 function calcFontSize(ctx, text, maxWidth, maxHeight) {
-    const padding = 4;
+    const padding = 2;
     const availWidth = maxWidth - padding * 2;
     const availHeight = maxHeight - padding * 2;
     if (availWidth <= 0 || availHeight <= 0) return 6;
@@ -610,15 +620,27 @@ function calcFontSize(ctx, text, maxWidth, maxHeight) {
 
 function wrapLines(ctx, text, maxWidth) {
     const lines = [];
-    // Use word-based wrapping for space-separated languages, char-based for CJK
     const hasSpaces = /\s/.test(text);
     const tokens = hasSpaces ? text.split(/(\s+)/) : text.split('');
     let line = '';
     for (const token of tokens) {
         const testLine = line + token;
-        if (ctx.measureText(testLine).width > maxWidth && line.length > 0) {
-            lines.push(line);
-            line = hasSpaces ? token.trimStart() : token;
+        if (ctx.measureText(testLine).width > maxWidth) {
+            if (line.length > 0) {
+                lines.push(line);
+                line = hasSpaces ? token.trimStart() : token;
+            } else {
+                // Single token wider than maxWidth — force char split
+                for (const ch of token) {
+                    const chTest = line + ch;
+                    if (ctx.measureText(chTest).width > maxWidth && line.length > 0) {
+                        lines.push(line);
+                        line = ch;
+                    } else {
+                        line = chTest;
+                    }
+                }
+            }
         } else {
             line = testLine;
         }
@@ -712,6 +734,7 @@ function ensurePaddleOCR() {
                 if (pending) {
                     delete paddlePendingRequests[data.requestId];
                     if (data.success) {
+                        console.log('OCR result for request ' + data.requestId, data.boxes);
                         pending.resolve(data.boxes);
                     } else {
                         pending.reject(new Error(data.error));
