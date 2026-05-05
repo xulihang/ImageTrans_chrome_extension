@@ -453,6 +453,17 @@ async function renderTranslatedImage(base64Image, boxes) {
 
                 ctx.fillStyle = '#FFFFFF';
                 ctx.fillRect(x, y, w, h);
+            }
+
+            for (const box of boxes) {
+                const geo = box.geometry || {};
+                const x = geo.X || geo.x || 0;
+                const y = geo.Y || geo.y || 0;
+                const w = geo.width || geo.Width || 0;
+                const h = geo.height || geo.Height || 0;
+                const targetText = box.target || '';
+                
+                if (w <= 0 || h <= 0 || !targetText) continue;
 
                 const fontSize = calcFontSize(ctx, targetText, w, h);
                 ctx.font = `${fontSize}px sans-serif`;
