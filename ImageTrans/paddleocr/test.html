@@ -57,6 +57,107 @@ const DIC_PATH = 'ppocrv5_dict.txt';
 
 let paddleReady = false;
 
+// --- 合并逻辑 ---
+function mergeTextBoxes(items) {
+  if (items.length === 0) return [];
+
+  function boxHeight(box) {
+    var minY = Math.min(box[0][1], box[1][1]);
+    var maxY = Math.max(box[2][1], box[3][1]);
+    return maxY - minY;
+  }
+
+  function xOverlap(a, b) {
+    var aMinX = Math.min(a[0][0], a[3][0]);
+    var aMaxX = Math.max(a[1][0], a[2][0]);
+    var bMinX = Math.min(b[0][0], b[3][0]);
+    var bMaxX = Math.max(b[1][0], b[2][0]);
+    return aMinX <= bMaxX && bMinX <= aMaxX;
+  }
+
+  // Y 间距：不相交时返回正值，相交返回 0
+  function yDist(a, b) {
+    var aMinY = Math.min(a[0][1], a[1][1]);
+    var aMaxY = Math.max(a[2][1], a[3][1]);
+    var bMinY = Math.min(b[0][1], b[1][1]);
+    var bMaxY = Math.max(b[2][1], b[3][1]);
+    if (aMaxY < bMinY) return bMinY - aMaxY;
+    if (bMaxY < aMinY) return aMinY - bMaxY;
+    return 0;
+  }
+
+  function unionBox(group) {
+    var allX = [], allY = [];
+    group.forEach(function(item) {
+      item.box.forEach(function(p) { allX.push(p[0]); allY.push(p[1]); });
+    });
+    var minX = Math.min.apply(null, allX);
+    var maxX = Math.max.apply(null, allX);
+    var minY = Math.min.apply(null, allY);
+    var maxY = Math.max.apply(null, allY);
+    return [[minX, minY], [maxX, minY], [maxX, maxY], [minX, maxY]];
+  }
+
+  // 先按 Y 排序
+  var sorted = items.slice().sort(function(a, b) {
+    var aY = Math.min(a.box[0][1], a.box[1][1]);
+    var bY = Math.min(b.box[0][1], b.box[1][1]);
+    return aY - bY;
+  });
+
+  var groups = [];
+  var used = new Array(sorted.length).fill(false);
+
+  for (var i = 0; i < sorted.length; i++) {
+    if (used[i]) continue;
+    var group = [sorted[i]];
+    used[i] = true;
+
+    // 计算当前组的参考高度（用于 Y 间距阈值）
+    var refH = boxHeight(sorted[i].box);
+
+    var changed = true;
+    while (changed) {
+      changed = false;
+      for (var j = 0; j < sorted.length; j++) {
+        if (used[j]) continue;
+        for (var k = 0; k < group.length; k++) {
+          // 必须 X 重叠 AND Y 间距不超过当前组平均高度
+          if (xOverlap(group[k].box, sorted[j].box)) {
+            var dist = yDist(group[k].box, sorted[j].box);
+            if (dist <= refH * 2) {
+              group.push(sorted[j]);
+              used[j] = true;
+              changed = true;
+              // 更新参考高度
+              refH = Math.max(refH, boxHeight(sorted[j].box));
+              break;
+            }
+          }
+        }
+      }
+    }
+    groups.push(group);
+  }
+
+  return groups.map(function(group) {
+    // 组内文本合并（去除重复/空白）
+    var texts = group.map(function(item) { return item.text; });
+    var box = unionBox(group);
+    return { text: texts.join(''), box: box };
+  });
+}
+
+var _colorIdx = 0;
+var _colors = ['red', 'blue', 'green', 'orange', 'purple', 'brown', 'cyan', 'magenta'];
+function getRandomColor() {
+  return _colors[_colorIdx++ % _colors.length];
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 async function init() {
   try {
     statusEl.textContent = '正在加载字典...';
@@ -101,13 +202,32 @@ fileInput.addEventListener('change', async (e) => {
     console.log(result);
 
     boxesEl.innerHTML = '';
+    _colorIdx = 0;
 
-    result.columns.forEach(column => {
-      const box = column.outerBox;
-      const text = column.src.map(s => s.text).join('');
+    // 使用 result.src 手动合并相邻文字行
+    const srcItems = result.src.filter(function(item) {
+      return item.text && item.text.trim() !== '';
+    });
+    srcItems.forEach(function(srcItem) {
+      srcItem.box.forEach(function(box) {
+        if (box[0] < 0 || box[1] < 0) {
+          let x = Math.abs(box[1]);
+          let y = Math.abs(box[0]);
+          box[0] = x;
+          box[1] = y;
+          console.warn('检测到负坐标，已修正:', box);
+        }
+        
+      });
+    });
+    const mergedGroups = mergeTextBoxes(srcItems);
+
+    mergedGroups.forEach(function(group) {
+      const box = group.box;
+      const text = group.text;
 
       // 绘制识别框
-      ctx.strokeStyle = 'red';
+      ctx.strokeStyle = getRandomColor();
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.moveTo(box[0][0], box[0][1]);
@@ -120,11 +240,11 @@ fileInput.addEventListener('change', async (e) => {
       // 显示文字
       const boxEl = document.createElement('div');
       boxEl.className = 'box-item';
-      boxEl.innerHTML = `<div class="text">${text}</div><div class="coord">[${box[0].join(',')}] [${box[2].join(',')}]</div>`;
+      boxEl.innerHTML = '<div class="text">' + escapeHtml(text) + '</div><div class="coord">[' + box[0].join(',') + '] [' + box[2].join(',') + ']</div>';
       boxesEl.appendChild(boxEl);
     });
 
-    statusEl.textContent = `识别完成，共 ${result.columns.length} 个文本区域`;
+    statusEl.textContent = '识别完成，共 ' + srcItems.length + ' 个文本片段，合并为 ' + mergedGroups.length + ' 个区域';
   } catch (err) {
     statusEl.textContent = '识别失败: ' + err.message;
     console.error(err);
