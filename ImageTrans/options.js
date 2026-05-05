@@ -46,7 +46,7 @@ function load() {
     serverURL: 'https://local.basiccat.org:51043',
     pickingWay: '1',
     useCanvas: true,
-    useCORS: true,
+    useCORS: false,
     renderTextInFrontend: false,
     displayName: "",
     password:"",

@@ -524,33 +524,41 @@ function compressToWebP(dataURL, quality) {
 
 function captureImageViaFetch(src, rect) {
     console.log("captureImageViaFetch: trying to fetch", src);
-    return fetch(src)
-        .then(response => {
-            console.log("captureImageViaFetch: response status", response.status, "type", response.type, "url", response.url);
-            if (!response.ok) {
-                throw new Error('Fetch failed with status ' + response.status);
-            }
-            return response.blob();
-        })
-        .then(blob => {
-            console.log("captureImageViaFetch: blob size", blob.size, "type", blob.type);
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onloadend = () => {
-                    console.log("captureImageViaFetch: FileReader done, dataURL length", reader.result ? reader.result.length : 0);
-                    compressToWebP(reader.result, 0.8).then(resolve).catch(reject);
-                };
-                reader.onerror = function(e) {
-                    console.error("captureImageViaFetch: FileReader error", e);
-                    reject(e);
-                };
-                reader.readAsDataURL(blob);
-            });
-        })
-        .catch(err => {
-            console.error("captureImageViaFetch: failed, falling back to screenshot", err);
-            return captureImageViaScreenshot(rect);
+    return new Promise((resolve) => {
+        chrome.runtime.sendMessage({action: "enableCORSForFetch"}, () => {
+            fetch(src)
+                .then(response => {
+                    console.log("captureImageViaFetch: response status", response.status, "type", response.type, "url", response.url);
+                    if (!response.ok) {
+                        throw new Error('Fetch failed with status ' + response.status);
+                    }
+                    return response.blob();
+                })
+                .then(blob => {
+                    console.log("captureImageViaFetch: blob size", blob.size, "type", blob.type);
+                    return new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                            console.log("captureImageViaFetch: FileReader done, dataURL length", reader.result ? reader.result.length : 0);
+                            compressToWebP(reader.result, 0.8).then(resolve).catch(reject);
+                        };
+                        reader.onerror = function(e) {
+                            console.error("captureImageViaFetch: FileReader error", e);
+                            reject(e);
+                        };
+                        reader.readAsDataURL(blob);
+                    });
+                })
+                .catch(err => {
+                    console.error("captureImageViaFetch: failed, falling back to screenshot", err);
+                    return captureImageViaScreenshot(rect);
+                })
+                .then(resolve)
+                .finally(() => {
+                    chrome.runtime.sendMessage({action: "disableCORSForFetch"});
+                });
         });
+    });
 }
 
 function captureImageViaScreenshot(rect) {
