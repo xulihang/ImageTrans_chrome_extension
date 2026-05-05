@@ -2,9 +2,7 @@
 
 Chrome Extension for ImageTrans. You can use this to translate images on webpages.
 
-It should be used in couple with [ImageTrans](https://www.basiccat.org/imagetrans) and [ImageTrans_wsServer](https://github.com/xulihang/ImageTrans_wsServer).
-
-
+It is designed to be used in couple with [ImageTrans](https://www.basiccat.org/imagetrans) and [ImageTrans_wsServer](https://github.com/xulihang/ImageTrans_wsServer). It can also work without ImageTrans using local PaddleOCR.
 
 
 https://github.com/xulihang/ImageTrans_chrome_extension/assets/5462205/e3cf01e9-9545-483b-b1d1-c488c775d72f
@@ -16,17 +14,22 @@ Other versions:
 ## Installation
 
 1. Install from [Chrome Store](https://chromewebstore.google.com/detail/imagetrans/lkijcgjookpddgfacoankphnpbinmhia?hl=en) or manually install it by downloading this repository and installing the extension through More Tools->Extensions->Load unpacked. Remember to check developer mode.
-2. Purchase ImageTrans and install it.
+2. Purchase ImageTrans and install it (optional if you just use PaddleOCR).
 3. Download [ImageTrans_wsServer.jar](https://github.com/xulihang/ImageTrans_wsServer/releases/download/builds/ImageTrans_wsServer.jar) and put it with ImageTrans.
 4. (Optional. The function is already built into the extension.) Install and enable [Allow CORS](https://chromewebstore.google.com/detail/allow-cors-access-control/lhobafahddgcelffkeicbaginigeejlf) to remove restrictions on downloading images for some websites.
 
 ## Usage
+
 
 1. Pin the ImageTrans extension.
 2. Open ImageTrans. Open Server through Tools->Server. Press Start the server button and press Reconnect button. Check silent translation mode if you want ImageTrans to do tasks silently.
 3. Open or create an ImageTrans project. Set up things like its language pair in project setting. Choose params like ocrengine and language.
 4. In Chrome, right click on the image to translate it.
 5. If the context menu is disabled, you can use the popup menu to translate the image in the center of the screen. You can also set it to translate the image behind the mouse cursor. After the setup, you can press CTRL+SHIFT+F (CTRL+SHIFT+V on mac) to call the popup and press TAB to alter the buttons. Then press Enter to run the desired action like translating the image or getting the image's src.
+
+ImageTrans is optional if you use PaddleOCR. PaddleOCR is used by default. You can also setup OpenAI APIs to use ChatGPT, Gemini, etc.
+
+PaddleOCR's function is limited (lack of supported languages and options).
 
 
 ## Supported Web Sites
@@ -61,7 +64,7 @@ If the images on a web site have a unique URL and are downloadable, then the ext
 
 ImageTrans的Chrome扩展程序。你可以用它来翻译网页上的图像。
 
-它需要与[ImageTrans](https://www.basiccat.org/imagetrans)和[ImageTrans_wsServer](https://github.com/xulihang/ImageTrans_wsServer)配合使用。
+它需要与[ImageTrans](https://www.basiccat.org/imagetrans)和[ImageTrans_wsServer](https://github.com/xulihang/ImageTrans_wsServer)配合使用。如果只是用本地PaddleOCR，则可以不依赖ImageTrans。
 
 其它版本：
 
@@ -70,7 +73,7 @@ ImageTrans的Chrome扩展程序。你可以用它来翻译网页上的图像。
 ## 安装
 
 1. 从[商店](https://chromewebstore.google.com/detail/imagetrans/lkijcgjookpddgfacoankphnpbinmhia?hl=en)安装或者下载这个仓库中的扩展手动安装。手动安装操作：更多工具->扩展程序->加载已解压的扩展程序。记得勾选开发者模式。
-2. 购买ImageTrans并安装。
+2. 购买ImageTrans并安装（可选步骤，如果只用PaddleOCR）。
 3. 下载[ImageTrans_wsServer.jar](https://github.com/xulihang/ImageTrans_wsServer/releases/download/builds/ImageTrans_wsServer.jar)并将其与ImageTrans放在一起。
 4. （可选，本插件已经包含该功能）安装并启用[Allow CORS](https://chromewebstore.google.com/detail/allow-cors-access-control/lhobafahddgcelffkeicbaginigeejlf)以移除某些站点对下载图片的限制。
 
@@ -81,6 +84,11 @@ ImageTrans的Chrome扩展程序。你可以用它来翻译网页上的图像。
 3. 打开或创建一个ImageTrans项目。在项目设置中设置如语言对等项目。选好OCR引擎和语言。
 4. 在Chrome中，在图片上右键进行翻译。
 5. 如果右键菜单被禁用了，可以点击工具栏上的图标唤出弹窗进行操作，翻译屏幕中央的图片。你也可以设置翻译鼠标下方的图片。设置完成后将鼠标移到需要翻译的图片上。按下CTRL + SHIFT + F（在Mac上为CTRL + SHIFT + V）调出操作窗口，按TAB键更改按钮。之后按回车键运行所需的操作，比如翻译图像或获取图像的链接。
+
+ImageTrans是可选的，默认会使用PaddleOCR。可以自定设置OpenAI兼容API来使用ChatGPT、DeepSeek等大模型。
+
+本地PaddleOCR的功能比较有限，支持的语言较少，设置选项也比较少。
+
 
 ## 受支持的网站
 
