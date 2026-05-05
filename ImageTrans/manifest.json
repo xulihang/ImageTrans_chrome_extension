@@ -26,17 +26,15 @@
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_icon": "imagetrans.png",
-    "icons": {
-      "128": "imagetrans.png" }
-    },
+    "default_icon": "imagetrans.png"
+  },
   "commands": {
     "_execute_action": {
       "suggested_key": {
         "default": "Ctrl+Shift+F",
         "mac": "MacCtrl+Shift+V"
        },
-      "description": "Opens popup.html"
+      "description": "Open the extension popup"
     }
   },
   "icons": {
