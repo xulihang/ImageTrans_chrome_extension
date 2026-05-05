@@ -17,7 +17,7 @@ var openaiKey = "";
 var openaiModel = "gpt-4o";
 var openaiPrompt = "";
 var ocrMethod = "paddleocr";
-var translationMode = "local";
+var translationMode = "imagetrans";
 chrome.storage.sync.get({
     serverURL: serverURL,
     pickingWay: pickingWay,
@@ -33,7 +33,7 @@ chrome.storage.sync.get({
     openaiModel: 'gpt-4o',
     openaiPrompt: '',
     ocrMethod: 'paddleocr',
-    translationMode: 'local'
+    translationMode: 'imagetrans'
 }, async function(items) {
     if (items.serverURL) {
         serverURL = items.serverURL;
@@ -240,26 +240,30 @@ async function ajax(src,img,checkData){
             document.body.className = bodyClassName;
             console.log('Request failed:', err);
             if (serverURL === "https://local.basiccat.org:51043") {
-                serverURL = "https://service.basiccat.org:51043";
-                alert("Failed to connect to ImageTrans server. Will try to use the public server. You can configure it in the options page.");
-                document.body.className = bodyClassName + " wait";
-                try {
-                    const respData = await post(serverURL, data);
-                    console.log(respData);
-                    document.body.className = bodyClassName;
-                    if (!respData["img"]) {
-                        alert("Bad result. Is ImageTrans running correctly?");
-                    } else if (renderTextInFrontend && respData["imgMap"] && respData["imgMap"]["boxes"]) {
-                        renderTranslatedImage(respData["img"], respData["imgMap"]["boxes"]).then(translatedDataURL => {
-                            console.log(replaceImgSrc(src, translatedDataURL, checkData, img));
-                        });
-                    } else {
-                        var dataURL = "data:image/jpeg;base64," + respData["img"];
-                        console.log(replaceImgSrc(src, dataURL, checkData, img));
+                var usePublic = confirm("Failed to connect to local ImageTrans server.\n\nClick OK to use the public server, or Cancel to use local PaddleOCR instead.\n\nNote: PaddleOCR quality is lower than ImageTrans.");
+                if (usePublic) {
+                    serverURL = "https://service.basiccat.org:51043";
+                    document.body.className = bodyClassName + " wait";
+                    try {
+                        const respData = await post(serverURL, data);
+                        console.log(respData);
+                        document.body.className = bodyClassName;
+                        if (!respData["img"]) {
+                            alert("Bad result. Is ImageTrans running correctly?");
+                        } else if (renderTextInFrontend && respData["imgMap"] && respData["imgMap"]["boxes"]) {
+                            renderTranslatedImage(respData["img"], respData["imgMap"]["boxes"]).then(translatedDataURL => {
+                                console.log(replaceImgSrc(src, translatedDataURL, checkData, img));
+                            });
+                        } else {
+                            var dataURL = "data:image/jpeg;base64," + respData["img"];
+                            console.log(replaceImgSrc(src, dataURL, checkData, img));
+                        }
+                    } catch (err2) {
+                        document.body.className = bodyClassName;
+                        alert("Failed to connect to ImageTrans server.");
                     }
-                } catch (err2) {
-                    document.body.className = bodyClassName;
-                    alert("Failed to connect to ImageTrans server.");
+                } else {
+                    await ajaxMyMemory(src, img, checkData);
                 }
             } else {
                 alert("Failed to connect to ImageTrans server.");

@@ -58,7 +58,7 @@ function load() {
     openaiModel: 'gpt-4o',
     openaiPrompt: DEFAULT_OPENAI_PROMPT,
     ocrMethod: 'paddleocr',
-    translationMode: 'local'
+    translationMode: 'imagetrans'
   }, function(items) {
     if (items.serverURL) {
         document.getElementById("serverURL").value = items.serverURL;
