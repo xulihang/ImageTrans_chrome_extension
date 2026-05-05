@@ -53,7 +53,7 @@
   }
 
   // --- 合并逻辑（与 test.html 一致）---
-  function mergeTextBoxes(items) {
+  function mergeTextBoxes(items, sourceLang) {
     if (items.length === 0) return [];
 
     function xOverlapRatio(a, b) {
@@ -147,7 +147,9 @@
       }
       var texts = group.map(function(item) { return item.text; });
       var box = unionBox(group);
-      return { text: texts.join(''), box: box };
+      var noSpaceLangs = ['zh', 'ja', 'th'];
+      var sep = noSpaceLangs.includes(sourceLang) ? '' : ' ';
+      return { text: texts.join(sep), box: box };
     });
 
     if (isVertical) {
@@ -157,7 +159,7 @@
     return merged;
   }
 
-  async function doOCR(imageDataURL) {
+  async function doOCR(imageDataURL, sourceLang) {
     const img = new Image();
     img.src = imageDataURL;
     await new Promise(function(resolve) {
@@ -185,7 +187,7 @@
     });
 
     // 合并相邻文本块
-    const mergedGroups = mergeTextBoxes(srcItems);
+    const mergedGroups = mergeTextBoxes(srcItems, sourceLang);
 
     // 转换为 ImageTrans 需要的格式
     const boxes = [];
@@ -239,7 +241,7 @@
             if (!paddleReady) {
               throw new Error('PaddleOCR not initialized');
             }
-            const boxes = await doOCR(data.imageDataURL);
+            const boxes = await doOCR(data.imageDataURL, data.sourceLang);
             window.postMessage({
               source: 'imagetrans-extension',
               type: 'PADDLE_OCR_RESULT',

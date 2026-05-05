@@ -289,7 +289,7 @@ async function ajaxMyMemory(src, img, checkData) {
             throw new Error("Cannot get image data for OCR");
         }
 
-        let boxes = await paddleOCR(dataURL);
+        let boxes = await paddleOCR(dataURL, sourceLang);
 
         const sourceTexts = [];
         for (const box of boxes) {
@@ -374,7 +374,7 @@ async function ajaxOpenAI(src, img, checkData) {
         // Step 2: OCR (text detection + coordinates)
         let boxes;
         if (ocrMethod === "paddleocr") {
-            boxes = await paddleOCR(dataURL);
+            boxes = await paddleOCR(dataURL, sourceLang);
         } else {
             const ocrData = {
                 src: dataURL,
@@ -772,7 +772,7 @@ function ensurePaddleOCR() {
     });
 }
 
-function paddleOCR(imageDataURL) {
+function paddleOCR(imageDataURL, sourceLang) {
     return ensurePaddleOCR().then(function() {
         return new Promise(function(resolve, reject) {
             var requestId = 'ocr_' + Date.now() + '_' + Math.random();
@@ -781,6 +781,7 @@ function paddleOCR(imageDataURL) {
                 source: 'imagetrans-extension',
                 type: 'PADDLE_OCR',
                 imageDataURL: imageDataURL,
+                sourceLang: sourceLang || 'auto',
                 requestId: requestId
             }, '*');
         });
