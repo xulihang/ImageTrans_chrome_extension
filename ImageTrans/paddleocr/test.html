@@ -67,23 +67,35 @@ function mergeTextBoxes(items) {
     return maxY - minY;
   }
 
-  function xOverlap(a, b) {
+  function xOverlapRatio(a, b) {
     var aMinX = Math.min(a[0][0], a[3][0]);
     var aMaxX = Math.max(a[1][0], a[2][0]);
     var bMinX = Math.min(b[0][0], b[3][0]);
     var bMaxX = Math.max(b[1][0], b[2][0]);
-    return aMinX <= bMaxX && bMinX <= aMaxX;
+    var aW = aMaxX - aMinX;
+    var bW = bMaxX - bMinX;
+    var marginA = Math.max(aW * 0.25, 10);
+    var marginB = Math.max(bW * 0.25, 10);
+    var overlap = Math.min(aMaxX + marginA, bMaxX + marginB) - Math.max(aMinX - marginA, bMinX - marginB);
+    if (overlap <= 0) return 0;
+    var minW = Math.min(aW, bW);
+    return overlap / minW;
   }
 
-  // Y 间距：不相交时返回正值，相交返回 0
-  function yDist(a, b) {
+  // Y 重叠比例：0 = 不相交，1 = 完全重叠（带容差，上下各扩展 15% 高度或 5px）
+  function yOverlapRatio(a, b) {
     var aMinY = Math.min(a[0][1], a[1][1]);
     var aMaxY = Math.max(a[2][1], a[3][1]);
     var bMinY = Math.min(b[0][1], b[1][1]);
     var bMaxY = Math.max(b[2][1], b[3][1]);
-    if (aMaxY < bMinY) return bMinY - aMaxY;
-    if (bMaxY < aMinY) return aMinY - bMaxY;
-    return 0;
+    var aH = aMaxY - aMinY;
+    var bH = bMaxY - bMinY;
+    var marginA = Math.max(aH * 0.25, 10);
+    var marginB = Math.max(bH * 0.25, 10);
+    var overlap = Math.min(aMaxY + marginA, bMaxY + marginB) - Math.max(aMinY - marginA, bMinY - marginB);
+    if (overlap <= 0) return 0;
+    var minH = Math.min(aH, bH);
+    return overlap / minH;
   }
 
   function unionBox(group) {
@@ -113,24 +125,18 @@ function mergeTextBoxes(items) {
     var group = [sorted[i]];
     used[i] = true;
 
-    // 计算当前组的参考高度（用于 Y 间距阈值）
-    var refH = boxHeight(sorted[i].box);
-
     var changed = true;
     while (changed) {
       changed = false;
       for (var j = 0; j < sorted.length; j++) {
         if (used[j]) continue;
         for (var k = 0; k < group.length; k++) {
-          // 必须 X 重叠 AND Y 间距不超过当前组平均高度
-          if (xOverlap(group[k].box, sorted[j].box)) {
-            var dist = yDist(group[k].box, sorted[j].box);
-            if (dist <= refH * 2) {
+          // 必须 X 重叠比例 ≥ 30% AND Y 重叠比例 ≥ 30%
+          if (xOverlapRatio(group[k].box, sorted[j].box) >= 0.3) {
+            if (yOverlapRatio(group[k].box, sorted[j].box) >= 0.3) {
               group.push(sorted[j]);
               used[j] = true;
               changed = true;
-              // 更新参考高度
-              refH = Math.max(refH, boxHeight(sorted[j].box));
               break;
             }
           }
@@ -208,6 +214,7 @@ fileInput.addEventListener('change', async (e) => {
     const srcItems = result.src.filter(function(item) {
       return item.text && item.text.trim() !== '';
     });
+
     srcItems.forEach(function(srcItem) {
       srcItem.box.forEach(function(box) {
         if (box[0] < 0 || box[1] < 0) {
@@ -217,9 +224,9 @@ fileInput.addEventListener('change', async (e) => {
           box[1] = y;
           console.warn('检测到负坐标，已修正:', box);
         }
-        
       });
     });
+
     const mergedGroups = mergeTextBoxes(srcItems);
 
     mergedGroups.forEach(function(group) {
