@@ -505,6 +505,23 @@ function getDataURLFromImg(img) {
     return captureImageViaFetch(img.src, rect);
 };
 
+function compressToWebP(dataURL, quality) {
+	quality = quality || 0.8;
+	return new Promise((resolve, reject) => {
+		const img = new Image();
+		img.onload = function() {
+			const c = document.createElement("canvas");
+			c.width = img.naturalWidth;
+			c.height = img.naturalHeight;
+			const ctx = c.getContext('2d');
+			ctx.drawImage(img, 0, 0);
+			resolve(c.toDataURL("image/webp", quality));
+		};
+		img.onerror = reject;
+		img.src = dataURL;
+	});
+}
+
 function captureImageViaFetch(src, rect) {
     console.log("captureImageViaFetch: trying to fetch", src);
     return fetch(src)
@@ -521,7 +538,7 @@ function captureImageViaFetch(src, rect) {
                 const reader = new FileReader();
                 reader.onloadend = () => {
                     console.log("captureImageViaFetch: FileReader done, dataURL length", reader.result ? reader.result.length : 0);
-                    resolve(reader.result);
+                    compressToWebP(reader.result, 0.8).then(resolve).catch(reject);
                 };
                 reader.onerror = function(e) {
                     console.error("captureImageViaFetch: FileReader error", e);
@@ -561,7 +578,7 @@ function captureImageViaScreenshot(rect) {
                 canvas.height = sh;
                 var ctx = canvas.getContext('2d');
                 ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
-                resolve(canvas.toDataURL("image/jpeg", 0.8));
+                resolve(canvas.toDataURL("image/webp", 0.8));
             };
             img.onerror = function() {
                 reject(new Error("Failed to load screenshot image"));
