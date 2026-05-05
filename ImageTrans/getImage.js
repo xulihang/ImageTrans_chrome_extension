@@ -497,32 +497,75 @@ async function ajaxOpenAI(src, img, checkData) {
 }
 
 function getDataURLFromImg(img) {
-    return new Promise((resolve, reject) => {
-        if (!canvas) {
-            canvas = document.createElement("canvas");
-        }
-        img.setAttribute('crossorigin', 'anonymous');
-        img.onload = function () {
-            let width = img.naturalWidth;
-            let height = img.naturalHeight;
-            let context = canvas.getContext('2d');
-            let maxWidth = 1500;
-            if (maxWidth && img.naturalWidth > maxWidth) {
-                width = maxWidth;
-                height = img.naturalHeight * maxWidth / img.naturalWidth;
-            }
-            canvas.width = width;
-            canvas.height = height;
-            let imageFormat = "image/webp";
-            if (!isSupportWebp(canvas)) {
-                imageFormat = "image/jpeg";
-            }
-            let quality = 0.8;
-            context.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight, 0, 0, canvas.width, canvas.height);
-            resolve(canvas.toDataURL(imageFormat,quality));
-        }
-    })
+    var rect = img.getBoundingClientRect();
+    return captureImageViaFetch(img.src, rect);
 };
+
+function captureImageViaFetch(src, rect) {
+    console.log("captureImageViaFetch: trying to fetch", src);
+    return fetch(src)
+        .then(response => {
+            console.log("captureImageViaFetch: response status", response.status, "type", response.type, "url", response.url);
+            if (!response.ok) {
+                throw new Error('Fetch failed with status ' + response.status);
+            }
+            return response.blob();
+        })
+        .then(blob => {
+            console.log("captureImageViaFetch: blob size", blob.size, "type", blob.type);
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    console.log("captureImageViaFetch: FileReader done, dataURL length", reader.result ? reader.result.length : 0);
+                    resolve(reader.result);
+                };
+                reader.onerror = function(e) {
+                    console.error("captureImageViaFetch: FileReader error", e);
+                    reject(e);
+                };
+                reader.readAsDataURL(blob);
+            });
+        })
+        .catch(err => {
+            console.error("captureImageViaFetch: failed, falling back to screenshot", err);
+            return captureImageViaScreenshot(rect);
+        });
+}
+
+function captureImageViaScreenshot(rect) {
+    return new Promise((resolve, reject) => {
+        chrome.runtime.sendMessage({action: "captureVisibleTab"}, (response) => {
+            if (chrome.runtime.lastError) {
+                reject(new Error("Screenshot failed: " + chrome.runtime.lastError.message));
+                return;
+            }
+            if (!response || !response.dataURL) {
+                reject(new Error("Screenshot returned no dataURL"));
+                return;
+            }
+            var img = new Image();
+            img.onload = function() {
+                if (!canvas) {
+                    canvas = document.createElement("canvas");
+                }
+                var scale = img.naturalWidth / window.innerWidth;
+                var sx = rect.left * scale;
+                var sy = rect.top * scale;
+                var sw = rect.width * scale;
+                var sh = rect.height * scale;
+                canvas.width = sw;
+                canvas.height = sh;
+                var ctx = canvas.getContext('2d');
+                ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+                resolve(canvas.toDataURL("image/jpeg", 0.8));
+            };
+            img.onerror = function() {
+                reject(new Error("Failed to load screenshot image"));
+            };
+            img.src = response.dataURL;
+        });
+    });
+}
 
 async function renderTranslatedImage(base64Image, boxes) {
     return new Promise((resolve, reject) => {

@@ -27,6 +27,15 @@ function updateCORSStatus(enabled) {
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "updateCORSStatus") {
     updateCORSStatus(request.enabled);
+  } else if (request.action === "captureVisibleTab") {
+    chrome.tabs.captureVisibleTab(null, {format: "png"}, (dataURL) => {
+      if (chrome.runtime.lastError) {
+        sendResponse({error: chrome.runtime.lastError.message});
+      } else {
+        sendResponse({dataURL: dataURL});
+      }
+    });
+    return true; // keep sendResponse valid for async callback
   } else if (request === "showOptions") {
     chrome.runtime.openOptionsPage();
   }
