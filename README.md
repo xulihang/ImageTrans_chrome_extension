@@ -29,7 +29,7 @@ Other versions:
 
 ImageTrans is optional if you use PaddleOCR. PaddleOCR is used by default. You can also setup OpenAI APIs to use ChatGPT, Gemini, etc.
 
-PaddleOCR's function is limited (lack of supported languages and options).
+PaddleOCR's function is limited (lack of supported languages and options). You need to set the language pair on the options page as well.
 
 
 ## Supported Web Sites
@@ -87,7 +87,7 @@ ImageTrans的Chrome扩展程序。你可以用它来翻译网页上的图像。
 
 ImageTrans是可选的，默认会使用PaddleOCR。可以自定设置OpenAI兼容API来使用ChatGPT、DeepSeek等大模型。
 
-本地PaddleOCR的功能比较有限，支持的语言较少，设置选项也比较少。
+本地PaddleOCR的功能比较有限，支持的语言较少，设置选项也比较少。使用时记得在扩展选项里设置好语言对。
 
 
 ## 受支持的网站
