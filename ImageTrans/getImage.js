@@ -637,10 +637,10 @@ function calcFontSize(ctx, text, maxWidth, maxHeight) {
     const padding = 2;
     const availWidth = maxWidth - padding * 2;
     const availHeight = maxHeight - padding * 2;
-    if (availWidth <= 0 || availHeight <= 0) return 6;
+    if (availWidth <= 0 || availHeight <= 0) return 16;
 
     const lineHeightRatio = 1.3;
-    let lo = 6;
+    let lo = 16;
     let hi = Math.min(availHeight, 200);
 
     // Binary search for the largest font size that fits
@@ -700,10 +700,10 @@ function drawTextBox(ctx, text, x, y, maxWidth, maxHeight, fontSize) {
     const lineHeight = fontSize * 1.3;
     const lines = wrapLines(ctx, text, maxWidth - padding * 2);
     let lineY = y + padding;
-    for (const line of lines) {
-        if (lineY + lineHeight > y + maxHeight) break;
-        ctx.strokeText(line, x + padding, lineY);
-        ctx.fillText(line, x + padding, lineY);
+    for (let i = 0; i < lines.length; i++) {
+        //if (lineY + lineHeight > y + maxHeight && i > 0) break;
+        ctx.strokeText(lines[i], x + padding, lineY);
+        ctx.fillText(lines[i], x + padding, lineY);
         lineY += lineHeight;
     }
 }
