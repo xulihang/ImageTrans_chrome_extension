@@ -1,6 +1,6 @@
 {
   "name": "ImageTrans",
-  "version": "4.1",
+  "version": "4.2",
   "description": "Translate images on websites",
   "permissions": ["storage","activeTab","contextMenus","clipboardWrite","declarativeNetRequest"],
   "host_permissions": ["<all_urls>"],
