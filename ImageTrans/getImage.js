@@ -627,7 +627,7 @@ function parseFontCSS(cssText) {
         textAlign: 'left',
         textTransform: '',
         backgroundColor: '#FFFFFF',
-        borderRadius: 0,
+        borderRadius: { value: 0, unit: 'px' },
         strokeColor: '#FFFFFF',
         strokeWidth: null
     };
@@ -646,7 +646,15 @@ function parseFontCSS(cssText) {
             case 'text-align': if (['left','center','right'].includes(val)) style.textAlign = val; break;
             case 'text-transform': if (['uppercase','lowercase','capitalize'].includes(val)) style.textTransform = val; break;
             case 'background-color': style.backgroundColor = val; break;
-            case 'border-radius': style.borderRadius = Math.max(0, parseFloat(val) || 0); break;
+            case 'border-radius':
+                if (val.endsWith('%')) {
+                    const pct = parseFloat(val);
+                    if (pct > 0) style.borderRadius = { value: pct, unit: '%' };
+                } else {
+                    const px = parseFloat(val);
+                    if (px > 0) style.borderRadius = { value: px, unit: 'px' };
+                }
+                break;
             case '-webkit-text-stroke-color': style.strokeColor = val; break;
             case '-webkit-text-stroke-width': style.strokeWidth = parseFloat(val) || null; break;
         }
@@ -672,7 +680,11 @@ function applyTextTransform(text, transform) {
     }
 }
 
-function fillRoundRect(ctx, x, y, w, h, r) {
+function fillRoundRect(ctx, x, y, w, h, borderRadius) {
+    let r = borderRadius.value;
+    if (borderRadius.unit === '%') {
+        r = (Math.min(w, h) * r) / 100;
+    }
     if (r <= 0) {
         ctx.fillRect(x, y, w, h);
         return;
