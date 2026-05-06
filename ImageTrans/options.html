@@ -240,6 +240,15 @@
           Render text in the front-end
         </label>
       </div>
+      <div class="form-row" id="renderTextCSSSection" style="flex-direction:column; align-items:flex-start;">
+        <label for="renderTextCSS">Font CSS (for front-end rendering)</label>
+        <textarea id="renderTextCSS" rows="3" style="width:100%; font-family:monospace; font-size:12px;" placeholder="e.g. text-align: center; font-weight: bold;"></textarea>
+        <div style="margin-top:6px; display:flex; gap:6px; flex-wrap:wrap;">
+          <button id="cssPresetDefault" class="btn-secondary" style="font-size:12px;">Default</button>
+          <button id="cssPresetCenter" class="btn-secondary" style="font-size:12px;">Center Align</button>
+          <button id="cssPresetCenterBold" class="btn-secondary" style="font-size:12px;">Center + Bold</button>
+        </div>
+      </div>
     </div>
 
     <!-- OpenAI API -->

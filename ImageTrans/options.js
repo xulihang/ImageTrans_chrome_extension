@@ -7,6 +7,7 @@ function save() {
   const useCanvas = document.getElementById("useCanvas").checked;
   const useCORS = document.getElementById("useCORS").checked;
   const renderTextInFrontend = document.getElementById("renderTextInFrontend").checked;
+  const renderTextCSS = document.getElementById("renderTextCSS").value;
   const imagetransInstanceDisplayName = document.getElementById("imagetransInstanceInput").value;
   const password = document.getElementById("imagetransPasswordInput").value;
   const sourceLang = document.getElementById("sourceLangSelect").selectedOptions[0].value;
@@ -24,6 +25,7 @@ function save() {
     useCanvas: useCanvas,
     useCORS: useCORS,
     renderTextInFrontend: renderTextInFrontend,
+    renderTextCSS: renderTextCSS,
     displayName: imagetransInstanceDisplayName,
     password: password,
     sourceLang: sourceLang,
@@ -48,6 +50,7 @@ function load() {
     useCanvas: true,
     useCORS: true,
     renderTextInFrontend: false,
+    renderTextCSS: '',
     displayName: "",
     password:"",
     sourceLang:"auto",
@@ -86,6 +89,7 @@ function load() {
     document.getElementById("useCanvas").checked = items.useCanvas;
     document.getElementById("useCORS").checked = items.useCORS;
     document.getElementById("renderTextInFrontend").checked = items.renderTextInFrontend;
+    document.getElementById("renderTextCSS").value = items.renderTextCSS || '';
     document.getElementById("imagetransInstanceInput").value = items.displayName;
     document.getElementById("imagetransPasswordInput").value = items.password;
     document.getElementById("useOpenAI").checked = items.useOpenAI;
@@ -173,5 +177,14 @@ window.onload = function (){
     } else {
       document.getElementById("ocrMethodSection").style.display = 'none';
     }
+  })
+  document.getElementById("cssPresetDefault").addEventListener("click",function(){
+    document.getElementById("renderTextCSS").value = '';
+  })
+  document.getElementById("cssPresetCenter").addEventListener("click",function(){
+    document.getElementById("renderTextCSS").value = 'text-align: center;';
+  })
+  document.getElementById("cssPresetCenterBold").addEventListener("click",function(){
+    document.getElementById("renderTextCSS").value = 'text-align: center;\nfont-weight: bold;';
   })
 }

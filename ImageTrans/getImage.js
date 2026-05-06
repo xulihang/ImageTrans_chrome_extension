@@ -15,6 +15,7 @@ var isProcessing = false;
 var pickingWay = "1";
 var useCanvas = true;
 var renderTextInFrontend = false;
+var renderTextCSS = '';
 var password = "";
 var displayName = "";
 var sourceLang = "auto";
@@ -33,6 +34,7 @@ chrome.storage.sync.get({
     displayName: displayName,
     useCanvas: true,
     renderTextInFrontend: false,
+    renderTextCSS: '',
     sourceLang: sourceLang,
     targetLang: targetLang,
     useOpenAI: false,
@@ -66,6 +68,9 @@ chrome.storage.sync.get({
     }
     if (items.renderTextInFrontend != undefined) {
         renderTextInFrontend = items.renderTextInFrontend;
+    }
+    if (items.renderTextCSS != undefined) {
+        renderTextCSS = items.renderTextCSS;
     }
     if (items.useOpenAI != undefined) {
         useOpenAI = items.useOpenAI;
@@ -613,7 +618,49 @@ function captureImageViaScreenshot(rect) {
     });
 }
 
+function parseFontCSS(cssText) {
+    const style = {
+        fontFamily: 'sans-serif',
+        fontWeight: '',
+        fontStyle: '',
+        color: '#000000',
+        textAlign: 'left',
+        strokeColor: '#FFFFFF',
+        strokeWidth: null
+    };
+    if (!cssText) return style;
+    const rules = cssText.split(';').map(s => s.trim()).filter(Boolean);
+    for (const rule of rules) {
+        const colonIdx = rule.indexOf(':');
+        if (colonIdx === -1) continue;
+        const prop = rule.substring(0, colonIdx).trim().toLowerCase();
+        const val = rule.substring(colonIdx + 1).trim();
+        switch (prop) {
+            case 'font-family': style.fontFamily = val; break;
+            case 'font-weight': style.fontWeight = val; break;
+            case 'font-style': style.fontStyle = val; break;
+            case 'color': style.color = val; break;
+            case 'text-align': if (['left','center','right'].includes(val)) style.textAlign = val; break;
+            case '-webkit-text-stroke-color': style.strokeColor = val; break;
+            case '-webkit-text-stroke-width': style.strokeWidth = parseFloat(val) || null; break;
+        }
+    }
+    return style;
+}
+
+function buildFontString(fontSize, style) {
+    const parts = [];
+    if (style.fontStyle) parts.push(style.fontStyle);
+    if (style.fontWeight) parts.push(style.fontWeight);
+    parts.push(`${fontSize}px`);
+    parts.push(style.fontFamily);
+    return parts.join(' ');
+}
+
 async function renderTranslatedImage(base64Image, boxes) {
+    console.log(renderTextCSS)
+    const textStyle = parseFontCSS(renderTextCSS);
+    console.log(textStyle)
     return new Promise((resolve, reject) => {
         const img = new Image();
         img.onload = function() {
@@ -658,12 +705,16 @@ async function renderTranslatedImage(base64Image, boxes) {
                 if (bw <= 0 || bh <= 0 || !targetText) continue;
                 const c2 = clampBox(bx, by, bw, bh);
 
-                const fontSize = calcFontSize(ctx, targetText, c2.w, c2.h);
-                ctx.font = `${fontSize}px sans-serif`;
-                ctx.fillStyle = '#000000';
+                const fontSize = calcFontSize(ctx, targetText, c2.w, c2.h, textStyle);
+                ctx.font = buildFontString(fontSize, textStyle);
+                ctx.fillStyle = textStyle.color;
                 ctx.textBaseline = 'top';
+                ctx.strokeStyle = textStyle.strokeColor;
+                if (textStyle.strokeWidth !== null) {
+                    ctx.lineWidth = textStyle.strokeWidth;
+                }
 
-                drawTextBox(ctx, targetText, c2.x, c2.y, c2.w, c2.h, fontSize);
+                drawTextBox(ctx, targetText, c2.x, c2.y, c2.w, c2.h, fontSize, textStyle);
             }
 
             resolve(c.toDataURL('image/png'));
@@ -679,7 +730,7 @@ async function renderTranslatedImage(base64Image, boxes) {
     });
 }
 
-function calcFontSize(ctx, text, maxWidth, maxHeight) {
+function calcFontSize(ctx, text, maxWidth, maxHeight, textStyle) {
     const padding = 2;
     const availWidth = maxWidth - padding * 2;
     const availHeight = maxHeight - padding * 2;
@@ -693,7 +744,7 @@ function calcFontSize(ctx, text, maxWidth, maxHeight) {
     let bestSize = lo;
     for (let i = 0; i < 15; i++) {
         const mid = (lo + hi) / 2;
-        ctx.font = `${mid}px sans-serif`;
+        ctx.font = buildFontString(mid, textStyle);
         const lines = wrapLines(ctx, text, availWidth);
         const totalHeight = lines.length * mid * lineHeightRatio;
         if (totalHeight <= availHeight) {
@@ -738,18 +789,29 @@ function wrapLines(ctx, text, maxWidth) {
     return lines;
 }
 
-function drawTextBox(ctx, text, x, y, maxWidth, maxHeight, fontSize) {
+function drawTextBox(ctx, text, x, y, maxWidth, maxHeight, fontSize, textStyle) {
     const padding = 2;
-    ctx.font = `${fontSize}px sans-serif`;
-    ctx.lineWidth = Math.max(2, fontSize * 0.15);
-    ctx.strokeStyle = '#FFFFFF';
+    const availWidth = maxWidth - padding * 2;
+    ctx.font = buildFontString(fontSize, textStyle);
+    if (textStyle.strokeWidth === null) {
+        ctx.lineWidth = Math.max(2, fontSize * 0.15);
+    }
     const lineHeight = fontSize * 1.3;
-    const lines = wrapLines(ctx, text, maxWidth - padding * 2);
+    const lines = wrapLines(ctx, text, availWidth);
     let lineY = y + padding;
     for (let i = 0; i < lines.length; i++) {
-        //if (lineY + lineHeight > y + maxHeight && i > 0) break;
-        ctx.strokeText(lines[i], x + padding, lineY);
-        ctx.fillText(lines[i], x + padding, lineY);
+        let lineX = x + padding;
+        if (textStyle.textAlign === 'center') {
+            lineX = x + maxWidth / 2;
+            ctx.textAlign = 'center';
+        } else if (textStyle.textAlign === 'right') {
+            lineX = x + maxWidth - padding;
+            ctx.textAlign = 'right';
+        } else {
+            ctx.textAlign = 'left';
+        }
+        ctx.strokeText(lines[i], lineX, lineY);
+        ctx.fillText(lines[i], lineX, lineY);
         lineY += lineHeight;
     }
 }
