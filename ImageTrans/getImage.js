@@ -1055,27 +1055,39 @@ function startAutoTranslate() {
 
     autoMutationObserver = new MutationObserver(function(mutations) {
         for (var i = 0; i < mutations.length; i++) {
-            var addedNodes = mutations[i].addedNodes;
-            for (var j = 0; j < addedNodes.length; j++) {
-                var node = addedNodes[j];
-                if (node.nodeType !== 1) continue;
-                if (node.tagName === 'IMG') {
-                    observeImage(node);
-                }
-                if (node.getElementsByTagName) {
-                    var childImgs = node.getElementsByTagName('img');
-                    for (var k = 0; k < childImgs.length; k++) {
-                        observeImage(childImgs[k]);
+            var mutation = mutations[i];
+            if (mutation.type === 'childList') {
+                var addedNodes = mutation.addedNodes;
+                for (var j = 0; j < addedNodes.length; j++) {
+                    var node = addedNodes[j];
+                    if (node.nodeType !== 1) continue;
+                    if (node.tagName === 'IMG') {
+                        observeImage(node);
                     }
+                    if (node.getElementsByTagName) {
+                        var childImgs = node.getElementsByTagName('img');
+                        for (var k = 0; k < childImgs.length; k++) {
+                            observeImage(childImgs[k]);
+                        }
+                    }
+                }
+            } else if (mutation.type === 'attributes' && mutation.target.tagName === 'IMG') {
+                // Lazy-loaded image whose src just changed – re-observe to force re-evaluation
+                var img = mutation.target;
+                if (autoObserver && img.isConnected) {
+                    autoObserver.unobserve(img);
+                    autoObserver.observe(img);
                 }
             }
         }
     });
-    autoMutationObserver.observe(document.body, {childList: true, subtree: true});
+    autoMutationObserver.observe(document.body, {childList: true, subtree: true, attributes: true, attributeFilter: ['src']});
 }
 
 function observeImage(img) {
-    if (img.naturalWidth < 100 && img.naturalHeight < 100) return;
+    // Only skip images that are loaded AND confirmed small (likely icons).
+    // Unloaded images (naturalWidth/Height === 0) must be observed to catch lazy loads.
+    if (img.naturalWidth > 0 && img.naturalHeight > 0 && img.naturalWidth < 100 && img.naturalHeight < 100) return;
     if (autoObserver) autoObserver.observe(img);
 }
 
@@ -1165,16 +1177,18 @@ function showTranslatingOverlay(img) {
     document.body.appendChild(overlay);
     img._imagetransOverlay = overlay;
 
-    var updateFn = function() { updateOverlayPosition(overlay, img); };
-    window.addEventListener('scroll', updateFn, {passive: true});
-    window.addEventListener('resize', updateFn, {passive: true});
-    overlay._imagetransUpdateFn = updateFn;
+    function tick() {
+        if (!img._imagetransOverlay) return;
+        updateOverlayPosition(overlay, img);
+        overlay._imagetransRafId = requestAnimationFrame(tick);
+    }
+    overlay._imagetransRafId = requestAnimationFrame(tick);
 }
 
 function updateOverlayPosition(overlay, img) {
     var rect = img.getBoundingClientRect();
-    overlay.style.left = rect.left + 'px';
-    overlay.style.top = rect.top + 'px';
+    overlay.style.left = (rect.left + window.scrollX) + 'px';
+    overlay.style.top = (rect.top + window.scrollY) + 'px';
     overlay.style.width = rect.width + 'px';
     overlay.style.height = rect.height + 'px';
 }
@@ -1182,9 +1196,8 @@ function updateOverlayPosition(overlay, img) {
 function hideTranslatingOverlay(img) {
     if (img._imagetransOverlay) {
         var overlay = img._imagetransOverlay;
-        if (overlay._imagetransUpdateFn) {
-            window.removeEventListener('scroll', overlay._imagetransUpdateFn);
-            window.removeEventListener('resize', overlay._imagetransUpdateFn);
+        if (overlay._imagetransRafId) {
+            cancelAnimationFrame(overlay._imagetransRafId);
         }
         overlay.remove();
         img._imagetransOverlay = null;
