@@ -50,7 +50,7 @@ function load() {
     useCanvas: true,
     useCORS: true,
     renderTextInFrontend: false,
-    renderTextCSS: 'text-align: center;\nborder-radius: 10px;',
+    renderTextCSS: 'text-align: center;\nborder-radius: 10%;',
     displayName: "",
     password:"",
     sourceLang:"auto",
@@ -179,7 +179,7 @@ window.onload = function (){
     }
   })
   document.getElementById("cssPresetDefault").addEventListener("click",function(){
-    document.getElementById("renderTextCSS").value = 'text-align: center;\nborder-radius: 10px;';
+    document.getElementById("renderTextCSS").value = 'text-align: center;\nborder-radius: 10%;';
   })
   document.getElementById("cssPresetCenter").addEventListener("click",function(){
     document.getElementById("renderTextCSS").value = 'text-align: center;';
