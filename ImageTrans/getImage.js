@@ -34,7 +34,7 @@ chrome.storage.sync.get({
     displayName: displayName,
     useCanvas: true,
     renderTextInFrontend: false,
-    renderTextCSS: 'text-align: center;\nborder-radius: 10%;',
+    renderTextCSS: renderTextCSS,
     sourceLang: sourceLang,
     targetLang: targetLang,
     useOpenAI: false,
