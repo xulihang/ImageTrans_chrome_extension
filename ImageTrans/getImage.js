@@ -169,6 +169,7 @@ chrome.runtime.onMessage.addListener(
 console.log("loaded");
 
 async function ajax(src,img,checkData){
+    translatedSrcs[src] = true;
     if (useOpenAI) {
         return ajaxOpenAI(src, img, checkData);
     }
@@ -1032,7 +1033,6 @@ function inDisplay(img){
 function startAutoTranslate() {
     if (autoTranslating) return;
     autoTranslating = true;
-    translatedSrcs = {};
 
     autoObserver = new IntersectionObserver(function(entries) {
         for (var i = 0; i < entries.length; i++) {
