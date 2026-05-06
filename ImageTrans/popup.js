@@ -4,6 +4,7 @@ let btnTrans = document.getElementById('translate');
 let btnTransCheck = document.getElementById('translate-check');
 let btnAlter = document.getElementById('alterlanguage');
 let btnAlterCheck = document.getElementById('alterlanguage-check');
+let btnAutoTranslate = document.getElementById('auto-translate');
 let help = document.getElementsByClassName('help')[0];
 document.getElementsByClassName('options')[0].addEventListener("click",function(){
 	chrome.runtime.openOptionsPage();
@@ -53,10 +54,31 @@ btnAlterCheck.onclick = function() {
 	connect(true,"alterlanguage");
 };
 
+btnAutoTranslate.onclick = function() {
+	chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+		chrome.tabs.sendMessage(tabs[0].id, {message: "toggleAutoTranslate"}, function(response) {
+			if (response && response.active) {
+				btnAutoTranslate.textContent = "Stop Auto Translating";
+			} else {
+				btnAutoTranslate.textContent = "Start Auto Translating";
+			}
+		});
+	});
+	window.close();
+};
+
 help.onclick = function() {
 	window.open("https://github.com/xulihang/ImageTrans_chrome_extension","_blank");
 };
 
+// Query current auto-translate state on popup open
+chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+	chrome.tabs.sendMessage(tabs[0].id, {message: "getAutoTranslateState"}, function(response) {
+		if (response && response.active) {
+			btnAutoTranslate.textContent = "Stop Auto Translating";
+		}
+	});
+});
 
 
 function connect(check,message) {

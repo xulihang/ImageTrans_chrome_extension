@@ -4,6 +4,14 @@ var bodyClassName;
 var canvas;
 var dataURLMap = {};
 var serverURL = "https://local.basiccat.org:51043";
+
+// Auto-translate state
+var autoTranslating = false;
+var autoObserver = null;
+var autoMutationObserver = null;
+var translatedSrcs = {};
+var processingQueue = [];
+var isProcessing = false;
 var pickingWay = "1";
 var useCanvas = true;
 var renderTextInFrontend = false;
@@ -144,8 +152,17 @@ chrome.runtime.onMessage.addListener(
     }else if (message=="alterlanguage"){
         var e=getImage(coordinate.x,coordinate.y,request.check);
         alterLanguage(e);
+    }else if (message == "getAutoTranslateState") {
+        sendResponse({active: autoTranslating});
+    }else if (message == "toggleAutoTranslate") {
+        if (autoTranslating) {
+            stopAutoTranslate();
+        } else {
+            startAutoTranslate();
+        }
+        sendResponse({active: autoTranslating});
     }
-      
+
   }
 );
 
@@ -1010,3 +1027,166 @@ function inDisplay(img){
     }
 }
 
+// === Auto-translate ===
+
+function startAutoTranslate() {
+    if (autoTranslating) return;
+    autoTranslating = true;
+    translatedSrcs = {};
+
+    autoObserver = new IntersectionObserver(function(entries) {
+        for (var i = 0; i < entries.length; i++) {
+            var entry = entries[i];
+            if (entry.isIntersecting) {
+                var img = entry.target;
+                var src = getImageSrc(img);
+                if (src && !translatedSrcs[src] && !isInQueue(img)) {
+                    processingQueue.push(img);
+                    processQueue();
+                }
+            }
+        }
+    }, {rootMargin: '150px'});
+
+    var imgs = document.getElementsByTagName('img');
+    for (var i = 0; i < imgs.length; i++) {
+        observeImage(imgs[i]);
+    }
+
+    autoMutationObserver = new MutationObserver(function(mutations) {
+        for (var i = 0; i < mutations.length; i++) {
+            var addedNodes = mutations[i].addedNodes;
+            for (var j = 0; j < addedNodes.length; j++) {
+                var node = addedNodes[j];
+                if (node.nodeType !== 1) continue;
+                if (node.tagName === 'IMG') {
+                    observeImage(node);
+                }
+                if (node.getElementsByTagName) {
+                    var childImgs = node.getElementsByTagName('img');
+                    for (var k = 0; k < childImgs.length; k++) {
+                        observeImage(childImgs[k]);
+                    }
+                }
+            }
+        }
+    });
+    autoMutationObserver.observe(document.body, {childList: true, subtree: true});
+}
+
+function observeImage(img) {
+    if (img.naturalWidth < 100 && img.naturalHeight < 100) return;
+    if (autoObserver) autoObserver.observe(img);
+}
+
+function isInQueue(img) {
+    for (var i = 0; i < processingQueue.length; i++) {
+        if (processingQueue[i] === img) return true;
+    }
+    return false;
+}
+
+function stopAutoTranslate() {
+    autoTranslating = false;
+    if (autoObserver) {
+        autoObserver.disconnect();
+        autoObserver = null;
+    }
+    if (autoMutationObserver) {
+        autoMutationObserver.disconnect();
+        autoMutationObserver = null;
+    }
+    processingQueue = [];
+    isProcessing = false;
+}
+
+function processQueue() {
+    if (isProcessing || processingQueue.length === 0 || !autoTranslating) return;
+    isProcessing = true;
+
+    var img = processingQueue.shift();
+    var src = getImageSrc(img);
+
+    if (!src || translatedSrcs[src]) {
+        isProcessing = false;
+        processQueue();
+        return;
+    }
+
+    translatedSrcs[src] = true;
+    autoTranslateImage(img, src).finally(function() {
+        isProcessing = false;
+        processQueue();
+    });
+}
+
+function autoTranslateImage(img, src) {
+    return new Promise(function(resolve) {
+        showTranslatingOverlay(img);
+
+        var origAlert = window.alert;
+        var origConfirm = window.confirm;
+        window.alert = function(msg) { console.log('[AutoTranslate]', msg); };
+        window.confirm = function(msg) { console.log('[AutoTranslate]', msg); return false; };
+
+        var savedBodyClass = document.body.className;
+
+        var done = function() {
+            window.alert = origAlert;
+            window.confirm = origConfirm;
+            document.body.className = savedBodyClass;
+            hideTranslatingOverlay(img);
+            resolve();
+        };
+
+        try {
+            var promise = ajax(src, img, true);
+            if (promise && promise.then) {
+                promise.then(done).catch(function(e) {
+                    console.error('[AutoTranslate] Error:', e);
+                    done();
+                });
+            } else {
+                done();
+            }
+        } catch (e) {
+            console.error('[AutoTranslate] Error:', e);
+            done();
+        }
+    });
+}
+
+function showTranslatingOverlay(img) {
+    hideTranslatingOverlay(img);
+    var overlay = document.createElement('div');
+    overlay.className = 'imagetrans-overlay';
+    overlay.innerHTML = '<div class="imagetrans-spinner"></div><div>Translating...</div>';
+    updateOverlayPosition(overlay, img);
+    document.body.appendChild(overlay);
+    img._imagetransOverlay = overlay;
+
+    var updateFn = function() { updateOverlayPosition(overlay, img); };
+    window.addEventListener('scroll', updateFn, {passive: true});
+    window.addEventListener('resize', updateFn, {passive: true});
+    overlay._imagetransUpdateFn = updateFn;
+}
+
+function updateOverlayPosition(overlay, img) {
+    var rect = img.getBoundingClientRect();
+    overlay.style.left = rect.left + 'px';
+    overlay.style.top = rect.top + 'px';
+    overlay.style.width = rect.width + 'px';
+    overlay.style.height = rect.height + 'px';
+}
+
+function hideTranslatingOverlay(img) {
+    if (img._imagetransOverlay) {
+        var overlay = img._imagetransOverlay;
+        if (overlay._imagetransUpdateFn) {
+            window.removeEventListener('scroll', overlay._imagetransUpdateFn);
+            window.removeEventListener('resize', overlay._imagetransUpdateFn);
+        }
+        overlay.remove();
+        img._imagetransOverlay = null;
+    }
+}
