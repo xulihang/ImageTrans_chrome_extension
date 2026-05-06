@@ -169,7 +169,6 @@ chrome.runtime.onMessage.addListener(
 console.log("loaded");
 
 async function ajax(src,img,checkData){
-    translatedSrcs[src] = true;
     if (useOpenAI) {
         return ajaxOpenAI(src, img, checkData);
     }
@@ -908,6 +907,7 @@ function replaceImgSrc(src1,src2,checkData,img){
         img.src=src2;
         img.setAttribute("original-src",src1)
         img.setAttribute("target-src",src2);
+        translatedSrcs[src1] = true;
         return "success"
     }
     return "fail"
@@ -1156,6 +1156,7 @@ function autoTranslateImage(img, src) {
             if (promise && promise.then) {
                 promise.then(done).catch(function(e) {
                     console.error('[AutoTranslate] Error:', e);
+                    delete translatedSrcs[src];
                     done();
                 });
             } else {
@@ -1163,6 +1164,7 @@ function autoTranslateImage(img, src) {
             }
         } catch (e) {
             console.error('[AutoTranslate] Error:', e);
+            delete translatedSrcs[src];
             done();
         }
     });
