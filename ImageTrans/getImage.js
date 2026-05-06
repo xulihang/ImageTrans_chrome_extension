@@ -625,6 +625,9 @@ function parseFontCSS(cssText) {
         fontStyle: '',
         color: '#000000',
         textAlign: 'left',
+        textTransform: '',
+        backgroundColor: '#FFFFFF',
+        borderRadius: 0,
         strokeColor: '#FFFFFF',
         strokeWidth: null
     };
@@ -641,6 +644,9 @@ function parseFontCSS(cssText) {
             case 'font-style': style.fontStyle = val; break;
             case 'color': style.color = val; break;
             case 'text-align': if (['left','center','right'].includes(val)) style.textAlign = val; break;
+            case 'text-transform': if (['uppercase','lowercase','capitalize'].includes(val)) style.textTransform = val; break;
+            case 'background-color': style.backgroundColor = val; break;
+            case 'border-radius': style.borderRadius = Math.max(0, parseFloat(val) || 0); break;
             case '-webkit-text-stroke-color': style.strokeColor = val; break;
             case '-webkit-text-stroke-width': style.strokeWidth = parseFloat(val) || null; break;
         }
@@ -655,6 +661,35 @@ function buildFontString(fontSize, style) {
     parts.push(`${fontSize}px`);
     parts.push(style.fontFamily);
     return parts.join(' ');
+}
+
+function applyTextTransform(text, transform) {
+    switch (transform) {
+        case 'uppercase': return text.toUpperCase();
+        case 'lowercase': return text.toLowerCase();
+        case 'capitalize': return text.replace(/\b\w/g, c => c.toUpperCase());
+        default: return text;
+    }
+}
+
+function fillRoundRect(ctx, x, y, w, h, r) {
+    if (r <= 0) {
+        ctx.fillRect(x, y, w, h);
+        return;
+    }
+    r = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.arcTo(x + w, y, x + w, y + r, r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+    ctx.lineTo(x + r, y + h);
+    ctx.arcTo(x, y + h, x, y + h - r, r);
+    ctx.lineTo(x, y + r);
+    ctx.arcTo(x, y, x + r, y, r);
+    ctx.closePath();
+    ctx.fill();
 }
 
 async function renderTranslatedImage(base64Image, boxes) {
@@ -690,8 +725,8 @@ async function renderTranslatedImage(base64Image, boxes) {
                 if (bw <= 0 || bh <= 0 || !targetText) continue;
 
                 const c1 = clampBox(bx, by, bw, bh);
-                ctx.fillStyle = '#FFFFFF';
-                ctx.fillRect(c1.x, c1.y, c1.w, c1.h);
+                ctx.fillStyle = textStyle.backgroundColor;
+                fillRoundRect(ctx, c1.x, c1.y, c1.w, c1.h, textStyle.borderRadius);
             }
 
             for (const box of boxes) {
@@ -704,8 +739,9 @@ async function renderTranslatedImage(base64Image, boxes) {
 
                 if (bw <= 0 || bh <= 0 || !targetText) continue;
                 const c2 = clampBox(bx, by, bw, bh);
+                const displayText = applyTextTransform(targetText, textStyle.textTransform);
 
-                const fontSize = calcFontSize(ctx, targetText, c2.w, c2.h, textStyle);
+                const fontSize = calcFontSize(ctx, displayText, c2.w, c2.h, textStyle);
                 ctx.font = buildFontString(fontSize, textStyle);
                 ctx.fillStyle = textStyle.color;
                 ctx.textBaseline = 'top';
@@ -714,7 +750,7 @@ async function renderTranslatedImage(base64Image, boxes) {
                     ctx.lineWidth = textStyle.strokeWidth;
                 }
 
-                drawTextBox(ctx, targetText, c2.x, c2.y, c2.w, c2.h, fontSize, textStyle);
+                drawTextBox(ctx, displayText, c2.x, c2.y, c2.w, c2.h, fontSize, textStyle);
             }
 
             resolve(c.toDataURL('image/png'));

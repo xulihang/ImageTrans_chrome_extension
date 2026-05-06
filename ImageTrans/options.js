@@ -187,4 +187,13 @@ window.onload = function (){
   document.getElementById("cssPresetCenterBold").addEventListener("click",function(){
     document.getElementById("renderTextCSS").value = 'text-align: center;\nfont-weight: bold;';
   })
+  document.getElementById("cssPresetRounded").addEventListener("click",function(){
+    document.getElementById("renderTextCSS").value = 'text-align: center;\nborder-radius: 8px;';
+  })
+  document.getElementById("cssPresetUppercase").addEventListener("click",function(){
+    document.getElementById("renderTextCSS").value = 'text-align: center;\ntext-transform: uppercase;';
+  })
+  document.getElementById("cssPresetRoundedUppercase").addEventListener("click",function(){
+    document.getElementById("renderTextCSS").value = 'text-align: center;\nborder-radius: 8px;\ntext-transform: uppercase;';
+  })
 }
