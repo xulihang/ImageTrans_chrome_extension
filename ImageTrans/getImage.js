@@ -303,6 +303,8 @@ async function ajaxMyMemory(src, img, checkData) {
         bodyClassName = document.body.className;
     }
     document.body.className = bodyClassName + " wait";
+    // Yield so the browser renders the wait cursor before OCR blocks the thread
+    await yieldToBrowser();
 
     try {
         let dataURL;
@@ -384,6 +386,8 @@ async function ajaxOpenAI(src, img, checkData) {
         bodyClassName = document.body.className;
     }
     document.body.className = bodyClassName + " wait";
+    // Yield so the browser renders the wait cursor before OCR blocks the thread
+    await yieldToBrowser();
 
     try {
         // Step 1: Get image dataURL
@@ -933,6 +937,15 @@ function ensurePaddleOCR() {
                 if (pending) {
                     delete paddlePendingRequests[data.requestId];
                     if (data.success) {
+                        // Scale coordinates back to original image dimensions
+                        if (pending.scale && pending.scale !== 1) {
+                            data.boxes.forEach(function(box) {
+                                box.geometry.X = Math.round(box.geometry.X / pending.scale);
+                                box.geometry.Y = Math.round(box.geometry.Y / pending.scale);
+                                box.geometry.width = Math.round(box.geometry.width / pending.scale);
+                                box.geometry.height = Math.round(box.geometry.height / pending.scale);
+                            });
+                        }
                         console.log('OCR result for request ' + data.requestId, data.boxes);
                         pending.resolve(data.boxes);
                     } else {
@@ -973,17 +986,53 @@ function ensurePaddleOCR() {
 
 function paddleOCR(imageDataURL, sourceLang) {
     return ensurePaddleOCR().then(function() {
+        // Downscale large images to reduce OCR processing time.
+        // PaddleOCR detection model works at a fixed resolution internally,
+        // so oversize images just waste computation without improving accuracy.
+        return downscaleDataURL(imageDataURL, 1500);
+    }).then(function(result) {
+        var dataURL = result.dataURL;
+        var scale = result.scale;
         return new Promise(function(resolve, reject) {
             var requestId = 'ocr_' + Date.now() + '_' + Math.random();
-            paddlePendingRequests[requestId] = { resolve: resolve, reject: reject };
+            paddlePendingRequests[requestId] = { resolve: resolve, reject: reject, scale: scale };
             window.postMessage({
                 source: 'imagetrans-extension',
                 type: 'PADDLE_OCR',
-                imageDataURL: imageDataURL,
+                imageDataURL: dataURL,
                 sourceLang: sourceLang || 'auto',
                 requestId: requestId
             }, '*');
         });
+    });
+}
+
+function downscaleDataURL(dataURL, maxDimension) {
+    return new Promise(function(resolve) {
+        var img = new Image();
+        img.onload = function() {
+            var w = img.naturalWidth;
+            var h = img.naturalHeight;
+            if (w <= maxDimension && h <= maxDimension) {
+                resolve({ dataURL: dataURL, scale: 1 });
+                return;
+            }
+            var ratio = Math.min(maxDimension / w, maxDimension / h);
+            var canvas = document.createElement('canvas');
+            canvas.width = Math.round(w * ratio);
+            canvas.height = Math.round(h * ratio);
+            var ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            resolve({ dataURL: canvas.toDataURL('image/jpeg', 0.9), scale: ratio });
+        };
+        img.onerror = function() { resolve({ dataURL: dataURL, scale: 1 }); };
+        img.src = dataURL;
+    });
+}
+
+function yieldToBrowser() {
+    return new Promise(function(resolve) {
+        setTimeout(resolve, 0);
     });
 }
 
