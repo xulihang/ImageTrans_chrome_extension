@@ -3,10 +3,10 @@
 // 使用declarativeNetRequest API处理跨域请求，相关规则在cors_rules.json中定义
 
 let fetchCount = 0;
-let useCORS = false;
+let useCORS = true;
 
 // 初始化时加载用户的CORS设置（不主动启用，等fetch时再开）
-chrome.storage.sync.get({ useCORS: false }, function(items) {
+chrome.storage.sync.get({ useCORS: true }, function(items) {
   useCORS = items.useCORS;
 });
 
