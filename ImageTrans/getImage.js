@@ -15,7 +15,7 @@ var isProcessing = false;
 var pickingWay = "1";
 var useCanvas = true;
 var renderTextInFrontend = false;
-var renderTextCSS = '';
+var renderTextCSS = 'text-align: center;\nborder-radius: 10px;';
 var password = "";
 var displayName = "";
 var sourceLang = "auto";
@@ -34,7 +34,7 @@ chrome.storage.sync.get({
     displayName: displayName,
     useCanvas: true,
     renderTextInFrontend: false,
-    renderTextCSS: '',
+    renderTextCSS: 'text-align: center;\nborder-radius: 10px;',
     sourceLang: sourceLang,
     targetLang: targetLang,
     useOpenAI: false,
