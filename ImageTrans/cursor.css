@@ -1,7 +1,7 @@
 .wait, .wait * { cursor: wait !important; }
 
 .imagetrans-overlay {
-    position: absolute;
+    position: fixed;
     z-index: 2147483647;
     background: rgba(0, 0, 0, 0.65);
     display: flex;
