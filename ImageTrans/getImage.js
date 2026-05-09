@@ -894,7 +894,54 @@ function mousemove(event){
 // PaddleOCR page-context bridge
 var paddleInjected = false;
 var paddleInitDone = false;
+var paddleCurrentModelKey = null;
+var paddleInitResolver = null;
 var paddlePendingRequests = {};
+
+var PADDLE_MODEL_URLS = {
+    korean: {
+        rec: 'https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.4.0/onnx/PP-OCRv5/rec/korean_PP-OCRv5_rec_mobile_infer.onnx',
+        dict: 'https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.4.0/paddle/PP-OCRv5/rec/korean_PP-OCRv5_rec_mobile_infer/ppocrv5_korean_dict.txt'
+    },
+    latin: {
+        rec: 'https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.4.0/onnx/PP-OCRv5/rec/latin_PP-OCRv5_rec_mobile_infer.onnx',
+        dict: 'https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.4.0/paddle/PP-OCRv5/rec/latin_PP-OCRv5_rec_mobile_infer/ppocrv5_latin_dict.txt'
+    },
+    eslav: {
+        rec: 'https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.4.0/onnx/PP-OCRv5/rec/eslav_PP-OCRv5_rec_mobile_infer.onnx',
+        dict: 'https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.4.0/paddle/PP-OCRv5/rec/eslav_PP-OCRv5_rec_mobile_infer/ppocrv5_eslav_dict.txt'
+    }
+};
+
+var PADDLE_LANG_TO_MODEL = {
+    ko: 'korean',
+    ru: 'eslav',
+    fr: 'latin', it: 'latin', es: 'latin', pt: 'latin',
+    id: 'latin', vi: 'latin', de: 'latin', nl: 'latin',
+    tr: 'latin', pl: 'latin', sv: 'latin', da: 'latin',
+    no: 'latin', fi: 'latin', hu: 'latin', cs: 'latin',
+    ro: 'latin', bg: 'latin', el: 'latin', ms: 'latin'
+};
+
+function getPaddleModelInfo(sourceLang) {
+    var modelKey = PADDLE_LANG_TO_MODEL[sourceLang] || 'default';
+    var detUrl = chrome.runtime.getURL('paddleocr/ppocr_v5_mobile_det.onnx');
+    var modelInfo = PADDLE_MODEL_URLS[modelKey];
+    if (modelInfo) {
+        return {
+            modelKey: modelKey,
+            detUrl: detUrl,
+            recUrl: modelInfo.rec,
+            dicUrl: modelInfo.dict
+        };
+    }
+    return {
+        modelKey: 'default',
+        detUrl: detUrl,
+        recUrl: chrome.runtime.getURL('paddleocr/ppocr_v5_mobile_rec.onnx'),
+        dicUrl: chrome.runtime.getURL('paddleocr/ppocrv5_dict.txt')
+    };
+}
 
 function loadLibrary(src, type, id) {
     return new Promise(function(resolve, reject) {
@@ -914,12 +961,11 @@ function loadLibrary(src, type, id) {
     });
 }
 
-function ensurePaddleOCR() {
+function injectPaddleLibraries() {
     if (paddleInjected) return Promise.resolve();
     paddleInjected = true;
 
     return new Promise(function(resolve, reject) {
-        // Listen for responses from page-ocr.js
         function messageListener(event) {
             if (event.source !== window) return;
             var data = event.data;
@@ -928,16 +974,22 @@ function ensurePaddleOCR() {
             if (data.type === 'PADDLE_INIT_RESULT') {
                 if (data.success) {
                     paddleInitDone = true;
-                    resolve(true);
+                    paddleCurrentModelKey = data.modelKey || 'default';
+                    if (paddleInitResolver) {
+                        paddleInitResolver.resolve(true);
+                        paddleInitResolver = null;
+                    }
                 } else {
-                    reject(new Error('PaddleOCR init failed: ' + data.error));
+                    if (paddleInitResolver) {
+                        paddleInitResolver.reject(new Error('PaddleOCR init failed: ' + data.error));
+                        paddleInitResolver = null;
+                    }
                 }
             } else if (data.type === 'PADDLE_OCR_RESULT') {
                 var pending = paddlePendingRequests[data.requestId];
                 if (pending) {
                     delete paddlePendingRequests[data.requestId];
                     if (data.success) {
-                        // Scale coordinates back to original image dimensions
                         if (pending.scale && pending.scale !== 1) {
                             data.boxes.forEach(function(box) {
                                 box.geometry.X = Math.round(box.geometry.X / pending.scale);
@@ -956,10 +1008,6 @@ function ensurePaddleOCR() {
         }
         window.addEventListener('message', messageListener);
 
-        var detUrl = chrome.runtime.getURL('paddleocr/ppocr_v5_mobile_det.onnx');
-        var recUrl = chrome.runtime.getURL('paddleocr/ppocr_v5_mobile_rec.onnx');
-        var dicUrl = chrome.runtime.getURL('paddleocr/ppocrv5_dict.txt');
-
         Promise.all([
             loadLibrary(chrome.runtime.getURL('paddleocr/opencv.js'), 'text/javascript'),
             loadLibrary(chrome.runtime.getURL('paddleocr/ort.min.js'), 'text/javascript')
@@ -968,14 +1016,7 @@ function ensurePaddleOCR() {
         }).then(function() {
             return loadLibrary(chrome.runtime.getURL('paddleocr/page-ocr.js'), 'text/javascript');
         }).then(function() {
-            window.postMessage({
-                source: 'imagetrans-extension',
-                type: 'PADDLE_INIT',
-                detPath: detUrl,
-                recPath: recUrl,
-                dicPath: dicUrl,
-                requestId: 'init'
-            }, '*');
+            resolve();
         }).catch(function(err) {
             paddleInjected = false;
             window.removeEventListener('message', messageListener);
@@ -984,8 +1025,29 @@ function ensurePaddleOCR() {
     });
 }
 
+function ensurePaddleModel(sourceLang) {
+    var modelInfo = getPaddleModelInfo(sourceLang);
+    if (paddleCurrentModelKey === modelInfo.modelKey && paddleInitDone) {
+        return Promise.resolve();
+    }
+    return new Promise(function(resolve, reject) {
+        paddleInitResolver = {resolve: resolve, reject: reject};
+        window.postMessage({
+            source: 'imagetrans-extension',
+            type: 'PADDLE_INIT',
+            detPath: modelInfo.detUrl,
+            recPath: modelInfo.recUrl,
+            dicPath: modelInfo.dicUrl,
+            modelKey: modelInfo.modelKey,
+            requestId: 'init_' + modelInfo.modelKey
+        }, '*');
+    });
+}
+
 function paddleOCR(imageDataURL, sourceLang) {
-    return ensurePaddleOCR().then(function() {
+    return injectPaddleLibraries().then(function() {
+        return ensurePaddleModel(sourceLang);
+    }).then(function() {
         // Downscale large images to reduce OCR processing time.
         // PaddleOCR detection model works at a fixed resolution internally,
         // so oversize images just waste computation without improving accuracy.

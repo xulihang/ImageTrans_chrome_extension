@@ -7,6 +7,7 @@
 
   const Paddle = window['esearch-ocr'];
   let paddleReady = false;
+  let currentModelKey = null;
   let initPromise = null;
 
   function waitForDeps() {
@@ -25,8 +26,14 @@
     });
   }
 
-  async function init(detPath, recPath, dicUrl) {
-    if (initPromise) return initPromise;
+  async function init(detPath, recPath, dicUrl, modelKey) {
+    // Same model already loaded — reuse
+    if (currentModelKey === modelKey && initPromise) return initPromise;
+    // Switching to a different model — reset and re-init
+    if (currentModelKey !== modelKey) {
+      paddleReady = false;
+      initPromise = null;
+    }
     initPromise = (async function() {
       await waitForDeps();
 
@@ -46,6 +53,7 @@
         cv: window.cv
       });
 
+      currentModelKey = modelKey;
       paddleReady = true;
       return true;
     })();
@@ -216,11 +224,12 @@
       case 'PADDLE_INIT':
         (async function() {
           try {
-            await init(data.detPath, data.recPath, data.dicPath);
+            await init(data.detPath, data.recPath, data.dicPath, data.modelKey || 'default');
             window.postMessage({
               source: 'imagetrans-extension',
               type: 'PADDLE_INIT_RESULT',
               success: true,
+              modelKey: data.modelKey || 'default',
               requestId: data.requestId
             }, '*');
           } catch (err) {
