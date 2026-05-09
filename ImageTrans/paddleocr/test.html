@@ -226,8 +226,17 @@ function mergeTextBoxes(items) {
       // 竖排文字：组内从右往左排列
       group.sort(function(a, b) { return b.box[0][0] - a.box[0][0]; });
     } else {
-      // 横排文字行：按从上到下排列
-      group.sort(function(a, b) { return a.box[0][1] - b.box[0][1]; });
+      // 横排文字行：xycut排序
+      group.sort(function(a, b) {
+        var ya = a.box[0][1], yb = b.box[0][1];
+        var ha = Math.abs(a.box[3][1] - a.box[0][1]);
+        var hb = Math.abs(b.box[3][1] - b.box[0][1]);
+        var minH = Math.min(ha, hb);
+        if (Math.abs(ya - yb) < minH * 0.5) {
+          return a.box[0][0] - b.box[0][0];
+        }
+        return ya - yb;
+      });
     }
     console.log('sorted:', group);
     var texts = group.map(function(item) { return item.text; });
