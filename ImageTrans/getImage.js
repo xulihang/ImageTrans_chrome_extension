@@ -1473,6 +1473,7 @@ var screenCaptureToolbar = null;
 var screenCaptureStartX = 0;
 var screenCaptureStartY = 0;
 var screenCaptureRect = null;
+var screenCaptureServerFailed = false;
 
 function startScreenCapture() {
     if (screenCaptureActive) return;
@@ -1832,42 +1833,102 @@ function resetToolbarButton() {
 }
 
 function processScreenOCR(dataURL) {
+    if (translationMode === "imagetrans" && !screenCaptureServerFailed) {
+        processScreenOCRWithImageTrans(dataURL);
+    } else {
+        processScreenOCRWithPaddle(dataURL);
+    }
+}
+
+function processScreenOCRWithImageTrans(dataURL) {
+    var ocrData = {
+        src: dataURL,
+        saveToFile: "true",
+        displayName: displayName || "default",
+        password: password,
+        withoutImage: "true"
+    };
+    if (sourceLang !== "auto") ocrData["sourceLang"] = sourceLang;
+    if (targetLang !== "auto") ocrData["targetLang"] = targetLang;
+
+    var ocrParams = new URLSearchParams();
+    for (var k in ocrData) {
+        if (ocrData[k] !== undefined && ocrData[k] !== null) {
+            ocrParams.append(k, ocrData[k]);
+        }
+    }
+
+    fetch(serverURL + '/translate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+        body: ocrParams.toString(),
+        cache: 'no-store'
+    }).then(function(ocrResponse) {
+        if (!ocrResponse.ok) {
+            throw new Error('ImageTrans OCR failed: HTTP ' + ocrResponse.status);
+        }
+        return ocrResponse.json();
+    }).then(function(ocrResult) {
+        if (!ocrResult["imgMap"] || !ocrResult["imgMap"]["boxes"]) {
+            throw new Error('ImageTrans did not return text boxes');
+        }
+        var boxes = ocrResult["imgMap"]["boxes"];
+        var hasTranslations = boxes.some(function(b) {
+            return b.target && b.target.trim();
+        });
+        if (hasTranslations) {
+            showResultDialog(dataURL, boxes);
+        } else {
+            handleScreenOCRResult(dataURL, boxes);
+        }
+    }).catch(function(err) {
+        console.log('ImageTrans screen OCR failed, falling back to PaddleOCR:', err.message);
+        screenCaptureServerFailed = true;
+        processScreenOCRWithPaddle(dataURL);
+    });
+}
+
+function processScreenOCRWithPaddle(dataURL) {
     injectPaddleLibraries().then(function() {
         return ensurePaddleModel(sourceLang);
     }).then(function() {
         return paddleOCR(dataURL, sourceLang);
     }).then(function(boxes) {
-        var sourceTexts = [];
-        for (var i = 0; i < boxes.length; i++) {
-            var t = boxes[i].source || boxes[i].text || boxes[i].target || '';
-            sourceTexts.push(t);
-        }
-
-        if (sourceTexts.length === 0 || sourceTexts.every(function(t) { return !t; })) {
-            showResultDialog(dataURL, [], chrome.i18n.getMessage("sc_no_text_detected"));
-            return;
-        }
-
-        if (useOpenAI) {
-            return translateScreenTextsViaOpenAI(sourceTexts).then(function(translations) {
-                for (var j = 0; j < boxes.length && j < translations.length; j++) {
-                    boxes[j].target = translations[j];
-                }
-                showResultDialog(dataURL, boxes);
-            });
-        } else {
-            return translateScreenTextsViaMyMemory(sourceTexts).then(function(translations) {
-                for (var j = 0; j < boxes.length && j < translations.length; j++) {
-                    boxes[j].target = translations[j];
-                }
-                showResultDialog(dataURL, boxes);
-            });
-        }
+        handleScreenOCRResult(dataURL, boxes);
     }).catch(function(err) {
         console.error('Screen OCR failed:', err);
         alert(chrome.i18n.getMessage("sc_ocr_failed", err.message));
         resetToolbarButton();
     });
+}
+
+function handleScreenOCRResult(dataURL, boxes) {
+    var sourceTexts = [];
+    for (var i = 0; i < boxes.length; i++) {
+        var t = boxes[i].source || boxes[i].text || boxes[i].target || '';
+        sourceTexts.push(t);
+    }
+
+    if (sourceTexts.length === 0 || sourceTexts.every(function(t) { return !t; })) {
+        showResultDialog(dataURL, [], chrome.i18n.getMessage("sc_no_text_detected"));
+        return;
+    }
+
+    if (useOpenAI) {
+        return translateScreenTextsViaOpenAI(sourceTexts).then(function(translations) {
+            for (var j = 0; j < boxes.length && j < translations.length; j++) {
+                boxes[j].target = translations[j];
+            }
+            showResultDialog(dataURL, boxes);
+        });
+    } else {
+        return translateScreenTextsViaMyMemory(sourceTexts).then(function(translations) {
+            for (var j = 0; j < boxes.length && j < translations.length; j++) {
+                boxes[j].target = translations[j];
+            }
+            showResultDialog(dataURL, boxes);
+        });
+    }
 }
 
 function translateScreenTextsViaMyMemory(sourceTexts) {
