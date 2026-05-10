@@ -936,6 +936,7 @@ var paddlePendingRequests = {};
 
 var PADDLE_MODEL_URLS = {
     arabic: {
+        det: 'https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.4.0/onnx/PP-OCRv4/det/Multilingual_PP-OCRv3_det_infer.onnx',
         rec: 'https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/master/onnx/PP-OCRv5/rec/arabic_PP-OCRv5_rec_mobile.onnx',
         dict: 'https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/master/paddle/PP-OCRv5/rec/arabic_PP-OCRv5_rec_mobile/ppocrv5_arabic_dict.txt'
     },
@@ -971,19 +972,19 @@ var PADDLE_LANG_TO_MODEL = {
 
 function getPaddleModelInfo(sourceLang) {
     var modelKey = PADDLE_LANG_TO_MODEL[sourceLang] || 'default';
-    var detUrl = chrome.runtime.getURL('paddleocr/ppocr_v5_mobile_det.onnx');
+    var defaultDetUrl = chrome.runtime.getURL('paddleocr/ppocr_v5_mobile_det.onnx');
     var modelInfo = PADDLE_MODEL_URLS[modelKey];
     if (modelInfo) {
         return {
             modelKey: modelKey,
-            detUrl: detUrl,
+            detUrl: modelInfo.det || defaultDetUrl,
             recUrl: modelInfo.rec,
             dicUrl: modelInfo.dict
         };
     }
     return {
         modelKey: 'default',
-        detUrl: detUrl,
+        detUrl: defaultDetUrl,
         recUrl: chrome.runtime.getURL('paddleocr/ppocr_v5_mobile_rec.onnx'),
         dicUrl: chrome.runtime.getURL('paddleocr/ppocrv5_dict.txt')
     };
