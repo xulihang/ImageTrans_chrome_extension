@@ -1,6 +1,62 @@
 const DEFAULT_OPENAI_PROMPT = `Translate the following texts from {sourceLang} to {targetLang}. Return ONLY a JSON array of translated strings in the same order (no markdown, no code fences).
 Texts: {texts}`;
 
+// --- Custom i18n: allow user to override UI language ---
+const _i18nOriginal = chrome.i18n.getMessage.bind(chrome.i18n);
+let getMessage = _i18nOriginal;
+
+async function initI18n() {
+  const { uiLanguage } = await chrome.storage.sync.get({ uiLanguage: '' });
+  if (uiLanguage) {
+    try {
+      const url = chrome.runtime.getURL('_locales/' + uiLanguage + '/messages.json');
+      const resp = await fetch(url);
+      const messages = await resp.json();
+      getMessage = function(key, subs) {
+        if (messages[key]) {
+          const msg = messages[key];
+          let text = msg.message;
+          if (subs !== undefined && subs !== null && msg.placeholders) {
+            const subsArr = Array.isArray(subs) ? subs : [subs];
+            for (const [name, def] of Object.entries(msg.placeholders)) {
+              const m = def.content.match(/^\$(\d+)$/);
+              if (m) {
+                const val = subsArr[parseInt(m[1]) - 1];
+                if (val !== undefined) {
+                  text = text.replace(new RegExp('\\$' + name.toUpperCase() + '\\$', 'g'), function() { return val; });
+                }
+              }
+            }
+          }
+          return text;
+        }
+        return _i18nOriginal(key, subs);
+      };
+    } catch(e) { /* fall back to browser default */ }
+  }
+}
+
+let languageCodes;
+
+function buildLanguageCodes() {
+  languageCodes = [
+    {name: getMessage("lang_arabic"), code:"ar"},
+    {name: getMessage("lang_english"), code:"en"},
+    {name: getMessage("lang_chinese"), code:"zh"},
+    {name: getMessage("lang_japanese"), code:"ja"},
+    {name: getMessage("lang_korean"), code:"ko"},
+    {name: getMessage("lang_french"), code:"fr"},
+    {name: getMessage("lang_italian"), code:"it"},
+    {name: getMessage("lang_spanish"), code:"es"},
+    {name: getMessage("lang_russian"), code:"ru"},
+    {name: getMessage("lang_portuguese"), code:"pt"},
+    {name: getMessage("lang_indonesian"), code:"id"},
+    {name: getMessage("lang_vietnamese"), code:"vi"},
+    {name: getMessage("lang_thai"), code:"th"},
+    {name: getMessage("lang_auto"), code:"auto"}
+  ];
+}
+
 function save() {
   const URL = document.getElementById("serverURL").value;
   const pickingWay = document.getElementById("pickingWay").selectedOptions[0].value;
@@ -21,6 +77,7 @@ function save() {
   const translationMode = document.getElementById("translationMode").value;
   const xSpacing = parseInt(document.getElementById("xSpacing").value) || 15;
   const ySpacing = parseInt(document.getElementById("ySpacing").value) || 15;
+  const uiLanguage = document.getElementById("uiLanguage").value;
   chrome.storage.sync.set({
     serverURL: URL,
     pickingWay: pickingWay,
@@ -40,9 +97,10 @@ function save() {
     ocrMethod: ocrMethod,
     translationMode: translationMode,
     xSpacing: xSpacing,
-    ySpacing: ySpacing
+    ySpacing: ySpacing,
+    uiLanguage: uiLanguage
   }, function() {
-    alert(chrome.i18n.getMessage("alert_saved"));
+    alert(getMessage("alert_saved"));
     chrome.runtime.sendMessage({action: "updateCORSStatus", enabled: useCORS});
   });
 }
@@ -67,7 +125,8 @@ function load() {
     ocrMethod: 'paddleocr',
     translationMode: 'imagetrans',
     xSpacing: 15,
-    ySpacing: 15
+    ySpacing: 15,
+    uiLanguage: ''
   }, function(items) {
     if (items.serverURL) {
         document.getElementById("serverURL").value = items.serverURL;
@@ -111,27 +170,12 @@ function load() {
     }
     document.getElementById("xSpacing").value = items.xSpacing;
     document.getElementById("ySpacing").value = items.ySpacing;
-    // Show/hide OCR method section based on useOpenAI
+    if (items.uiLanguage) {
+      document.getElementById("uiLanguage").value = items.uiLanguage;
+    }
     document.getElementById("ocrMethodSection").style.display = items.useOpenAI ? 'block' : 'none';
   });
 }
-
-let languageCodes = [
-  {name: chrome.i18n.getMessage("lang_arabic"), code:"ar"},
-  {name: chrome.i18n.getMessage("lang_english"), code:"en"},
-  {name: chrome.i18n.getMessage("lang_chinese"), code:"zh"},
-  {name: chrome.i18n.getMessage("lang_japanese"), code:"ja"},
-  {name: chrome.i18n.getMessage("lang_korean"), code:"ko"},
-  {name: chrome.i18n.getMessage("lang_french"), code:"fr"},
-  {name: chrome.i18n.getMessage("lang_italian"), code:"it"},
-  {name: chrome.i18n.getMessage("lang_spanish"), code:"es"},
-  {name: chrome.i18n.getMessage("lang_russian"), code:"ru"},
-  {name: chrome.i18n.getMessage("lang_portuguese"), code:"pt"},
-  {name: chrome.i18n.getMessage("lang_indonesian"), code:"id"},
-  {name: chrome.i18n.getMessage("lang_vietnamese"), code:"vi"},
-  {name: chrome.i18n.getMessage("lang_thai"), code:"th"},
-  {name: chrome.i18n.getMessage("lang_auto"), code:"auto"}
-]
 
 function loadLanguageCodes(){
   let sourceSelect = document.getElementById("sourceLangSelect");
@@ -158,19 +202,21 @@ function setSelectedLang(targetSelect,targetLang) {
 }
 
 function applyI18n() {
-  document.title = chrome.i18n.getMessage("options_title");
+  document.title = getMessage("options_title");
   var elements = document.querySelectorAll('[data-i18n]');
   for (var i = 0; i < elements.length; i++) {
     var el = elements[i];
     var key = el.getAttribute('data-i18n');
     if (key) {
       if (el.tagName === 'TITLE') continue;
-      el.textContent = chrome.i18n.getMessage(key);
+      el.textContent = getMessage(key);
     }
   }
 }
 
-window.onload = function (){
+window.onload = async function (){
+  await initI18n();
+  buildLanguageCodes();
   applyI18n();
   loadLanguageCodes();
   load();
@@ -188,7 +234,7 @@ window.onload = function (){
     if (serverURL) {
       window.open(serverURL + "/list");
     }else{
-      alert(chrome.i18n.getMessage("alert_server_url_not_set"));
+      alert(getMessage("alert_server_url_not_set"));
       window.open("https://local.basiccat.org:51043/list");
     }
   })

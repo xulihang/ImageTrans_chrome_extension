@@ -1,3 +1,36 @@
+// --- Custom i18n: allow user to override UI language ---
+(async function() {
+  const { uiLanguage } = await chrome.storage.sync.get({ uiLanguage: '' });
+  if (uiLanguage) {
+    try {
+      const url = chrome.runtime.getURL('_locales/' + uiLanguage + '/messages.json');
+      const resp = await fetch(url);
+      const messages = await resp.json();
+      const original = chrome.i18n.getMessage.bind(chrome.i18n);
+      chrome.i18n.getMessage = function(key, subs) {
+        if (messages[key]) {
+          const msg = messages[key];
+          let text = msg.message;
+          if (subs !== undefined && subs !== null && msg.placeholders) {
+            const subsArr = Array.isArray(subs) ? subs : [subs];
+            for (const [name, def] of Object.entries(msg.placeholders)) {
+              const m = def.content.match(/^\$(\d+)$/);
+              if (m) {
+                const val = subsArr[parseInt(m[1]) - 1];
+                if (val !== undefined) {
+                  text = text.replace(new RegExp('\\$' + name.toUpperCase() + '\\$', 'g'), function() { return val; });
+                }
+              }
+            }
+          }
+          return text;
+        }
+        return original(key, subs);
+      };
+    } catch(e) { /* fall back to browser default */ }
+  }
+})();
+
 var x=0;
 var y=0;
 var bodyClassName;

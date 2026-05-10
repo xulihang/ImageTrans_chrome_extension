@@ -62,6 +62,10 @@
   "options_y_spacing": { "message": "Y 间距（像素）" },
   "options_y_spacing_hint": { "message": "合并文本行为块的最大垂直间距" },
   "options_save": { "message": "保存设置" },
+  "options_ui_language": { "message": "界面语言" },
+  "options_ui_lang_default": { "message": "浏览器默认" },
+  "options_ui_lang_en": { "message": "English" },
+  "options_ui_lang_zh": { "message": "中文" },
   "options_footer": { "message": "更多信息，请访问 ImageTrans 的" },
   "options_homepage": { "message": "主页" },
 

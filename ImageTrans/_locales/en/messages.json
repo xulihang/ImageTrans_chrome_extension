@@ -62,6 +62,10 @@
   "options_y_spacing": { "message": "Y spacing (px)" },
   "options_y_spacing_hint": { "message": "Max vertical gap for merging text lines into blocks" },
   "options_save": { "message": "Save Settings" },
+  "options_ui_language": { "message": "Interface Language" },
+  "options_ui_lang_default": { "message": "Browser Default" },
+  "options_ui_lang_en": { "message": "English" },
+  "options_ui_lang_zh": { "message": "中文" },
   "options_footer": { "message": "For more info, visit ImageTrans's" },
   "options_homepage": { "message": "homepage" },
 
