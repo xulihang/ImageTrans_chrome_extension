@@ -1541,15 +1541,18 @@ function showSelectionToolbar(rect) {
     screenCaptureSelection.style.width = rect.width + 'px';
     screenCaptureSelection.style.height = rect.height + 'px';
     screenCaptureSelection.style.pointerEvents = 'auto';
-    screenCaptureSelection.style.cursor = 'default';
+    screenCaptureSelection.style.cursor = 'move';
 
+    // Add resize handles
+    addResizeHandles(rect);
+
+    // Drag support
+    screenCaptureSelection.addEventListener('mousedown', onSelectionDragStart);
+
+    // Create toolbar
     screenCaptureToolbar = document.createElement('div');
     screenCaptureToolbar.id = 'imagetrans-sc-toolbar';
-    var toolbarTop = rect.top + rect.height + 8;
-    if (toolbarTop + 42 > window.innerHeight) {
-        toolbarTop = rect.top - 42;
-    }
-    screenCaptureToolbar.style.cssText = 'position:fixed;z-index:2147483647;left:' + rect.left + 'px;top:' + toolbarTop + 'px;display:flex;gap:8px;';
+    placeToolbar(rect);
 
     var btnOCR = document.createElement('button');
     btnOCR.textContent = 'Recognize';
@@ -1557,7 +1560,7 @@ function showSelectionToolbar(rect) {
     btnOCR.addEventListener('mousedown', function(e) { e.stopPropagation(); });
     btnOCR.addEventListener('click', function(e) {
         e.stopPropagation();
-        doScreenOCR(rect);
+        doScreenOCR();
     });
 
     var btnClose = document.createElement('button');
@@ -1574,8 +1577,158 @@ function showSelectionToolbar(rect) {
     document.body.appendChild(screenCaptureToolbar);
 }
 
+// === Selection drag & resize ===
+
+var screenCaptureDragging = false;
+var screenCaptureResizing = false;
+var screenCaptureResizeCorner = null; // 'nw', 'ne', 'sw', 'se'
+var screenCaptureDragOffsetX = 0;
+var screenCaptureDragOffsetY = 0;
+var screenCaptureResizeAnchorX = 0;
+var screenCaptureResizeAnchorY = 0;
+var screenCaptureHandles = [];
+
+function addResizeHandles(rect) {
+    removeResizeHandles();
+    var corners = [
+        { id: 'nw', left: rect.left - 4, top: rect.top - 4, cursor: 'nwse-resize' },
+        { id: 'ne', left: rect.left + rect.width - 4, top: rect.top - 4, cursor: 'nesw-resize' },
+        { id: 'sw', left: rect.left - 4, top: rect.top + rect.height - 4, cursor: 'nesw-resize' },
+        { id: 'se', left: rect.left + rect.width - 4, top: rect.top + rect.height - 4, cursor: 'nwse-resize' }
+    ];
+    for (var i = 0; i < corners.length; i++) {
+        var h = document.createElement('div');
+        h.className = 'imagetrans-sc-handle';
+        h.setAttribute('data-corner', corners[i].id);
+        h.style.cssText = 'position:fixed;z-index:2147483648;width:8px;height:8px;background:#4A90D9;border:1px solid #fff;cursor:' + corners[i].cursor + ';left:' + corners[i].left + 'px;top:' + corners[i].top + 'px;';
+        h.addEventListener('mousedown', function(e) {
+            e.stopPropagation();
+            e.preventDefault();
+            onSelectionResizeStart(e);
+        });
+        document.body.appendChild(h);
+        screenCaptureHandles.push(h);
+    }
+}
+
+function removeResizeHandles() {
+    for (var i = 0; i < screenCaptureHandles.length; i++) {
+        screenCaptureHandles[i].remove();
+    }
+    screenCaptureHandles = [];
+}
+
+function updateHandlePositions(rect) {
+    var corners = [
+        { id: 'nw', left: rect.left - 4, top: rect.top - 4 },
+        { id: 'ne', left: rect.left + rect.width - 4, top: rect.top - 4 },
+        { id: 'sw', left: rect.left - 4, top: rect.top + rect.height - 4 },
+        { id: 'se', left: rect.left + rect.width - 4, top: rect.top + rect.height - 4 }
+    ];
+    for (var i = 0; i < screenCaptureHandles.length; i++) {
+        var handle = screenCaptureHandles[i];
+        for (var j = 0; j < corners.length; j++) {
+            if (handle.getAttribute('data-corner') === corners[j].id) {
+                handle.style.left = corners[j].left + 'px';
+                handle.style.top = corners[j].top + 'px';
+                break;
+            }
+        }
+    }
+}
+
+function placeToolbar(rect) {
+    var toolbarTop = rect.top + rect.height + 8;
+    if (toolbarTop + 42 > window.innerHeight) {
+        toolbarTop = rect.top - 42;
+    }
+    screenCaptureToolbar.style.cssText = 'position:fixed;z-index:2147483647;left:' + rect.left + 'px;top:' + toolbarTop + 'px;display:flex;gap:8px;';
+}
+
+function applyRect(rect) {
+    screenCaptureRect = rect;
+    screenCaptureSelection.style.left = rect.left + 'px';
+    screenCaptureSelection.style.top = rect.top + 'px';
+    screenCaptureSelection.style.width = rect.width + 'px';
+    screenCaptureSelection.style.height = rect.height + 'px';
+    updateHandlePositions(rect);
+    placeToolbar(rect);
+}
+
+function onSelectionDragStart(e) {
+    if (screenCaptureResizing) return;
+    screenCaptureDragging = true;
+    screenCaptureDragOffsetX = e.clientX - screenCaptureRect.left;
+    screenCaptureDragOffsetY = e.clientY - screenCaptureRect.top;
+    window.addEventListener('mousemove', onSelectionDragMove);
+    window.addEventListener('mouseup', onSelectionDragEnd);
+    e.preventDefault();
+}
+
+function onSelectionDragMove(e) {
+    if (!screenCaptureDragging) return;
+    var newLeft = e.clientX - screenCaptureDragOffsetX;
+    var newTop = e.clientY - screenCaptureDragOffsetY;
+    applyRect({
+        left: newLeft,
+        top: newTop,
+        width: screenCaptureRect.width,
+        height: screenCaptureRect.height
+    });
+}
+
+function onSelectionDragEnd(e) {
+    screenCaptureDragging = false;
+    window.removeEventListener('mousemove', onSelectionDragMove);
+    window.removeEventListener('mouseup', onSelectionDragEnd);
+}
+
+function onSelectionResizeStart(e) {
+    screenCaptureResizing = true;
+    screenCaptureResizeCorner = e.target.getAttribute('data-corner');
+    // Anchor is the opposite corner
+    switch (screenCaptureResizeCorner) {
+        case 'nw':
+            screenCaptureResizeAnchorX = screenCaptureRect.left + screenCaptureRect.width;
+            screenCaptureResizeAnchorY = screenCaptureRect.top + screenCaptureRect.height;
+            break;
+        case 'ne':
+            screenCaptureResizeAnchorX = screenCaptureRect.left;
+            screenCaptureResizeAnchorY = screenCaptureRect.top + screenCaptureRect.height;
+            break;
+        case 'sw':
+            screenCaptureResizeAnchorX = screenCaptureRect.left + screenCaptureRect.width;
+            screenCaptureResizeAnchorY = screenCaptureRect.top;
+            break;
+        case 'se':
+            screenCaptureResizeAnchorX = screenCaptureRect.left;
+            screenCaptureResizeAnchorY = screenCaptureRect.top;
+            break;
+    }
+    window.addEventListener('mousemove', onSelectionResizeMove);
+    window.addEventListener('mouseup', onSelectionResizeEnd);
+}
+
+function onSelectionResizeMove(e) {
+    if (!screenCaptureResizing) return;
+    var newLeft = Math.min(screenCaptureResizeAnchorX, e.clientX);
+    var newTop = Math.min(screenCaptureResizeAnchorY, e.clientY);
+    var newWidth = Math.abs(e.clientX - screenCaptureResizeAnchorX);
+    var newHeight = Math.abs(e.clientY - screenCaptureResizeAnchorY);
+    applyRect({ left: newLeft, top: newTop, width: newWidth, height: newHeight });
+}
+
+function onSelectionResizeEnd(e) {
+    screenCaptureResizing = false;
+    screenCaptureResizeCorner = null;
+    window.removeEventListener('mousemove', onSelectionResizeMove);
+    window.removeEventListener('mouseup', onSelectionResizeEnd);
+}
+
 function cleanupScreenCaptureAll() {
     screenCaptureActive = false;
+    screenCaptureDragging = false;
+    screenCaptureResizing = false;
     if (screenCaptureOverlay) {
         screenCaptureOverlay.remove();
         screenCaptureOverlay = null;
@@ -1583,6 +1736,10 @@ function cleanupScreenCaptureAll() {
     window.removeEventListener('mousemove', onScreenCaptureMouseMove);
     window.removeEventListener('mouseup', onScreenCaptureMouseUp);
     window.removeEventListener('keydown', onScreenCaptureKeyDown);
+    window.removeEventListener('mousemove', onSelectionDragMove);
+    window.removeEventListener('mouseup', onSelectionDragEnd);
+    window.removeEventListener('mousemove', onSelectionResizeMove);
+    window.removeEventListener('mouseup', onSelectionResizeEnd);
     if (screenCaptureSelection) {
         screenCaptureSelection.remove();
         screenCaptureSelection = null;
@@ -1591,6 +1748,7 @@ function cleanupScreenCaptureAll() {
         screenCaptureToolbar.remove();
         screenCaptureToolbar = null;
     }
+    removeResizeHandles();
     var existingDialog = document.getElementById('imagetrans-sc-dialog');
     if (existingDialog) existingDialog.remove();
     var existingBackdrop = document.getElementById('imagetrans-sc-backdrop');
@@ -1598,7 +1756,8 @@ function cleanupScreenCaptureAll() {
     screenCaptureRect = null;
 }
 
-function doScreenOCR(rect) {
+function doScreenOCR() {
+    var rect = screenCaptureRect;
     if (screenCaptureToolbar) {
         var btns = screenCaptureToolbar.getElementsByTagName('button');
         if (btns.length > 0) {
@@ -1842,7 +2001,7 @@ function showResultDialog(dataURL, boxes, message) {
     footerRight.style.cssText = 'display:flex;gap:8px;';
 
     var btnContinue = document.createElement('button');
-    btnContinue.textContent = 'Continue';
+    btnContinue.textContent = 'New Region';
     btnContinue.style.cssText = 'padding:6px 16px;background:#5cb85c;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:14px;';
     btnContinue.addEventListener('click', function() {
         backdrop.remove();
@@ -1857,7 +2016,7 @@ function showResultDialog(dataURL, boxes, message) {
     btnReOCR.addEventListener('click', function() {
         backdrop.remove();
         dialog.remove();
-        doScreenOCR(screenCaptureRect);
+        doScreenOCR();
     });
 
     var btnClose = document.createElement('button');
