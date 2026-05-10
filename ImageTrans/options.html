@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Options</title>
+    <title data-i18n="options_title">ImageTrans Options</title>
     <style>
       :root {
         --bg: #f5f7fa;
@@ -170,145 +170,145 @@
   </head>
   <body>
     <div class="header">
-      <h2>ImageTrans Options</h2>
+      <h2 data-i18n="options_title">ImageTrans Options</h2>
     </div>
 
     <!-- Translation -->
     <div class="card">
-      <div class="card-title">Translation</div>
+      <div class="card-title" data-i18n="options_translation">Translation</div>
       <div class="form-row">
-        <label for="translationMode">Translation Mode</label>
+        <label for="translationMode" data-i18n="options_translation_mode">Translation Mode</label>
         <select id="translationMode">
-          <option value="local">Local (PaddleOCR + MyMemory or OpenAI)</option>
-          <option value="imagetrans">ImageTrans (local or remote server)</option>
+          <option value="local" data-i18n="options_mode_local">Local (PaddleOCR + MyMemory or OpenAI)</option>
+          <option value="imagetrans" data-i18n="options_mode_imagetrans">ImageTrans (local or remote server)</option>
         </select>
       </div>
       <div class="inline-group">
-        <label>Source lang <select id="sourceLangSelect"></select></label>
-        <label>Target lang <select id="targetLangSelect"></select></label>
-        <div>It uses ImageTrans project's language pair if the languages are auto. You need to specify the language pair using remote server or PaddleOCR.</div>
-        <div>PaddleOCR's ability is limited (lack of language support and options).</div>
+        <label><span data-i18n="options_source_lang">Source lang</span> <select id="sourceLangSelect"></select></label>
+        <label><span data-i18n="options_target_lang">Target lang</span> <select id="targetLangSelect"></select></label>
+        <div data-i18n="options_langpair_hint">It uses ImageTrans project's language pair if the languages are auto. You need to specify the language pair using remote server or PaddleOCR.</div>
+        <div data-i18n="options_paddleocr_hint">PaddleOCR's ability is limited (lack of language support and options).</div>
       </div>
     </div>
 
     <!-- Server -->
     <div class="card">
-      <div class="card-title">Server Connection</div>
+      <div class="card-title" data-i18n="options_server_connection">Server Connection</div>
       <div class="form-row">
-        <label for="serverURL">Server URL</label>
+        <label for="serverURL" data-i18n="options_server_url">Server URL</label>
         <input id="serverURL" type="text" value="" class="wide" />
       </div>
       <div class="form-row">
-        <button id="publicServerButton" class="btn-secondary">Use public server</button>
-        <button id="localServerButton" class="btn-secondary">Use local server</button>
+        <button id="publicServerButton" class="btn-secondary" data-i18n="options_use_public_server">Use public server</button>
+        <button id="localServerButton" class="btn-secondary" data-i18n="options_use_local_server">Use local server</button>
       </div>
       <div class="form-row">
-        <label id="imagetransInstanceLabel">Instance display name</label>
+        <label id="imagetransInstanceLabel" data-i18n="options_instance_name">Instance display name</label>
         <input id="imagetransInstanceInput" type="text" placeholder="default" />
-        <button id="checkInstanceButton" class="btn-secondary">Check existing instances</button>
+        <button id="checkInstanceButton" class="btn-secondary" data-i18n="options_check_instances">Check existing instances</button>
       </div>
       <div class="form-row">
-        <label id="imagetransPasswordLabel">Password (optional)</label>
+        <label id="imagetransPasswordLabel" data-i18n="options_password">Password (optional)</label>
         <input id="imagetransPasswordInput" type="password" />
       </div>
     </div>
 
     <!-- Image Capture -->
     <div class="card">
-      <div class="card-title">Image Capture and Rendering</div>
+      <div class="card-title" data-i18n="options_image_capture">Image Capture and Rendering</div>
       <div class="form-row">
-        <label>Pick image from
+        <label><span data-i18n="options_pick_image_from">Pick image from</span>
           <select id="pickingWay">
-            <option value="0">Behind Mouse Cursor</option>
-            <option value="1">Center of the Screen</option>
+            <option value="0" data-i18n="options_behind_cursor">Behind Mouse Cursor</option>
+            <option value="1" data-i18n="options_center_screen">Center of the Screen</option>
           </select>
         </label>
       </div>
       <div class="form-row">
         <label class="checkbox-label">
           <input id="useCanvas" type="checkbox" checked />
-          Use Canvas to get image data by default
+          <span data-i18n="options_use_canvas">Use Canvas to get image data by default</span>
         </label>
       </div>
       <div class="form-row">
         <label class="checkbox-label">
           <input id="useCORS" type="checkbox" />
-          Enable CORS headers for cross-domain images
+          <span data-i18n="options_enable_cors">Enable CORS headers for cross-domain images</span>
         </label>
       </div>
       <div class="form-row">
         <label class="checkbox-label">
           <input id="renderTextInFrontend" type="checkbox" checked />
-          Render text in the front-end
+          <span data-i18n="options_render_frontend">Render text in the front-end</span>
         </label>
       </div>
       <div class="form-row" id="renderTextCSSSection" style="flex-direction:column; align-items:flex-start;">
-        <label for="renderTextCSS">Font CSS (for front-end rendering)</label>
+        <label for="renderTextCSS" data-i18n="options_font_css">Font CSS (for front-end rendering)</label>
         <textarea id="renderTextCSS" rows="3" style="width:100%; font-family:monospace; font-size:12px;" placeholder="e.g. text-align: center; font-weight: bold;"></textarea>
         <div style="margin-top:6px; display:flex; gap:6px; flex-wrap:wrap;">
-          <button id="cssPresetDefault" class="btn-secondary" style="font-size:12px;">Default</button>
-          <button id="cssPresetCenter" class="btn-secondary" style="font-size:12px;">Center Align</button>
-          <button id="cssPresetCenterBold" class="btn-secondary" style="font-size:12px;">Center + Bold</button>
-          <button id="cssPresetRounded" class="btn-secondary" style="font-size:12px;">Rounded + Center</button>
-          <button id="cssPresetUppercase" class="btn-secondary" style="font-size:12px;">Uppercase + Center</button>
-          <button id="cssPresetRoundedUppercase" class="btn-secondary" style="font-size:12px;">Rounded + Uppercase</button>
+          <button id="cssPresetDefault" class="btn-secondary" style="font-size:12px;" data-i18n="options_css_default">Default</button>
+          <button id="cssPresetCenter" class="btn-secondary" style="font-size:12px;" data-i18n="options_css_center">Center Align</button>
+          <button id="cssPresetCenterBold" class="btn-secondary" style="font-size:12px;" data-i18n="options_css_center_bold">Center + Bold</button>
+          <button id="cssPresetRounded" class="btn-secondary" style="font-size:12px;" data-i18n="options_css_rounded">Rounded + Center</button>
+          <button id="cssPresetUppercase" class="btn-secondary" style="font-size:12px;" data-i18n="options_css_uppercase">Uppercase + Center</button>
+          <button id="cssPresetRoundedUppercase" class="btn-secondary" style="font-size:12px;" data-i18n="options_css_rounded_uppercase">Rounded + Uppercase</button>
         </div>
       </div>
     </div>
 
     <!-- OpenAI API -->
     <div class="card">
-      <div class="card-title">OpenAI-Compatible API (optional)</div>
+      <div class="card-title" data-i18n="options_openai_api">OpenAI-Compatible API (optional)</div>
       <div class="form-row">
         <label class="checkbox-label">
           <input id="useOpenAI" type="checkbox" />
-          Enable OpenAI-compatible API for translation
+          <span data-i18n="options_enable_openai">Enable OpenAI-compatible API for translation</span>
         </label>
       </div>
       <div id="ocrMethodSection" style="margin-bottom:12px; display:none;">
-        <label for="ocrMethod">OCR method</label>
+        <label for="ocrMethod" data-i18n="options_ocr_method">OCR method</label>
         <select id="ocrMethod">
-          <option value="paddleocr">PaddleOCR (local)</option>
-          <option value="imagetrans">ImageTrans (remote)</option>
+          <option value="paddleocr" data-i18n="options_ocr_paddleocr">PaddleOCR (local)</option>
+          <option value="imagetrans" data-i18n="options_ocr_imagetrans">ImageTrans (remote)</option>
         </select>
       </div>
       <div class="form-row">
-        <label for="openaiURL">API URL</label>
+        <label for="openaiURL" data-i18n="options_api_url">API URL</label>
         <input id="openaiURL" type="text" value="https://api.openai.com/v1" class="wide" />
       </div>
       <div class="form-row">
-        <label for="openaiKey">API Key</label>
+        <label for="openaiKey" data-i18n="options_api_key">API Key</label>
         <input id="openaiKey" type="password" class="wide" />
       </div>
       <div class="form-row">
-        <label for="openaiModel">Model</label>
+        <label for="openaiModel" data-i18n="options_model">Model</label>
         <input id="openaiModel" type="text" value="gpt-4o" />
       </div>
       <div class="form-row">
-        <label for="openaiPrompt">Prompt <span style="font-weight:400;color:var(--text-secondary)">({sourceLang}, {targetLang}, {texts})</span></label>
+        <label for="openaiPrompt"><span data-i18n="options_prompt">Prompt</span> <span style="font-weight:400;color:var(--text-secondary);" data-i18n="options_prompt_hint">({sourceLang}, {targetLang}, {texts})</span></label>
       </div>
       <textarea id="openaiPrompt" rows="5"></textarea>
     </div>
 
     <!-- Image Processing -->
     <div class="card">
-      <div class="card-title">Image Processing</div>
+      <div class="card-title" data-i18n="options_image_processing">Image Processing</div>
       <div class="form-row">
-        <label for="xSpacing">X spacing (px)</label>
+        <label for="xSpacing" data-i18n="options_x_spacing">X spacing (px)</label>
         <input id="xSpacing" type="number" value="15" min="0" max="200" style="width:80px;" />
-        <span style="font-size:12px;color:var(--text-secondary);">Max horizontal gap for merging adjacent text boxes</span>
+        <span style="font-size:12px;color:var(--text-secondary);" data-i18n="options_x_spacing_hint">Max horizontal gap for merging adjacent text boxes</span>
       </div>
       <div class="form-row">
-        <label for="ySpacing">Y spacing (px)</label>
+        <label for="ySpacing" data-i18n="options_y_spacing">Y spacing (px)</label>
         <input id="ySpacing" type="number" value="15" min="0" max="200" style="width:80px;" />
-        <span style="font-size:12px;color:var(--text-secondary);">Max vertical gap for merging text lines into blocks</span>
+        <span style="font-size:12px;color:var(--text-secondary);" data-i18n="options_y_spacing_hint">Max vertical gap for merging text lines into blocks</span>
       </div>
     </div>
 
-    <button id="saveButton" class="btn-primary btn-save">Save Settings</button>
+    <button id="saveButton" class="btn-primary btn-save" data-i18n="options_save">Save Settings</button>
 
     <div class="footer">
-      For more info, visit ImageTrans's <a href="https://www.basiccat.org/imagetrans" target="_blank">homepage</a>.
+      <span data-i18n="options_footer">For more info, visit ImageTrans's</span> <a href="https://www.basiccat.org/imagetrans" target="_blank" data-i18n="options_homepage">homepage</a>.
     </div>
 
     <script src="options.js"></script>

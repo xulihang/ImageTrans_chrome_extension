@@ -1,7 +1,8 @@
 {
-  "name": "ImageTrans",
+  "name": "__MSG_ext_name__",
   "version": "4.3",
-  "description": "Translate images on websites",
+  "description": "__MSG_ext_desc__",
+  "default_locale": "en",
   "permissions": ["storage","activeTab","contextMenus","clipboardWrite","declarativeNetRequest"],
   "host_permissions": ["<all_urls>"],
   "declarative_net_request": {
@@ -34,7 +35,7 @@
         "default": "Ctrl+Shift+F",
         "mac": "MacCtrl+Shift+V"
        },
-      "description": "Open the extension popup"
+      "description": "__MSG_ext_command_desc__"
     }
   },
   "icons": {

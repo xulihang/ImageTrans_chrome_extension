@@ -63,17 +63,17 @@ chrome.runtime.onInstalled.addListener(() => {
   console.log('ImageTrans扩展已安装或更新');
   let parent = chrome.contextMenus.create({
     "id": "imagetrans-menu",
-    "title": "ImageTrans",
+    "title": chrome.i18n.getMessage("ctxmenu_parent"),
     "contexts": ["image"]
   });
   chrome.contextMenus.create({
-    "title": "translate this image",
+    "title": chrome.i18n.getMessage("ctxmenu_translate"),
     "parentId": parent,
     "id": "translate",
     "contexts": ["image"]
   });
   chrome.contextMenus.create({
-    "title": "alter source/target",
+    "title": chrome.i18n.getMessage("ctxmenu_alter"),
     "parentId": parent,
     "id": "alter",
     "contexts": ["image"]

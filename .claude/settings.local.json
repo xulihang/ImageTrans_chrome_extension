@@ -2,7 +2,10 @@
   "permissions": {
     "allow": [
       "Bash(python3 -c \"import mimetypes; print\\(mimetypes.guess_type\\('test.mjs'\\)\\)\")",
-      "Bash(python -c \"import mimetypes; print\\(mimetypes.guess_type\\('test.mjs'\\)\\)\")"
+      "Bash(python -c \"import mimetypes; print\\(mimetypes.guess_type\\('test.mjs'\\)\\)\")",
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('c:/Users/HP/Documents/GitHub/ImageTrans_chrome_extension/ImageTrans/_locales/en/messages.json','utf8'\\)\\); console.log\\('en: valid'\\)\")",
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('c:/Users/HP/Documents/GitHub/ImageTrans_chrome_extension/ImageTrans/_locales/zh_CN/messages.json','utf8'\\)\\); console.log\\('zh_CN: valid'\\)\")",
+      "Bash(node -e ' *)"
     ]
   }
 }

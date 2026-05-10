@@ -156,7 +156,7 @@ chrome.runtime.onMessage.addListener(
           navigator.clipboard.writeText(src)
             .then(() => {
               console.log('Text copied to clipboard');
-              alert(src + " copied to clipboard.");
+              alert(chrome.i18n.getMessage("alert_copied", src));
             })
             .catch(err => {
               // This can happen if the user denies clipboard permissions:
@@ -226,7 +226,7 @@ async function ajax(src,img,checkData){
         const post = async (url, payload) => {
             if (url.indexOf("https://service.basiccat.org:51043") != -1) {
               if (!sourceLang || !targetLang || sourceLang === "auto" || targetLang === "auto") {
-                alert("Please set the language pair in the options first (do not choose auto) and then refresh the page.");
+                alert(chrome.i18n.getMessage("alert_set_langpair"));
                 chrome.runtime.sendMessage("showOptions");
                 document.body.className=bodyClassName;
                 return;
@@ -261,7 +261,7 @@ async function ajax(src,img,checkData){
             console.log(respData);
             document.body.className = bodyClassName;
             if (!respData["imgMap"]) {
-                alert("Bad result. Is ImageTrans running correctly?");
+                alert(chrome.i18n.getMessage("alert_bad_result"));
             } else if (renderTextInFrontend && respData["imgMap"] && respData["imgMap"]["boxes"]) {
                 renderTranslatedImage(data.src, respData["imgMap"]["boxes"]).then(translatedDataURL => {
                     console.log(replaceImgSrc(src, translatedDataURL, checkData, img));
@@ -274,7 +274,7 @@ async function ajax(src,img,checkData){
             document.body.className = bodyClassName;
             console.log('Request failed:', err);
             if (serverURL === "https://local.basiccat.org:51043") {
-                var usePublic = confirm("Failed to connect to local ImageTrans server.\n\nClick OK to use the public server, or Cancel to use local PaddleOCR instead.\n\nNote: PaddleOCR quality is lower than ImageTrans. You can configure which one to use in options.");
+                var usePublic = confirm(chrome.i18n.getMessage("confirm_failed_connect"));
                 if (usePublic) {
                     serverURL = "https://service.basiccat.org:51043";
                     document.body.className = bodyClassName + " wait";
@@ -283,7 +283,7 @@ async function ajax(src,img,checkData){
                         console.log(respData);
                         document.body.className = bodyClassName;
                         if (!respData["img"]) {
-                            alert("Bad result. Is ImageTrans running correctly?");
+                            alert(chrome.i18n.getMessage("alert_bad_result"));
                         } else if (renderTextInFrontend && respData["imgMap"] && respData["imgMap"]["boxes"]) {
                             renderTranslatedImage(respData["img"], respData["imgMap"]["boxes"]).then(translatedDataURL => {
                                 console.log(replaceImgSrc(src, translatedDataURL, checkData, img));
@@ -294,13 +294,13 @@ async function ajax(src,img,checkData){
                         }
                     } catch (err2) {
                         document.body.className = bodyClassName;
-                        alert("Failed to connect to ImageTrans server.");
+                        alert(chrome.i18n.getMessage("alert_connect_failed"));
                     }
                 } else {
                     await ajaxMyMemory(src, img, checkData);
                 }
             } else {
-                alert("Failed to connect to ImageTrans server.");
+                alert(chrome.i18n.getMessage("alert_connect_failed"));
             }
         }
     } catch (e) {
@@ -339,7 +339,7 @@ async function ajaxMyMemory(src, img, checkData) {
 
         if (sourceTexts.length === 0 || sourceTexts.every(function(t) { return !t; })) {
             document.body.className = bodyClassName;
-            alert("No text detected in the image.");
+            alert(chrome.i18n.getMessage("alert_no_text"));
             return;
         }
 
@@ -359,7 +359,7 @@ async function ajaxMyMemory(src, img, checkData) {
     } catch (err) {
         document.body.className = bodyClassName;
         console.error('Translation failed:', err);
-        alert("Translation failed: " + err.message);
+        alert(chrome.i18n.getMessage("alert_translation_failed", err.message));
     }
 }
 
@@ -390,7 +390,7 @@ function reflowText(sourceLang, source) {
 async function ajaxOpenAI(src, img, checkData) {
     console.log("Using OpenAI for translation");
     if (!openaiURL || !openaiKey) {
-        alert("OpenAI API URL or Key is not configured. Please set them in the options page.");
+        alert(chrome.i18n.getMessage("alert_openai_not_configured"));
         document.body.className = bodyClassName;
         return;
     }
@@ -463,7 +463,7 @@ async function ajaxOpenAI(src, img, checkData) {
 
         if (sourceTexts.length === 0 || sourceTexts.every(function(t) { return !t; })) {
             document.body.className = bodyClassName;
-            alert("No text detected in the image.");
+            alert(chrome.i18n.getMessage("alert_no_text"));
             return;
         }
 
@@ -534,7 +534,7 @@ async function ajaxOpenAI(src, img, checkData) {
     } catch (err) {
         document.body.className = bodyClassName;
         console.error('Translation failed:', err);
-        alert("Translation failed: " + err.message);
+        alert(chrome.i18n.getMessage("alert_translation_failed", err.message));
     }
 }
 
@@ -1409,7 +1409,7 @@ function showTranslatingOverlay(img) {
     hideTranslatingOverlay(img);
     var overlay = document.createElement('div');
     overlay.className = 'imagetrans-overlay';
-    overlay.innerHTML = '<div class="imagetrans-spinner"></div><div>Translating...</div>';
+    overlay.innerHTML = '<div class="imagetrans-spinner"></div><div>' + chrome.i18n.getMessage("overlay_translating") + '</div>';
     updateOverlayPosition(overlay, img);
     document.body.appendChild(overlay);
     img._imagetransOverlay = overlay;
@@ -1555,7 +1555,7 @@ function showSelectionToolbar(rect) {
     placeToolbar(rect);
 
     var btnOCR = document.createElement('button');
-    btnOCR.textContent = 'Recognize';
+    btnOCR.textContent = chrome.i18n.getMessage("sc_recognize");
     btnOCR.style.cssText = 'padding:6px 16px;background:#4A90D9;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,0.2);';
     btnOCR.addEventListener('mousedown', function(e) { e.stopPropagation(); });
     btnOCR.addEventListener('click', function(e) {
@@ -1564,7 +1564,7 @@ function showSelectionToolbar(rect) {
     });
 
     var btnClose = document.createElement('button');
-    btnClose.textContent = 'Close';
+    btnClose.textContent = chrome.i18n.getMessage("sc_close");
     btnClose.style.cssText = 'padding:6px 16px;background:#fff;color:#333;border:1px solid #ccc;border-radius:4px;cursor:pointer;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,0.2);';
     btnClose.addEventListener('mousedown', function(e) { e.stopPropagation(); });
     btnClose.addEventListener('click', function(e) {
@@ -1761,14 +1761,14 @@ function doScreenOCR() {
     if (screenCaptureToolbar) {
         var btns = screenCaptureToolbar.getElementsByTagName('button');
         if (btns.length > 0) {
-            btns[0].textContent = 'Processing...';
+            btns[0].textContent = chrome.i18n.getMessage("sc_processing");
             btns[0].disabled = true;
         }
     }
 
     chrome.runtime.sendMessage({action: "captureVisibleTab"}, function(response) {
         if (chrome.runtime.lastError || !response || !response.dataURL) {
-            alert('Failed to capture screen: ' + (chrome.runtime.lastError ? chrome.runtime.lastError.message : 'unknown error'));
+            alert(chrome.i18n.getMessage("sc_failed_capture", (chrome.runtime.lastError ? chrome.runtime.lastError.message : 'unknown error')));
             resetToolbarButton();
             return;
         }
@@ -1791,7 +1791,7 @@ function doScreenOCR() {
             processScreenOCR(croppedDataURL);
         };
         img.onerror = function() {
-            alert('Failed to load screenshot');
+            alert(chrome.i18n.getMessage("sc_failed_load"));
             resetToolbarButton();
         };
         img.src = response.dataURL;
@@ -1802,7 +1802,7 @@ function resetToolbarButton() {
     if (screenCaptureToolbar) {
         var btns = screenCaptureToolbar.getElementsByTagName('button');
         if (btns.length > 0) {
-            btns[0].textContent = 'Recognize';
+            btns[0].textContent = chrome.i18n.getMessage("sc_recognize");
             btns[0].disabled = false;
         }
     }
@@ -1821,7 +1821,7 @@ function processScreenOCR(dataURL) {
         }
 
         if (sourceTexts.length === 0 || sourceTexts.every(function(t) { return !t; })) {
-            showResultDialog(dataURL, [], 'No text detected in the selected area.');
+            showResultDialog(dataURL, [], chrome.i18n.getMessage("sc_no_text_detected"));
             return;
         }
 
@@ -1842,7 +1842,7 @@ function processScreenOCR(dataURL) {
         }
     }).catch(function(err) {
         console.error('Screen OCR failed:', err);
-        alert('OCR failed: ' + err.message);
+        alert(chrome.i18n.getMessage("sc_ocr_failed", err.message));
         resetToolbarButton();
     });
 }
@@ -1933,7 +1933,7 @@ function showResultDialog(dataURL, boxes, message) {
     var header = document.createElement('div');
     header.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #eee;flex-shrink:0;';
     var title = document.createElement('span');
-    title.textContent = 'OCR & Translation';
+    title.textContent = chrome.i18n.getMessage("sc_title");
     title.style.cssText = 'font-size:16px;font-weight:600;color:#333;';
     var closeBtn = document.createElement('button');
     closeBtn.innerHTML = '&#x2715;';
@@ -1953,7 +1953,7 @@ function showResultDialog(dataURL, boxes, message) {
         body.appendChild(msgDiv);
     } else if (boxes.length === 0) {
         var emptyDiv = document.createElement('div');
-        emptyDiv.textContent = 'No text detected.';
+        emptyDiv.textContent = chrome.i18n.getMessage("sc_no_text");
         emptyDiv.style.cssText = 'color:#666;text-align:center;padding:20px 0;';
         body.appendChild(emptyDiv);
     } else {
@@ -1982,7 +1982,7 @@ function showResultDialog(dataURL, boxes, message) {
             sourceDiv.style.cssText = 'font-size:14px;color:#333;margin-bottom:4px;line-height:1.4;';
 
             var transDiv = document.createElement('div');
-            transDiv.textContent = '→ ' + target;
+            transDiv.textContent = chrome.i18n.getMessage("sc_arrow") + target;
             transDiv.style.cssText = 'font-size:13px;color:#4A90D9;line-height:1.4;';
 
             row.appendChild(sourceDiv);
@@ -2001,7 +2001,7 @@ function showResultDialog(dataURL, boxes, message) {
     footerRight.style.cssText = 'display:flex;gap:8px;';
 
     var btnContinue = document.createElement('button');
-    btnContinue.textContent = 'New Region';
+    btnContinue.textContent = chrome.i18n.getMessage("sc_new_region");
     btnContinue.style.cssText = 'padding:6px 16px;background:#5cb85c;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:14px;';
     btnContinue.addEventListener('click', function() {
         backdrop.remove();
@@ -2011,7 +2011,7 @@ function showResultDialog(dataURL, boxes, message) {
     });
 
     var btnReOCR = document.createElement('button');
-    btnReOCR.textContent = 'Recognize';
+    btnReOCR.textContent = chrome.i18n.getMessage("sc_recognize");
     btnReOCR.style.cssText = 'padding:6px 16px;background:#4A90D9;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:14px;';
     btnReOCR.addEventListener('click', function() {
         backdrop.remove();
@@ -2020,7 +2020,7 @@ function showResultDialog(dataURL, boxes, message) {
     });
 
     var btnClose = document.createElement('button');
-    btnClose.textContent = 'Close';
+    btnClose.textContent = chrome.i18n.getMessage("sc_close");
     btnClose.style.cssText = 'padding:6px 16px;background:#fff;color:#333;border:1px solid #ccc;border-radius:4px;cursor:pointer;font-size:14px;';
     btnClose.addEventListener('click', function() { backdrop.remove(); dialog.remove(); });
 

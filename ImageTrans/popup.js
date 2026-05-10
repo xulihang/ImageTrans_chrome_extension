@@ -1,3 +1,18 @@
+function applyI18n() {
+	document.getElementById('translate').textContent = chrome.i18n.getMessage("popup_translate");
+	document.getElementById('alterlanguage').textContent = chrome.i18n.getMessage("popup_alter_language");
+	document.getElementById('translate-check').textContent = chrome.i18n.getMessage("popup_translate_check");
+	document.getElementById('alterlanguage-check').textContent = chrome.i18n.getMessage("popup_alter_language_check");
+	document.getElementById('getimgsrc').textContent = chrome.i18n.getMessage("popup_get_img_src");
+	document.getElementById('getimgsrc-check').textContent = chrome.i18n.getMessage("popup_get_img_src_check");
+	document.getElementById('screen-capture').textContent = chrome.i18n.getMessage("popup_screen_capture");
+	document.getElementById('auto-translate').textContent = chrome.i18n.getMessage("popup_auto_translate_start");
+	document.getElementsByClassName('help')[0].textContent = chrome.i18n.getMessage("popup_help");
+	document.getElementsByClassName('options')[0].textContent = chrome.i18n.getMessage("popup_options");
+	document.getElementsByClassName('local')[0].textContent = chrome.i18n.getMessage("popup_translate_local");
+}
+applyI18n();
+
 let btn = document.getElementById('getimgsrc');
 let btnCheck = document.getElementById('getimgsrc-check');
 let btnTrans = document.getElementById('translate');
@@ -59,9 +74,9 @@ btnAutoTranslate.onclick = function() {
 	chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
 		chrome.tabs.sendMessage(tabs[0].id, {message: "toggleAutoTranslate"}, function(response) {
 			if (response && response.active) {
-				btnAutoTranslate.textContent = "Stop Auto Translating";
+				btnAutoTranslate.textContent = chrome.i18n.getMessage("popup_auto_translate_stop");
 			} else {
-				btnAutoTranslate.textContent = "Start Auto Translating";
+				btnAutoTranslate.textContent = chrome.i18n.getMessage("popup_auto_translate_start");
 			}
 		});
 		window.close();
@@ -83,7 +98,7 @@ help.onclick = function() {
 chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
 	chrome.tabs.sendMessage(tabs[0].id, {message: "getAutoTranslateState"}, function(response) {
 		if (response && response.active) {
-			btnAutoTranslate.textContent = "Stop Auto Translating";
+			btnAutoTranslate.textContent = chrome.i18n.getMessage("popup_auto_translate_stop");
 		}
 	});
 });

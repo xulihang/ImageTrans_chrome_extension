@@ -42,7 +42,7 @@ function save() {
     xSpacing: xSpacing,
     ySpacing: ySpacing
   }, function() {
-    alert("saved");
+    alert(chrome.i18n.getMessage("alert_saved"));
     chrome.runtime.sendMessage({action: "updateCORSStatus", enabled: useCORS});
   });
 }
@@ -117,20 +117,20 @@ function load() {
 }
 
 let languageCodes = [
-  {name:"Arabic",code:"ar"},
-  {name:"English",code:"en"},
-  {name:"Chinese",code:"zh"},
-  {name:"Japanese",code:"ja"},
-  {name:"Korean",code:"ko"},
-  {name:"French",code:"fr"},
-  {name:"Italian",code:"it"},
-  {name:"Spanish",code:"es"},
-  {name:"Russian",code:"ru"},
-  {name:"Portuguese",code:"pt"},
-  {name:"Indonesian",code:"id"},
-  {name:"Vietnamese",code:"vi"},
-  {name:"Thai",code:"th"},
-  {name:"Auto",code:"auto"}
+  {name: chrome.i18n.getMessage("lang_arabic"), code:"ar"},
+  {name: chrome.i18n.getMessage("lang_english"), code:"en"},
+  {name: chrome.i18n.getMessage("lang_chinese"), code:"zh"},
+  {name: chrome.i18n.getMessage("lang_japanese"), code:"ja"},
+  {name: chrome.i18n.getMessage("lang_korean"), code:"ko"},
+  {name: chrome.i18n.getMessage("lang_french"), code:"fr"},
+  {name: chrome.i18n.getMessage("lang_italian"), code:"it"},
+  {name: chrome.i18n.getMessage("lang_spanish"), code:"es"},
+  {name: chrome.i18n.getMessage("lang_russian"), code:"ru"},
+  {name: chrome.i18n.getMessage("lang_portuguese"), code:"pt"},
+  {name: chrome.i18n.getMessage("lang_indonesian"), code:"id"},
+  {name: chrome.i18n.getMessage("lang_vietnamese"), code:"vi"},
+  {name: chrome.i18n.getMessage("lang_thai"), code:"th"},
+  {name: chrome.i18n.getMessage("lang_auto"), code:"auto"}
 ]
 
 function loadLanguageCodes(){
@@ -157,7 +157,21 @@ function setSelectedLang(targetSelect,targetLang) {
   }
 }
 
+function applyI18n() {
+  document.title = chrome.i18n.getMessage("options_title");
+  var elements = document.querySelectorAll('[data-i18n]');
+  for (var i = 0; i < elements.length; i++) {
+    var el = elements[i];
+    var key = el.getAttribute('data-i18n');
+    if (key) {
+      if (el.tagName === 'TITLE') continue;
+      el.textContent = chrome.i18n.getMessage(key);
+    }
+  }
+}
+
 window.onload = function (){
+  applyI18n();
   loadLanguageCodes();
   load();
   document.getElementById("saveButton").addEventListener("click",function(){
@@ -174,7 +188,7 @@ window.onload = function (){
     if (serverURL) {
       window.open(serverURL + "/list");
     }else{
-      alert("Server URL is not set. Will use go to the local address.");
+      alert(chrome.i18n.getMessage("alert_server_url_not_set"));
       window.open("https://local.basiccat.org:51043/list");
     }
   })
