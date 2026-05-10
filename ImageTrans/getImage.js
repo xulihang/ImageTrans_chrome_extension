@@ -1461,7 +1461,7 @@ function startScreenCapture() {
 
     screenCaptureSelection = document.createElement('div');
     screenCaptureSelection.id = 'imagetrans-sc-selection';
-    screenCaptureSelection.style.cssText = 'position:fixed;border:2px dashed #4A90D9;background:rgba(74,144,217,0.1);display:none;z-index:2147483647;pointer-events:none;box-sizing:border-box;';
+    screenCaptureSelection.style.cssText = 'position:fixed;border:2px dashed #4A90D9;background:transparent;display:none;z-index:2147483647;pointer-events:none;box-sizing:border-box;';
 
     document.body.appendChild(screenCaptureSelection);
     document.body.appendChild(screenCaptureOverlay);
