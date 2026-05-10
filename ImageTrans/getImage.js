@@ -1412,12 +1412,13 @@ function showTranslatingOverlay(img) {
     document.body.appendChild(overlay);
     img._imagetransOverlay = overlay;
 
-    function tick() {
+    function onScroll() {
         if (!img._imagetransOverlay) return;
         updateOverlayPosition(overlay, img);
-        overlay._imagetransRafId = requestAnimationFrame(tick);
     }
-    overlay._imagetransRafId = requestAnimationFrame(tick);
+    window.addEventListener('scroll', onScroll, {passive: true});
+    window.addEventListener('resize', onScroll, {passive: true});
+    overlay._imagetransOnScroll = onScroll;
 }
 
 function updateOverlayPosition(overlay, img) {
@@ -1431,8 +1432,9 @@ function updateOverlayPosition(overlay, img) {
 function hideTranslatingOverlay(img) {
     if (img._imagetransOverlay) {
         var overlay = img._imagetransOverlay;
-        if (overlay._imagetransRafId) {
-            cancelAnimationFrame(overlay._imagetransRafId);
+        if (overlay._imagetransOnScroll) {
+            window.removeEventListener('scroll', overlay._imagetransOnScroll);
+            window.removeEventListener('resize', overlay._imagetransOnScroll);
         }
         overlay.remove();
         img._imagetransOverlay = null;
