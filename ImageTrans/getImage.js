@@ -176,6 +176,8 @@ chrome.runtime.onMessage.addListener(
             startAutoTranslate();
         }
         sendResponse({active: autoTranslating});
+    }else if (message == "startScreenCapture") {
+        startScreenCapture();
     }
 
   }
@@ -1437,4 +1439,424 @@ function hideTranslatingOverlay(img) {
         overlay.remove();
         img._imagetransOverlay = null;
     }
+}
+
+// === Screen Capture OCR ===
+
+var screenCaptureActive = false;
+var screenCaptureOverlay = null;
+var screenCaptureSelection = null;
+var screenCaptureToolbar = null;
+var screenCaptureStartX = 0;
+var screenCaptureStartY = 0;
+var screenCaptureRect = null;
+
+function startScreenCapture() {
+    if (screenCaptureActive) return;
+    screenCaptureActive = true;
+
+    screenCaptureOverlay = document.createElement('div');
+    screenCaptureOverlay.id = 'imagetrans-sc-overlay';
+    screenCaptureOverlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:2147483646;cursor:crosshair;background:rgba(0,0,0,0.15);';
+
+    screenCaptureSelection = document.createElement('div');
+    screenCaptureSelection.id = 'imagetrans-sc-selection';
+    screenCaptureSelection.style.cssText = 'position:fixed;border:2px dashed #4A90D9;background:rgba(74,144,217,0.1);display:none;z-index:2147483647;pointer-events:none;box-sizing:border-box;';
+
+    document.body.appendChild(screenCaptureSelection);
+    document.body.appendChild(screenCaptureOverlay);
+
+    screenCaptureOverlay.addEventListener('mousedown', onScreenCaptureMouseDown);
+    window.addEventListener('mousemove', onScreenCaptureMouseMove);
+    window.addEventListener('mouseup', onScreenCaptureMouseUp);
+    window.addEventListener('keydown', onScreenCaptureKeyDown);
+}
+
+function onScreenCaptureMouseDown(e) {
+    screenCaptureStartX = e.clientX;
+    screenCaptureStartY = e.clientY;
+    screenCaptureSelection.style.display = 'block';
+    screenCaptureSelection.style.left = screenCaptureStartX + 'px';
+    screenCaptureSelection.style.top = screenCaptureStartY + 'px';
+    screenCaptureSelection.style.width = '0px';
+    screenCaptureSelection.style.height = '0px';
+    e.preventDefault();
+    e.stopPropagation();
+}
+
+function onScreenCaptureMouseMove(e) {
+    if (screenCaptureSelection.style.display === 'none') return;
+    var x = Math.min(screenCaptureStartX, e.clientX);
+    var y = Math.min(screenCaptureStartY, e.clientY);
+    var w = Math.abs(e.clientX - screenCaptureStartX);
+    var h = Math.abs(e.clientY - screenCaptureStartY);
+    screenCaptureSelection.style.left = x + 'px';
+    screenCaptureSelection.style.top = y + 'px';
+    screenCaptureSelection.style.width = w + 'px';
+    screenCaptureSelection.style.height = h + 'px';
+}
+
+function onScreenCaptureMouseUp(e) {
+    var endX = e.clientX;
+    var endY = e.clientY;
+
+    var rect = {
+        left: Math.min(screenCaptureStartX, endX),
+        top: Math.min(screenCaptureStartY, endY),
+        width: Math.abs(endX - screenCaptureStartX),
+        height: Math.abs(endY - screenCaptureStartY)
+    };
+
+    cleanupScreenCaptureOverlay();
+
+    if (rect.width < 10 || rect.height < 10) {
+        cleanupScreenCaptureAll();
+        return;
+    }
+
+    screenCaptureRect = rect;
+    showSelectionToolbar(rect);
+}
+
+function onScreenCaptureKeyDown(e) {
+    if (e.key === 'Escape') {
+        cleanupScreenCaptureAll();
+    }
+}
+
+function cleanupScreenCaptureOverlay() {
+    if (screenCaptureOverlay) {
+        screenCaptureOverlay.remove();
+        screenCaptureOverlay = null;
+    }
+    window.removeEventListener('mousemove', onScreenCaptureMouseMove);
+    window.removeEventListener('mouseup', onScreenCaptureMouseUp);
+    window.removeEventListener('keydown', onScreenCaptureKeyDown);
+}
+
+function showSelectionToolbar(rect) {
+    screenCaptureSelection.style.display = 'block';
+    screenCaptureSelection.style.left = rect.left + 'px';
+    screenCaptureSelection.style.top = rect.top + 'px';
+    screenCaptureSelection.style.width = rect.width + 'px';
+    screenCaptureSelection.style.height = rect.height + 'px';
+    screenCaptureSelection.style.pointerEvents = 'auto';
+    screenCaptureSelection.style.cursor = 'default';
+
+    screenCaptureToolbar = document.createElement('div');
+    screenCaptureToolbar.id = 'imagetrans-sc-toolbar';
+    var toolbarTop = rect.top + rect.height + 8;
+    if (toolbarTop + 42 > window.innerHeight) {
+        toolbarTop = rect.top - 42;
+    }
+    screenCaptureToolbar.style.cssText = 'position:fixed;z-index:2147483647;left:' + rect.left + 'px;top:' + toolbarTop + 'px;display:flex;gap:8px;';
+
+    var btnOCR = document.createElement('button');
+    btnOCR.textContent = 'Recognize';
+    btnOCR.style.cssText = 'padding:6px 16px;background:#4A90D9;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,0.2);';
+    btnOCR.addEventListener('mousedown', function(e) { e.stopPropagation(); });
+    btnOCR.addEventListener('click', function(e) {
+        e.stopPropagation();
+        doScreenOCR(rect);
+    });
+
+    var btnClose = document.createElement('button');
+    btnClose.textContent = 'Close';
+    btnClose.style.cssText = 'padding:6px 16px;background:#fff;color:#333;border:1px solid #ccc;border-radius:4px;cursor:pointer;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,0.2);';
+    btnClose.addEventListener('mousedown', function(e) { e.stopPropagation(); });
+    btnClose.addEventListener('click', function(e) {
+        e.stopPropagation();
+        cleanupScreenCaptureAll();
+    });
+
+    screenCaptureToolbar.appendChild(btnOCR);
+    screenCaptureToolbar.appendChild(btnClose);
+    document.body.appendChild(screenCaptureToolbar);
+}
+
+function cleanupScreenCaptureAll() {
+    screenCaptureActive = false;
+    if (screenCaptureOverlay) {
+        screenCaptureOverlay.remove();
+        screenCaptureOverlay = null;
+    }
+    window.removeEventListener('mousemove', onScreenCaptureMouseMove);
+    window.removeEventListener('mouseup', onScreenCaptureMouseUp);
+    window.removeEventListener('keydown', onScreenCaptureKeyDown);
+    if (screenCaptureSelection) {
+        screenCaptureSelection.remove();
+        screenCaptureSelection = null;
+    }
+    if (screenCaptureToolbar) {
+        screenCaptureToolbar.remove();
+        screenCaptureToolbar = null;
+    }
+    var existingDialog = document.getElementById('imagetrans-sc-dialog');
+    if (existingDialog) existingDialog.remove();
+    var existingBackdrop = document.getElementById('imagetrans-sc-backdrop');
+    if (existingBackdrop) existingBackdrop.remove();
+    screenCaptureRect = null;
+}
+
+function doScreenOCR(rect) {
+    if (screenCaptureToolbar) {
+        var btns = screenCaptureToolbar.getElementsByTagName('button');
+        if (btns.length > 0) {
+            btns[0].textContent = 'Processing...';
+            btns[0].disabled = true;
+        }
+    }
+
+    chrome.runtime.sendMessage({action: "captureVisibleTab"}, function(response) {
+        if (chrome.runtime.lastError || !response || !response.dataURL) {
+            alert('Failed to capture screen: ' + (chrome.runtime.lastError ? chrome.runtime.lastError.message : 'unknown error'));
+            resetToolbarButton();
+            return;
+        }
+
+        var img = new Image();
+        img.onload = function() {
+            var scale = img.naturalWidth / window.innerWidth;
+            var sx = rect.left * scale;
+            var sy = rect.top * scale;
+            var sw = rect.width * scale;
+            var sh = rect.height * scale;
+
+            var c = document.createElement('canvas');
+            c.width = sw;
+            c.height = sh;
+            var ctx = c.getContext('2d');
+            ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+            var croppedDataURL = c.toDataURL('image/jpeg', 0.9);
+
+            processScreenOCR(croppedDataURL);
+        };
+        img.onerror = function() {
+            alert('Failed to load screenshot');
+            resetToolbarButton();
+        };
+        img.src = response.dataURL;
+    });
+}
+
+function resetToolbarButton() {
+    if (screenCaptureToolbar) {
+        var btns = screenCaptureToolbar.getElementsByTagName('button');
+        if (btns.length > 0) {
+            btns[0].textContent = 'Recognize';
+            btns[0].disabled = false;
+        }
+    }
+}
+
+function processScreenOCR(dataURL) {
+    injectPaddleLibraries().then(function() {
+        return ensurePaddleModel(sourceLang);
+    }).then(function() {
+        return paddleOCR(dataURL, sourceLang);
+    }).then(function(boxes) {
+        var sourceTexts = [];
+        for (var i = 0; i < boxes.length; i++) {
+            var t = boxes[i].source || boxes[i].text || boxes[i].target || '';
+            sourceTexts.push(t);
+        }
+
+        if (sourceTexts.length === 0 || sourceTexts.every(function(t) { return !t; })) {
+            showResultDialog(dataURL, [], 'No text detected in the selected area.');
+            return;
+        }
+
+        if (useOpenAI) {
+            return translateScreenTextsViaOpenAI(sourceTexts).then(function(translations) {
+                for (var j = 0; j < boxes.length && j < translations.length; j++) {
+                    boxes[j].target = translations[j];
+                }
+                showResultDialog(dataURL, boxes);
+            });
+        } else {
+            return translateScreenTextsViaMyMemory(sourceTexts).then(function(translations) {
+                for (var j = 0; j < boxes.length && j < translations.length; j++) {
+                    boxes[j].target = translations[j];
+                }
+                showResultDialog(dataURL, boxes);
+            });
+        }
+    }).catch(function(err) {
+        console.error('Screen OCR failed:', err);
+        alert('OCR failed: ' + err.message);
+        resetToolbarButton();
+    });
+}
+
+function translateScreenTextsViaMyMemory(sourceTexts) {
+    var promises = [];
+    for (var i = 0; i < sourceTexts.length; i++) {
+        if (sourceTexts[i]) {
+            promises.push(translateUsingMyMemory(sourceTexts[i]));
+        } else {
+            promises.push(Promise.resolve(''));
+        }
+    }
+    return Promise.all(promises);
+}
+
+function translateScreenTextsViaOpenAI(sourceTexts) {
+    var prompt = openaiPrompt
+        .replace(/\{sourceLang\}/g, sourceLang)
+        .replace(/\{targetLang\}/g, targetLang)
+        .replace(/\{texts\}/g, JSON.stringify(sourceTexts));
+
+    var apiUrl = openaiURL.replace(/\/+$/, '') + '/chat/completions';
+
+    return fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + openaiKey
+        },
+        body: JSON.stringify({
+            model: openaiModel,
+            messages: [{ role: 'user', content: prompt }]
+        })
+    }).then(function(resp) {
+        if (!resp.ok) {
+            return resp.text().then(function(t) { throw new Error('OpenAI API error HTTP ' + resp.status + ': ' + t); });
+        }
+        return resp.json();
+    }).then(function(result) {
+        var content = result.choices[0].message.content;
+        var translatedTexts;
+        try {
+            translatedTexts = JSON.parse(content);
+        } catch (e) {
+            var match = content.match(/```(?:json)?\s*([\s\S]*?)```/);
+            if (match) {
+                translatedTexts = JSON.parse(match[1]);
+            } else {
+                throw new Error('Failed to parse translation response as JSON.');
+            }
+        }
+        if (!Array.isArray(translatedTexts)) {
+            if (translatedTexts && translatedTexts.translations) {
+                translatedTexts = translatedTexts.translations;
+            } else if (translatedTexts && translatedTexts.texts) {
+                translatedTexts = translatedTexts.texts;
+            } else {
+                return sourceTexts.map(function() { return ''; });
+            }
+        }
+        return translatedTexts;
+    });
+}
+
+function showResultDialog(dataURL, boxes, message) {
+    var existingBackdrop = document.getElementById('imagetrans-sc-backdrop');
+    if (existingBackdrop) existingBackdrop.remove();
+    var existingDialog = document.getElementById('imagetrans-sc-dialog');
+    if (existingDialog) existingDialog.remove();
+
+    resetToolbarButton();
+
+    var backdrop = document.createElement('div');
+    backdrop.id = 'imagetrans-sc-backdrop';
+    backdrop.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:2147483647;background:rgba(0,0,0,0.3);';
+    backdrop.addEventListener('click', function() {
+        backdrop.remove();
+        dialog.remove();
+    });
+
+    var dialog = document.createElement('div');
+    dialog.id = 'imagetrans-sc-dialog';
+    dialog.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:2147483648;background:#fff;border-radius:8px;box-shadow:0 4px 24px rgba(0,0,0,0.25);width:520px;max-height:80vh;display:flex;flex-direction:column;font-family:sans-serif;';
+    dialog.addEventListener('click', function(e) { e.stopPropagation(); });
+
+    // Header
+    var header = document.createElement('div');
+    header.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #eee;flex-shrink:0;';
+    var title = document.createElement('span');
+    title.textContent = 'OCR & Translation';
+    title.style.cssText = 'font-size:16px;font-weight:600;color:#333;';
+    var closeBtn = document.createElement('button');
+    closeBtn.innerHTML = '&#x2715;';
+    closeBtn.style.cssText = 'background:none;border:none;font-size:18px;cursor:pointer;color:#999;padding:0;line-height:1;';
+    closeBtn.addEventListener('click', function() { backdrop.remove(); dialog.remove(); });
+    header.appendChild(title);
+    header.appendChild(closeBtn);
+
+    // Body
+    var body = document.createElement('div');
+    body.style.cssText = 'padding:16px;overflow-y:auto;flex:1;';
+
+    if (message) {
+        var msgDiv = document.createElement('div');
+        msgDiv.textContent = message;
+        msgDiv.style.cssText = 'color:#666;text-align:center;padding:20px 0;';
+        body.appendChild(msgDiv);
+    } else if (boxes.length === 0) {
+        var emptyDiv = document.createElement('div');
+        emptyDiv.textContent = 'No text detected.';
+        emptyDiv.style.cssText = 'color:#666;text-align:center;padding:20px 0;';
+        body.appendChild(emptyDiv);
+    } else {
+        // Image thumbnail
+        var thumbWrap = document.createElement('div');
+        thumbWrap.style.cssText = 'text-align:center;margin-bottom:16px;';
+        var thumb = document.createElement('img');
+        thumb.src = dataURL;
+        thumb.style.cssText = 'max-width:200px;max-height:120px;border-radius:4px;border:1px solid #eee;';
+        thumbWrap.appendChild(thumb);
+        body.appendChild(thumbWrap);
+
+        // Results list
+        var list = document.createElement('div');
+        list.style.cssText = 'display:flex;flex-direction:column;gap:12px;';
+        for (var i = 0; i < boxes.length; i++) {
+            var source = boxes[i].source || boxes[i].text || boxes[i].target || '';
+            var target = boxes[i].target || '';
+            if (!source && !target) continue;
+
+            var row = document.createElement('div');
+            row.style.cssText = 'border-left:3px solid #4A90D9;padding-left:10px;';
+
+            var sourceDiv = document.createElement('div');
+            sourceDiv.textContent = source;
+            sourceDiv.style.cssText = 'font-size:14px;color:#333;margin-bottom:4px;line-height:1.4;';
+
+            var transDiv = document.createElement('div');
+            transDiv.textContent = '→ ' + target;
+            transDiv.style.cssText = 'font-size:13px;color:#4A90D9;line-height:1.4;';
+
+            row.appendChild(sourceDiv);
+            row.appendChild(transDiv);
+            list.appendChild(row);
+        }
+        body.appendChild(list);
+    }
+
+    // Footer
+    var footer = document.createElement('div');
+    footer.style.cssText = 'padding:12px 16px;border-top:1px solid #eee;display:flex;justify-content:flex-end;gap:8px;flex-shrink:0;';
+
+    var btnReOCR = document.createElement('button');
+    btnReOCR.textContent = 'Recognize';
+    btnReOCR.style.cssText = 'padding:6px 16px;background:#4A90D9;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:14px;';
+    btnReOCR.addEventListener('click', function() {
+        backdrop.remove();
+        dialog.remove();
+        doScreenOCR(screenCaptureRect);
+    });
+
+    var btnClose = document.createElement('button');
+    btnClose.textContent = 'Close';
+    btnClose.style.cssText = 'padding:6px 16px;background:#fff;color:#333;border:1px solid #ccc;border-radius:4px;cursor:pointer;font-size:14px;';
+    btnClose.addEventListener('click', function() { backdrop.remove(); dialog.remove(); });
+
+    footer.appendChild(btnReOCR);
+    footer.appendChild(btnClose);
+
+    dialog.appendChild(header);
+    dialog.appendChild(body);
+    dialog.appendChild(footer);
+    document.body.appendChild(backdrop);
+    document.body.appendChild(dialog);
 }

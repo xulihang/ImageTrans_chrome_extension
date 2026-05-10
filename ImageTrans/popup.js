@@ -5,6 +5,7 @@ let btnTransCheck = document.getElementById('translate-check');
 let btnAlter = document.getElementById('alterlanguage');
 let btnAlterCheck = document.getElementById('alterlanguage-check');
 let btnAutoTranslate = document.getElementById('auto-translate');
+let btnScreenCapture = document.getElementById('screen-capture');
 let help = document.getElementsByClassName('help')[0];
 document.getElementsByClassName('options')[0].addEventListener("click",function(){
 	chrome.runtime.openOptionsPage();
@@ -63,8 +64,15 @@ btnAutoTranslate.onclick = function() {
 				btnAutoTranslate.textContent = "Start Auto Translating";
 			}
 		});
+		window.close();
 	});
-	window.close();
+};
+
+btnScreenCapture.onclick = function() {
+	chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+		chrome.tabs.sendMessage(tabs[0].id, {message: "startScreenCapture"});
+		window.close();
+	});
 };
 
 help.onclick = function() {
