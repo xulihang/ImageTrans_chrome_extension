@@ -935,6 +935,10 @@ var paddleInitResolver = null;
 var paddlePendingRequests = {};
 
 var PADDLE_MODEL_URLS = {
+    arabic: {
+        rec: 'https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/master/onnx/PP-OCRv5/rec/arabic_PP-OCRv5_rec_mobile.onnx',
+        dict: 'https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/master/paddle/PP-OCRv5/rec/arabic_PP-OCRv5_rec_mobile/ppocrv5_arabic_dict.txt'
+    },
     korean: {
         rec: 'https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.4.0/onnx/PP-OCRv5/rec/korean_PP-OCRv5_rec_mobile_infer.onnx',
         dict: 'https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.4.0/paddle/PP-OCRv5/rec/korean_PP-OCRv5_rec_mobile_infer/ppocrv5_korean_dict.txt'
@@ -954,6 +958,7 @@ var PADDLE_MODEL_URLS = {
 };
 
 var PADDLE_LANG_TO_MODEL = {
+    ar: 'arabic',
     ko: 'korean',
     ru: 'eslav',
     th: 'th',
