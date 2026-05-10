@@ -1,4 +1,4 @@
-.wait, .wait * { cursor: wait !important; }
+.imagetrans-wait, .imagetrans-wait * { cursor: wait !important; }
 
 .imagetrans-overlay {
     position: fixed;

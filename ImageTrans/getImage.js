@@ -33,7 +33,6 @@
 
 var x=0;
 var y=0;
-var bodyClassName;
 var canvas;
 var dataURLMap = {};
 var serverURL = "https://local.basiccat.org:51043";
@@ -162,10 +161,7 @@ chrome.runtime.onMessage.addListener(
     if (message == "hello"){
         sendResponse({farewell: "goodbye"});
     } else if (message=="translate"){
-        if (!bodyClassName){
-            bodyClassName=document.body.className;    
-        }
-        document.body.className=bodyClassName+" wait";
+        document.body.classList.add("imagetrans-wait");
         var e=getImage(coordinate.x, coordinate.y, request.check);
         var src=getImageSrc(e);
         console.log(src);
@@ -261,7 +257,7 @@ async function ajax(src,img,checkData){
               if (!sourceLang || !targetLang || sourceLang === "auto" || targetLang === "auto") {
                 alert(chrome.i18n.getMessage("alert_set_langpair"));
                 chrome.runtime.sendMessage("showOptions");
-                document.body.className=bodyClassName;
+                document.body.classList.remove("imagetrans-wait");
                 return;
               }
             }
@@ -292,7 +288,7 @@ async function ajax(src,img,checkData){
         try {
             const respData = await post(serverURL, data);
             console.log(respData);
-            document.body.className = bodyClassName;
+            document.body.classList.remove("imagetrans-wait");
             if (!respData["imgMap"]) {
                 alert(chrome.i18n.getMessage("alert_bad_result"));
             } else if (renderTextInFrontend && respData["imgMap"] && respData["imgMap"]["boxes"]) {
@@ -304,17 +300,17 @@ async function ajax(src,img,checkData){
                 console.log(replaceImgSrc(src, dataURL, checkData, img));
             }
         } catch (err) {
-            document.body.className = bodyClassName;
+            document.body.classList.remove("imagetrans-wait");
             console.log('Request failed:', err);
             if (serverURL === "https://local.basiccat.org:51043") {
                 var usePublic = confirm(chrome.i18n.getMessage("confirm_failed_connect"));
                 if (usePublic) {
                     serverURL = "https://service.basiccat.org:51043";
-                    document.body.className = bodyClassName + " wait";
+                    document.body.classList.add("imagetrans-wait");
                     try {
                         const respData = await post(serverURL, data);
                         console.log(respData);
-                        document.body.className = bodyClassName;
+                        document.body.classList.remove("imagetrans-wait");
                         if (!respData["img"]) {
                             alert(chrome.i18n.getMessage("alert_bad_result"));
                         } else if (renderTextInFrontend && respData["imgMap"] && respData["imgMap"]["boxes"]) {
@@ -326,7 +322,7 @@ async function ajax(src,img,checkData){
                             console.log(replaceImgSrc(src, dataURL, checkData, img));
                         }
                     } catch (err2) {
-                        document.body.className = bodyClassName;
+                        document.body.classList.remove("imagetrans-wait");
                         alert(chrome.i18n.getMessage("alert_connect_failed"));
                     }
                 } else {
@@ -337,17 +333,14 @@ async function ajax(src,img,checkData){
             }
         }
     } catch (e) {
-        document.body.className = bodyClassName;
+        document.body.classList.remove("imagetrans-wait");
         console.log(e);
     }
 }
 
 async function ajaxMyMemory(src, img, checkData) {
     console.log("Using PaddleOCR + MyMemory for translation");
-    if (!bodyClassName) {
-        bodyClassName = document.body.className;
-    }
-    document.body.className = bodyClassName + " wait";
+    document.body.classList.add("imagetrans-wait");
     // Yield so the browser renders the wait cursor before OCR blocks the thread
     await yieldToBrowser();
 
@@ -371,7 +364,7 @@ async function ajaxMyMemory(src, img, checkData) {
         }
 
         if (sourceTexts.length === 0 || sourceTexts.every(function(t) { return !t; })) {
-            document.body.className = bodyClassName;
+            document.body.classList.remove("imagetrans-wait");
             alert(chrome.i18n.getMessage("alert_no_text"));
             return;
         }
@@ -384,13 +377,13 @@ async function ajaxMyMemory(src, img, checkData) {
             }
         }
 
-        document.body.className = bodyClassName;
+        document.body.classList.remove("imagetrans-wait");
 
         const translatedDataURL = await renderTranslatedImage(dataURL, boxes);
         console.log(replaceImgSrc(src, translatedDataURL, checkData, img));
 
     } catch (err) {
-        document.body.className = bodyClassName;
+        document.body.classList.remove("imagetrans-wait");
         console.error('Translation failed:', err);
         alert(chrome.i18n.getMessage("alert_translation_failed", err.message));
     }
@@ -424,13 +417,10 @@ async function ajaxOpenAI(src, img, checkData) {
     console.log("Using OpenAI for translation");
     if (!openaiURL || !openaiKey) {
         alert(chrome.i18n.getMessage("alert_openai_not_configured"));
-        document.body.className = bodyClassName;
+        document.body.classList.remove("imagetrans-wait");
         return;
     }
-    if (!bodyClassName) {
-        bodyClassName = document.body.className;
-    }
-    document.body.className = bodyClassName + " wait";
+    document.body.classList.add("imagetrans-wait");
     // Yield so the browser renders the wait cursor before OCR blocks the thread
     await yieldToBrowser();
 
@@ -495,7 +485,7 @@ async function ajaxOpenAI(src, img, checkData) {
         }
 
         if (sourceTexts.length === 0 || sourceTexts.every(function(t) { return !t; })) {
-            document.body.className = bodyClassName;
+            document.body.classList.remove("imagetrans-wait");
             alert(chrome.i18n.getMessage("alert_no_text"));
             return;
         }
@@ -558,14 +548,14 @@ async function ajaxOpenAI(src, img, checkData) {
             boxes[i].target = translatedTexts[i];
         }
 
-        document.body.className = bodyClassName;
+        document.body.classList.remove("imagetrans-wait");
 
         // Step 7: Render on canvas
         const translatedDataURL = await renderTranslatedImage(dataURL, boxes);
         console.log(replaceImgSrc(src, translatedDataURL, checkData, img));
 
     } catch (err) {
-        document.body.className = bodyClassName;
+        document.body.classList.remove("imagetrans-wait");
         console.error('Translation failed:', err);
         alert(chrome.i18n.getMessage("alert_translation_failed", err.message));
     }
