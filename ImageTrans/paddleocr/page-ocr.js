@@ -165,6 +165,7 @@
       if (h > w) tallCount++;
     });
     var isVertical = tallCount > items.length / 2;
+    var isRTL = sourceLang === 'ar';
 
     // Phase 1: 左右合并 — 按 Y 重叠 + X 接近合并成行
     var lines = [];
@@ -190,7 +191,11 @@
           }
         }
       }
-      line.sort(function(a, b) { return a.box[0][0] - b.box[0][0]; });
+      if (isRTL) {
+        line.sort(function(a, b) { return b.box[0][0] - a.box[0][0]; });
+      } else {
+        line.sort(function(a, b) { return a.box[0][0] - b.box[0][0]; });
+      }
       lines.push(line);
     }
 
@@ -228,6 +233,18 @@
       if (isVertical) {
         // 竖排文字：组内从右往左排列
         group.sort(function(a, b) { return b.box[0][0] - a.box[0][0]; });
+      } else if (isRTL) {
+        // 阿拉伯文：组内从右往左排列
+        group.sort(function(a, b) {
+          var ya = a.box[0][1], yb = b.box[0][1];
+          var ha = Math.abs(a.box[3][1] - a.box[0][1]);
+          var hb = Math.abs(b.box[3][1] - b.box[0][1]);
+          var minH = Math.min(ha, hb);
+          if (Math.abs(ya - yb) < minH * 0.5) {
+            return b.box[0][0] - a.box[0][0];
+          }
+          return ya - yb;
+        });
       } else {
         // 横排文字行：xycut排序
         group.sort(function(a, b) {
@@ -251,6 +268,10 @@
 
     // 竖排文字：组间也从右往左排列
     if (isVertical) {
+      merged.sort(function(a, b) { return b.box[0][0] - a.box[0][0]; });
+    }
+    // 阿拉伯文：组间也从右往左排列
+    if (isRTL && !isVertical) {
       merged.sort(function(a, b) { return b.box[0][0] - a.box[0][0]; });
     }
 
