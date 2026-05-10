@@ -30,6 +30,8 @@ Other versions:
 4. In Chrome, right click on the image to translate it.
 5. If the context menu is disabled, you can use the popup menu to translate the image in the center of the screen. You can also set it to translate the image behind the mouse cursor. After the setup, you can press CTRL+SHIFT+F (CTRL+SHIFT+V on mac) to call the popup and press TAB to alter the buttons. Then press Enter to run the desired action like translating the image or getting the image's src.
 
+Automatic batch translation and regional OCR via screen capture are also supported, where text is copiable.
+
 ImageTrans is optional if you use PaddleOCR. You can also setup OpenAI APIs to use ChatGPT, Gemini, etc, for text translation.
 
 PaddleOCR's function is limited (lack of supported languages and options, low performance. It may only works great for manhua). You need to set the language pair on the options page as well.
@@ -87,6 +89,8 @@ ImageTrans的Chrome扩展程序。你可以用它来翻译网页上的图像。
 3. 打开或创建一个ImageTrans项目。在项目设置中设置如语言对等项目。选好OCR引擎和语言。
 4. 在Chrome中，在图片上右键进行翻译。
 5. 如果右键菜单被禁用了，可以点击工具栏上的图标唤出弹窗进行操作，翻译屏幕中央的图片。你也可以设置翻译鼠标下方的图片。设置完成后将鼠标移到需要翻译的图片上。按下CTRL + SHIFT + F（在Mac上为CTRL + SHIFT + V）调出操作窗口，按TAB键更改按钮。之后按回车键运行所需的操作，比如翻译图像或获取图像的链接。
+
+另外还支持自动批量翻译和区域截图翻译，支持复制文字。
 
 ImageTrans是可选的，不用ImageTrans可以使用PaddleOCR识别文字。可以自定设置OpenAI兼容API来使用ChatGPT、DeepSeek等大模型进行文字翻译。
 
