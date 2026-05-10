@@ -4,8 +4,11 @@ Chrome Extension for ImageTrans. You can use this to translate images on webpage
 
 It is designed to be used in couple with [ImageTrans](https://www.basiccat.org/imagetrans) and [ImageTrans_wsServer](https://github.com/xulihang/ImageTrans_wsServer). It can also work without ImageTrans using local PaddleOCR.
 
+It has two translation modes: whole image translation and screen capture.
 
 https://github.com/xulihang/ImageTrans_chrome_extension/assets/5462205/e3cf01e9-9545-483b-b1d1-c488c775d72f
+
+https://github.com/user-attachments/assets/7078e908-9526-4945-948f-458543a50d08
 
 Other versions:
 
