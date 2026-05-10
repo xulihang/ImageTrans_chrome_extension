@@ -491,9 +491,10 @@ async function ajaxOpenAI(src, img, checkData) {
         }
 
         // Step 4: Call OpenAI API for translation
+        const actualTargetLang = targetLang === 'auto' ? 'English' : targetLang;
         let prompt = openaiPrompt
             .replace(/\{sourceLang\}/g, sourceLang)
-            .replace(/\{targetLang\}/g, targetLang)
+            .replace(/\{targetLang\}/g, actualTargetLang)
             .replace(/\{texts\}/g, JSON.stringify(sourceTexts));
 
         const apiUrl = openaiURL.replace(/\/+$/, '') + '/chat/completions';
@@ -1944,9 +1945,10 @@ function translateScreenTextsViaMyMemory(sourceTexts) {
 }
 
 function translateScreenTextsViaOpenAI(sourceTexts) {
+    var actualTargetLang = targetLang === 'auto' ? 'english' : targetLang;
     var prompt = openaiPrompt
         .replace(/\{sourceLang\}/g, sourceLang)
-        .replace(/\{targetLang\}/g, targetLang)
+        .replace(/\{targetLang\}/g, actualTargetLang)
         .replace(/\{texts\}/g, JSON.stringify(sourceTexts));
 
     var apiUrl = openaiURL.replace(/\/+$/, '') + '/chat/completions';
