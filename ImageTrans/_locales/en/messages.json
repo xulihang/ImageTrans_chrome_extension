@@ -50,7 +50,7 @@
   "options_enable_openai": { "message": "Enable OpenAI-compatible API for translation" },
   "options_ocr_method": { "message": "OCR method" },
   "options_ocr_paddleocr": { "message": "PaddleOCR (local)" },
-  "options_ocr_imagetrans": { "message": "ImageTrans (remote)" },
+  "options_ocr_imagetrans": { "message": "ImageTrans" },
   "options_api_url": { "message": "API URL" },
   "options_api_key": { "message": "API Key" },
   "options_model": { "message": "Model" },
