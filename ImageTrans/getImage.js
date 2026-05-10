@@ -946,12 +946,17 @@ var PADDLE_MODEL_URLS = {
     eslav: {
         rec: 'https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.4.0/onnx/PP-OCRv5/rec/eslav_PP-OCRv5_rec_mobile_infer.onnx',
         dict: 'https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.4.0/paddle/PP-OCRv5/rec/eslav_PP-OCRv5_rec_mobile_infer/ppocrv5_eslav_dict.txt'
+    },
+    th:{
+        rec: 'https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.4.0/onnx/PP-OCRv5/rec/th_PP-OCRv5_rec_mobile_infer.onnx',
+        dict: 'https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.4.0/paddle/PP-OCRv5/rec/th_PP-OCRv5_rec_mobile_infer/ppocrv5_th_dict.txt'
     }
 };
 
 var PADDLE_LANG_TO_MODEL = {
     ko: 'korean',
     ru: 'eslav',
+    th: 'th',
     fr: 'latin', it: 'latin', es: 'latin', pt: 'latin',
     id: 'latin', vi: 'latin', de: 'latin', nl: 'latin',
     tr: 'latin', pl: 'latin', sv: 'latin', da: 'latin',
