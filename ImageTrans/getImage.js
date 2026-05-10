@@ -1835,7 +1835,21 @@ function showResultDialog(dataURL, boxes, message) {
 
     // Footer
     var footer = document.createElement('div');
-    footer.style.cssText = 'padding:12px 16px;border-top:1px solid #eee;display:flex;justify-content:flex-end;gap:8px;flex-shrink:0;';
+    footer.style.cssText = 'padding:12px 16px;border-top:1px solid #eee;display:flex;justify-content:space-between;gap:8px;flex-shrink:0;';
+    var footerLeft = document.createElement('div');
+    footerLeft.style.cssText = 'display:flex;gap:8px;';
+    var footerRight = document.createElement('div');
+    footerRight.style.cssText = 'display:flex;gap:8px;';
+
+    var btnContinue = document.createElement('button');
+    btnContinue.textContent = 'Continue';
+    btnContinue.style.cssText = 'padding:6px 16px;background:#5cb85c;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:14px;';
+    btnContinue.addEventListener('click', function() {
+        backdrop.remove();
+        dialog.remove();
+        cleanupScreenCaptureAll();
+        startScreenCapture();
+    });
 
     var btnReOCR = document.createElement('button');
     btnReOCR.textContent = 'Recognize';
@@ -1851,8 +1865,11 @@ function showResultDialog(dataURL, boxes, message) {
     btnClose.style.cssText = 'padding:6px 16px;background:#fff;color:#333;border:1px solid #ccc;border-radius:4px;cursor:pointer;font-size:14px;';
     btnClose.addEventListener('click', function() { backdrop.remove(); dialog.remove(); });
 
-    footer.appendChild(btnReOCR);
-    footer.appendChild(btnClose);
+    footerLeft.appendChild(btnContinue);
+    footerRight.appendChild(btnReOCR);
+    footerRight.appendChild(btnClose);
+    footer.appendChild(footerLeft);
+    footer.appendChild(footerRight);
 
     dialog.appendChild(header);
     dialog.appendChild(body);
