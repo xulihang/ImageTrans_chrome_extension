@@ -26,7 +26,7 @@
     });
   }
 
-  async function init(detPath, recPath, dicUrl, modelKey) {
+  async function init(detPath, recPath, dicUrl, modelKey, wasmPath) {
     // Same model already loaded — reuse
     if (currentModelKey === modelKey && initPromise) return initPromise;
     // Switching to a different model — reset and re-init
@@ -38,7 +38,7 @@
       await waitForDeps();
 
       if (window.ort.env && window.ort.env.wasm) {
-        window.ort.env.wasm.wasmPaths = new URL('.', detPath).href;
+        window.ort.env.wasm.wasmPaths = wasmPath;
       }
 
       const res = await fetch(dicUrl);
@@ -335,7 +335,7 @@
       case 'PADDLE_INIT':
         (async function() {
           try {
-            await init(data.detPath, data.recPath, data.dicPath, data.modelKey || 'default');
+            await init(data.detPath, data.recPath, data.dicPath, data.modelKey || 'default', data.wasmPath);
             window.postMessage({
               source: 'imagetrans-extension',
               type: 'PADDLE_INIT_RESULT',

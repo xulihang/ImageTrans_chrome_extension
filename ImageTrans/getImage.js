@@ -1086,6 +1086,7 @@ function ensurePaddleModel(sourceLang) {
             recPath: modelInfo.recUrl,
             dicPath: modelInfo.dicUrl,
             modelKey: modelInfo.modelKey,
+            wasmPath: chrome.runtime.getURL('paddleocr/'),
             requestId: 'init_' + modelInfo.modelKey
         }, '*');
     });
