@@ -39,9 +39,14 @@ PaddleOCR's function is limited (lack of supported languages and options, low pe
 
 ## Supported Web Sites
 
-If the images on a web site have a unique URL and are downloadable, then the extension can handle it, otherwise, the web site is not supported.
+Basically, all web sites are supported. Image replacing may not work on some sites but the screen capture methods works for any site.
 
-[List of supported sites](./supported-sites.md)
+I've tested replacing images on the following sites:
+
+* [Lezhin](https://www.lezhinus.com/)
+* [Tencent Comics](https://ac.qq.com/)
+* [mangadex](https://mangadex.org/)
+* [pixiv](https://www.pixiv.net/)
 
 ## Video
 
@@ -99,9 +104,15 @@ ImageTrans是可选的，不用ImageTrans可以使用PaddleOCR识别文字。可
 
 ## 受支持的网站
 
-如果网站的图片有明确的URL并且可以下载，那这个扩展程序就能处理，如果不是的话，这个网站就不受支持。
+基本上所有网站都是支持的，如果直接图片失败，也可以用屏幕截图的方式。
 
-[支持的网站列表](./supported-sites.md)
+我测试以下网站都是支持替换图片的：
+
+* [Lezhin](https://www.lezhinus.com/)
+* [腾讯动漫](https://ac.qq.com/)
+* [mangadex](https://mangadex.org/)
+* [pixiv](https://www.pixiv.net/)
+
 
 ## 视频
 
