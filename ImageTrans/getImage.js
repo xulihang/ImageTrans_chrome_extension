@@ -27,6 +27,8 @@ var openaiModel = "gpt-4o";
 var openaiPrompt = "";
 var ocrMethod = "paddleocr";
 var translationMode = "imagetrans";
+var xSpacing = 15;
+var ySpacing = 15;
 chrome.storage.sync.get({
     serverURL: serverURL,
     pickingWay: pickingWay,
@@ -43,7 +45,9 @@ chrome.storage.sync.get({
     openaiModel: 'gpt-4o',
     openaiPrompt: '',
     ocrMethod: 'paddleocr',
-    translationMode: 'imagetrans'
+    translationMode: 'imagetrans',
+    xSpacing: 15,
+    ySpacing: 15
 }, async function(items) {
     if (items.serverURL) {
         serverURL = items.serverURL;
@@ -95,6 +99,12 @@ chrome.storage.sync.get({
     }
     if (items.translationMode) {
         translationMode = items.translationMode;
+    }
+    if (items.xSpacing != undefined) {
+        xSpacing = items.xSpacing;
+    }
+    if (items.ySpacing != undefined) {
+        ySpacing = items.ySpacing;
     }
 });
 
@@ -1063,7 +1073,9 @@ function paddleOCR(imageDataURL, sourceLang) {
                 type: 'PADDLE_OCR',
                 imageDataURL: dataURL,
                 sourceLang: sourceLang || 'auto',
-                requestId: requestId
+                requestId: requestId,
+                xSpacing: xSpacing,
+                ySpacing: ySpacing
             }, '*');
         });
     });

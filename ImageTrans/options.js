@@ -19,6 +19,8 @@ function save() {
   const openaiPrompt = document.getElementById("openaiPrompt").value;
   const ocrMethod = document.getElementById("ocrMethod").value;
   const translationMode = document.getElementById("translationMode").value;
+  const xSpacing = parseInt(document.getElementById("xSpacing").value) || 15;
+  const ySpacing = parseInt(document.getElementById("ySpacing").value) || 15;
   chrome.storage.sync.set({
     serverURL: URL,
     pickingWay: pickingWay,
@@ -36,7 +38,9 @@ function save() {
     openaiModel: openaiModel,
     openaiPrompt: openaiPrompt,
     ocrMethod: ocrMethod,
-    translationMode: translationMode
+    translationMode: translationMode,
+    xSpacing: xSpacing,
+    ySpacing: ySpacing
   }, function() {
     alert("saved");
     chrome.runtime.sendMessage({action: "updateCORSStatus", enabled: useCORS});
@@ -61,7 +65,9 @@ function load() {
     openaiModel: 'gpt-4o',
     openaiPrompt: DEFAULT_OPENAI_PROMPT,
     ocrMethod: 'paddleocr',
-    translationMode: 'imagetrans'
+    translationMode: 'imagetrans',
+    xSpacing: 15,
+    ySpacing: 15
   }, function(items) {
     if (items.serverURL) {
         document.getElementById("serverURL").value = items.serverURL;
@@ -103,6 +109,8 @@ function load() {
     if (items.translationMode) {
       document.getElementById("translationMode").value = items.translationMode;
     }
+    document.getElementById("xSpacing").value = items.xSpacing;
+    document.getElementById("ySpacing").value = items.ySpacing;
     // Show/hide OCR method section based on useOpenAI
     document.getElementById("ocrMethodSection").style.display = items.useOpenAI ? 'block' : 'none';
   });

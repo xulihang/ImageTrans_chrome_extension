@@ -60,8 +60,11 @@
     return initPromise;
   }
   // --- 合并逻辑 ---
-  function mergeTextBoxes(items, sourceLang) {
+  function mergeTextBoxes(items, sourceLang, xSpacing, ySpacing) {
     if (items.length === 0) return [];
+    var xGap = (xSpacing != null) ? xSpacing : 15;
+    var yGap = (ySpacing != null) ? ySpacing : 15;
+    console.log('Merging text boxes with xGap=' + xGap + ' and yGap=' + yGap);
 
     function boxHeight(box) {
       var minY = Math.min(box[0][1], box[1][1]);
@@ -84,7 +87,7 @@
       return overlap / minW;
     }
 
-    // X 间距不超过 15px 即视为可合并
+    // X 间距不超过设定值即视为可合并
     function xCloseEnough(a, b) {
       var aMinX = Math.min(a[0][0], a[3][0]);
       var aMaxX = Math.max(a[1][0], a[2][0]);
@@ -94,7 +97,7 @@
       if (aMaxX < bMinX) gap = bMinX - aMaxX;
       else if (bMaxX < aMinX) gap = aMinX - bMaxX;
       else gap = 0;
-      return gap <= 15;
+      return gap <= xGap;
     }
 
     // Y 重叠比例：0 = 不相交，1 = 完全重叠（带容差，上下各扩展 15% 高度或 5px）
@@ -113,7 +116,7 @@
       return overlap / minH;
     }
 
-    // Y 间距不超过 15px 即视为可合并
+    // Y 间距不超过设定值即视为可合并
     function yCloseEnough(a, b) {
       var aMinY = Math.min(a[0][1], a[1][1]);
       var aMaxY = Math.max(a[2][1], a[3][1]);
@@ -123,7 +126,7 @@
       if (aMaxY < bMinY) gap = bMinY - aMaxY;
       else if (bMaxY < aMinY) gap = aMinY - bMaxY;
       else gap = 0;
-      return gap <= 15;
+      return gap <= yGap;
     }
 
     function unionBox(group) {
@@ -254,7 +257,7 @@
     return merged;
   }
   
-  async function doOCR(imageDataURL, sourceLang) {
+  async function doOCR(imageDataURL, sourceLang, xSpacing, ySpacing) {
     const img = new Image();
     img.src = imageDataURL;
     await new Promise(function(resolve) {
@@ -282,7 +285,7 @@
     });
 
     // 合并相邻文本块
-    const mergedGroups = mergeTextBoxes(srcItems, sourceLang);
+    const mergedGroups = mergeTextBoxes(srcItems, sourceLang, xSpacing, ySpacing);
 
     // 转换为 ImageTrans 需要的格式
     const boxes = [];
@@ -337,7 +340,7 @@
             if (!paddleReady) {
               throw new Error('PaddleOCR not initialized');
             }
-            const boxes = await doOCR(data.imageDataURL, data.sourceLang);
+            const boxes = await doOCR(data.imageDataURL, data.sourceLang, data.xSpacing, data.ySpacing);
             window.postMessage({
               source: 'imagetrans-extension',
               type: 'PADDLE_OCR_RESULT',
