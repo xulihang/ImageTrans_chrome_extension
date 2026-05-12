@@ -55,7 +55,8 @@
         "paddleocr/ppocr_v5_mobile_rec.onnx",
         "paddleocr/ppocrv5_dict.txt",
         "paddleocr/ort-wasm-simd-threaded.jsep.mjs",
-        "paddleocr/ort-wasm-simd-threaded.jsep.wasm"
+        "paddleocr/ort-wasm-simd-threaded.jsep.wasm",
+        "paddleocr/model.onnx"
       ],
       "matches": ["<all_urls>"]
     }

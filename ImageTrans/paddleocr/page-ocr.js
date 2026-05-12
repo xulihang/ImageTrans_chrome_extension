@@ -277,7 +277,308 @@
 
     return merged;
   }
-  
+
+  // --- YOLOv8 detection ---
+  var yoloSession = null;
+  var yoloModelUrl = null;
+  var INPUT_SIZE_YOLO = 640;
+  var YOLO_CONF_THRESHOLD = 0.25;
+  var YOLO_NMS_THRESHOLD = 0.45;
+
+  function letterbox(sourceCanvas, targetW, targetH) {
+    var srcW = sourceCanvas.width;
+    var srcH = sourceCanvas.height;
+    var ratio = Math.min(targetW / srcW, targetH / srcH);
+    var newW = Math.round(srcW * ratio);
+    var newH = Math.round(srcH * ratio);
+    var dw = (targetW - newW) / 2;
+    var dh = (targetH - newH) / 2;
+
+    var canvas = document.createElement("canvas");
+    canvas.width = targetW;
+    canvas.height = targetH;
+    var ctx = canvas.getContext("2d");
+
+    ctx.fillStyle = "#727272";
+    ctx.fillRect(0, 0, targetW, targetH);
+    ctx.drawImage(sourceCanvas, 0, 0, srcW, srcH, dw, dh, newW, newH);
+
+    return { canvas: canvas, ratio: ratio, dw: dw, dh: dh, srcW: srcW, srcH: srcH };
+  }
+
+  function imageDataToNCHW(imageData, mean, std, targetW, targetH) {
+    var data = imageData.data;
+    var h = targetH || imageData.height;
+    var w = targetW || imageData.width;
+    var size = h * w;
+    var tensorData = new Float32Array(3 * size);
+
+    for (var i = 0; i < size; i++) {
+      var r = data[i * 4] / 255.0;
+      var g = data[i * 4 + 1] / 255.0;
+      var b = data[i * 4 + 2] / 255.0;
+      tensorData[i] = (r - mean[0]) / std[0];
+      tensorData[size + i] = (g - mean[1]) / std[1];
+      tensorData[2 * size + i] = (b - mean[2]) / std[2];
+    }
+    return tensorData;
+  }
+
+  function preprocessYOLO(sourceCanvas) {
+    var lb = letterbox(sourceCanvas, INPUT_SIZE_YOLO, INPUT_SIZE_YOLO);
+    var ctx = lb.canvas.getContext("2d");
+    var inputImageData = ctx.getImageData(0, 0, INPUT_SIZE_YOLO, INPUT_SIZE_YOLO);
+    var tensorData = imageDataToNCHW(inputImageData, [0, 0, 0], [1, 1, 1], INPUT_SIZE_YOLO, INPUT_SIZE_YOLO);
+    return { tensorData: tensorData, ratio: lb.ratio, dw: lb.dw, dh: lb.dh, srcW: lb.srcW, srcH: lb.srcH };
+  }
+
+  function iouBox(boxA, boxB) {
+    var xA = Math.max(boxA[0], boxB[0]);
+    var yA = Math.max(boxA[1], boxB[1]);
+    var xB = Math.min(boxA[2], boxB[2]);
+    var yB = Math.min(boxA[3], boxB[3]);
+    var interArea = Math.max(0, xB - xA) * Math.max(0, yB - yA);
+    if (interArea === 0) return 0;
+    var boxAArea = (boxA[2] - boxA[0]) * (boxA[3] - boxA[1]);
+    var boxBArea = (boxB[2] - boxB[0]) * (boxB[3] - boxB[1]);
+    return interArea / (boxAArea + boxBArea - interArea);
+  }
+
+  function applyNMS(detections, iouThreshold) {
+    var byClass = {};
+    for (var d = 0; d < detections.length; d++) {
+      var det = detections[d];
+      var cls = det.classId;
+      if (!byClass[cls]) byClass[cls] = [];
+      byClass[cls].push(det);
+    }
+
+    var results = [];
+    var classKeys = Object.keys(byClass);
+    for (var k = 0; k < classKeys.length; k++) {
+      var boxes = byClass[classKeys[k]];
+      boxes.sort(function(a, b) { return b.confidence - a.confidence; });
+
+      while (boxes.length > 0) {
+        var best = boxes.shift();
+        results.push(best);
+        for (var i = boxes.length - 1; i >= 0; i--) {
+          if (iouBox(best.bbox, boxes[i].bbox) >= iouThreshold) {
+            boxes.splice(i, 1);
+          }
+        }
+      }
+    }
+    return results;
+  }
+
+  function scaleYoloCoords(detections, ratio, dw, dh, srcW, srcH) {
+    var result = [];
+    for (var d = 0; d < detections.length; d++) {
+      var det = detections[d];
+      var b = det.bbox;
+      result.push({
+        classId: det.classId,
+        confidence: det.confidence,
+        bbox: [
+          Math.max(0, Math.min(srcW - 1, Math.round((b[0] - dw) / ratio))),
+          Math.max(0, Math.min(srcH - 1, Math.round((b[1] - dh) / ratio))),
+          Math.max(0, Math.min(srcW - 1, Math.round((b[2] - dw) / ratio))),
+          Math.max(0, Math.min(srcH - 1, Math.round((b[3] - dh) / ratio)))
+        ]
+      });
+    }
+    return result;
+  }
+
+  function postprocessYOLO(outputData, outputDims, ratio, dw, dh, srcW, srcH) {
+    var numDims = outputDims.length;
+    var dims, numBoxes;
+    if (numDims === 3) {
+      dims = outputDims[1];
+      numBoxes = outputDims[2];
+    } else {
+      dims = outputDims[0];
+      numBoxes = outputDims[1];
+    }
+
+    var numClasses = dims - 4;
+    var detections = [];
+
+    for (var i = 0; i < numBoxes; i++) {
+      var x = outputData[i];
+      var y = outputData[numBoxes + i];
+      var w = outputData[2 * numBoxes + i];
+      var h = outputData[3 * numBoxes + i];
+
+      var maxScore = -1;
+      var maxClass = -1;
+      for (var c = 0; c < numClasses; c++) {
+        var score = outputData[(4 + c) * numBoxes + i];
+        if (score > maxScore) {
+          maxScore = score;
+          maxClass = c;
+        }
+      }
+
+      if (maxScore < YOLO_CONF_THRESHOLD) continue;
+      if (maxClass === 5) continue;
+
+      var x1 = x - w / 2;
+      var y1 = y - h / 2;
+      var x2 = x + w / 2;
+      var y2 = y + h / 2;
+      if (x1 >= x2 || y1 >= y2) continue;
+
+      detections.push({ classId: maxClass, confidence: maxScore, bbox: [x1, y1, x2, y2] });
+    }
+
+    var nmsResults = applyNMS(detections, YOLO_NMS_THRESHOLD);
+    return scaleYoloCoords(nmsResults, ratio, dw, dh, srcW, srcH);
+  }
+
+  function mergeYOLODetections(detections) {
+    if (detections.length <= 1) return detections;
+
+    var sorted = detections.slice().sort(function(a, b) {
+      var ay = (a.bbox[1] + a.bbox[3]) / 2;
+      var by = (b.bbox[1] + b.bbox[3]) / 2;
+      if (Math.abs(ay - by) < 10) return a.bbox[0] - b.bbox[0];
+      return ay - by;
+    });
+
+    var merged = [];
+    var used = new Array(sorted.length).fill(false);
+
+    for (var i = 0; i < sorted.length; i++) {
+      if (used[i]) continue;
+      var base = sorted[i];
+      var bx1 = base.bbox[0], by1 = base.bbox[1], bx2 = base.bbox[2], by2 = base.bbox[3];
+      used[i] = true;
+
+      for (var j = 0; j < sorted.length; j++) {
+        if (used[j]) continue;
+        var cand = sorted[j];
+        var cx1 = cand.bbox[0], cy1 = cand.bbox[1], cx2 = cand.bbox[2], cy2 = cand.bbox[3];
+
+        var overlapTop = Math.max(by1, cy1);
+        var overlapBot = Math.min(by2, cy2);
+        var overlapH = overlapBot - overlapTop;
+        var minH = Math.min(by2 - by1, cy2 - cy1);
+        if (overlapH > 0 && overlapH / minH > 0.5) {
+          var gap = cx1 - bx2;
+          var avgH = (by2 - by1 + cy2 - cy1) / 2;
+          if (gap > 0 && gap < avgH * 2) {
+            bx2 = Math.max(bx2, cx2);
+            by1 = Math.min(by1, cy1);
+            by2 = Math.max(by2, cy2);
+            used[j] = true;
+          }
+        }
+      }
+
+      merged.push({
+        classId: base.classId,
+        confidence: base.confidence,
+        bbox: [bx1, by1, bx2, by2]
+      });
+    }
+
+    return merged;
+  }
+
+  async function runYOLO(sourceCanvas) {
+    if (!yoloSession) throw new Error("YOLO model not loaded");
+
+    var prep = preprocessYOLO(sourceCanvas);
+    var tensor = new window.ort.Tensor("float32", prep.tensorData, [1, 3, INPUT_SIZE_YOLO, INPUT_SIZE_YOLO]);
+
+    var feeds = {};
+    feeds[yoloSession.inputNames[0]] = tensor;
+    var outputMap = await yoloSession.run(feeds);
+
+    var output = outputMap[yoloSession.outputNames[0]];
+    return postprocessYOLO(output.data, output.dims, prep.ratio, prep.dw, prep.dh, prep.srcW, prep.srcH);
+  }
+
+  async function ensureYOLOModel(yoloUrl) {
+    if (yoloSession && yoloModelUrl === yoloUrl) return;
+    yoloModelUrl = yoloUrl;
+    var sessionOpts = { executionProviders: ["webgpu", "webgl", "wasm"], graphOptimizationLevel: "all" };
+    yoloSession = await window.ort.InferenceSession.create(yoloUrl, sessionOpts);
+  }
+
+  async function doOCRYolo(imageDataURL, sourceLang, xSpacing, ySpacing, yoloUrl) {
+    await ensureYOLOModel(yoloUrl);
+
+    var img = new Image();
+    img.src = imageDataURL;
+    await new Promise(function(resolve) {
+      img.onload = resolve;
+      img.onerror = function() { resolve(); };
+    });
+
+    var canvas = document.createElement("canvas");
+    canvas.width = img.naturalWidth || img.width;
+    canvas.height = img.naturalHeight || img.height;
+    var ctx = canvas.getContext("2d");
+    ctx.drawImage(img, 0, 0);
+
+    // YOLOv8 detection
+    var detections = await runYOLO(canvas);
+    detections = mergeYOLODetections(detections);
+
+    // Recognize each text region with Paddle.recognize
+    var srcItems = [];
+    for (var i = 0; i < detections.length; i++) {
+      var det = detections[i];
+      var b = det.bbox;
+      var w = b[2] - b[0];
+      var h = b[3] - b[1];
+      if (w < 4 || h < 4) continue;
+
+      var cropCanvas = document.createElement("canvas");
+      cropCanvas.width = w;
+      cropCanvas.height = h;
+      var cropCtx = cropCanvas.getContext("2d");
+      cropCtx.drawImage(canvas, b[0], b[1], w, h, 0, 0, w, h);
+
+      try {
+        var recResult = await Paddle.recognize(cropCanvas);
+        var text = typeof recResult === 'string' ? recResult : (recResult.text || '');
+        if (text && text.trim()) {
+          srcItems.push({
+            text: text.trim(),
+            box: [[b[0], b[1]], [b[2], b[1]], [b[2], b[3]], [b[0], b[3]]]
+          });
+        }
+      } catch (e) {
+        console.error("Paddle.recognize failed for region " + i, e);
+      }
+    }
+
+    if (srcItems.length === 0) return [];
+
+    // Merge neighboring text blocks
+    var mergedGroups = mergeTextBoxes(srcItems, sourceLang, xSpacing, ySpacing);
+
+    var boxes = [];
+    mergedGroups.forEach(function(group) {
+      var b = group.box;
+      boxes.push({
+        geometry: {
+          X: b[0][0],
+          Y: b[0][1],
+          width: b[2][0] - b[0][0],
+          height: b[2][1] - b[0][1]
+        },
+        text: group.text
+      });
+    });
+
+    return boxes;
+  }
+
   async function doOCR(imageDataURL, sourceLang, xSpacing, ySpacing) {
     const img = new Image();
     img.src = imageDataURL;
@@ -362,6 +663,32 @@
               throw new Error('PaddleOCR not initialized');
             }
             const boxes = await doOCR(data.imageDataURL, data.sourceLang, data.xSpacing, data.ySpacing);
+            window.postMessage({
+              source: 'imagetrans-extension',
+              type: 'PADDLE_OCR_RESULT',
+              success: true,
+              boxes: boxes,
+              requestId: data.requestId
+            }, '*');
+          } catch (err) {
+            window.postMessage({
+              source: 'imagetrans-extension',
+              type: 'PADDLE_OCR_RESULT',
+              success: false,
+              error: err.message,
+              requestId: data.requestId
+            }, '*');
+          }
+        })();
+        break;
+
+      case 'PADDLE_OCR_YOLO':
+        (async function() {
+          try {
+            if (!paddleReady) {
+              throw new Error('PaddleOCR not initialized');
+            }
+            const boxes = await doOCRYolo(data.imageDataURL, data.sourceLang, data.xSpacing, data.ySpacing, data.yoloModelUrl);
             window.postMessage({
               source: 'imagetrans-extension',
               type: 'PADDLE_OCR_RESULT',

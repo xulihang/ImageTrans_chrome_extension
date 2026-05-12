@@ -75,6 +75,7 @@ function save() {
   const openaiPrompt = document.getElementById("openaiPrompt").value;
   const ocrMethod = document.getElementById("ocrMethod").value;
   const translationMode = document.getElementById("translationMode").value;
+  const useYOLODetection = document.getElementById("useYOLODetection").checked;
   const xSpacing = parseInt(document.getElementById("xSpacing").value) || 15;
   const ySpacing = parseInt(document.getElementById("ySpacing").value) || 15;
   const uiLanguage = document.getElementById("uiLanguage").value;
@@ -96,6 +97,7 @@ function save() {
     openaiPrompt: openaiPrompt,
     ocrMethod: ocrMethod,
     translationMode: translationMode,
+    useYOLODetection: useYOLODetection,
     xSpacing: xSpacing,
     ySpacing: ySpacing,
     uiLanguage: uiLanguage
@@ -124,6 +126,7 @@ function load() {
     openaiPrompt: DEFAULT_OPENAI_PROMPT,
     ocrMethod: 'paddleocr',
     translationMode: 'imagetrans',
+    useYOLODetection: false,
     xSpacing: 15,
     ySpacing: 15,
     uiLanguage: ''
@@ -168,6 +171,7 @@ function load() {
     if (items.translationMode) {
       document.getElementById("translationMode").value = items.translationMode;
     }
+    document.getElementById("useYOLODetection").checked = items.useYOLODetection;
     document.getElementById("xSpacing").value = items.xSpacing;
     document.getElementById("ySpacing").value = items.ySpacing;
     if (items.uiLanguage) {

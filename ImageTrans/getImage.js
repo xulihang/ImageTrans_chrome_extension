@@ -58,6 +58,7 @@ var openaiKey = "";
 var openaiModel = "gpt-4o";
 var openaiPrompt = "";
 var ocrMethod = "paddleocr";
+var useYOLODetection = false;
 var translationMode = "imagetrans";
 var xSpacing = 15;
 var ySpacing = 15;
@@ -77,6 +78,7 @@ chrome.storage.sync.get({
     openaiModel: 'gpt-4o',
     openaiPrompt: '',
     ocrMethod: 'paddleocr',
+    useYOLODetection: false,
     translationMode: 'imagetrans',
     xSpacing: 15,
     ySpacing: 15
@@ -128,6 +130,9 @@ chrome.storage.sync.get({
     }
     if (items.ocrMethod) {
         ocrMethod = items.ocrMethod;
+    }
+    if (items.useYOLODetection != undefined) {
+        useYOLODetection = items.useYOLODetection;
     }
     if (items.translationMode) {
         translationMode = items.translationMode;
@@ -1106,15 +1111,19 @@ function paddleOCR(imageDataURL, sourceLang) {
         return new Promise(function(resolve, reject) {
             var requestId = 'ocr_' + Date.now() + '_' + Math.random();
             paddlePendingRequests[requestId] = { resolve: resolve, reject: reject, scale: scale };
-            window.postMessage({
+            var msg = {
                 source: 'imagetrans-extension',
-                type: 'PADDLE_OCR',
+                type: useYOLODetection ? 'PADDLE_OCR_YOLO' : 'PADDLE_OCR',
                 imageDataURL: dataURL,
                 sourceLang: sourceLang || 'auto',
                 requestId: requestId,
                 xSpacing: xSpacing,
                 ySpacing: ySpacing
-            }, '*');
+            };
+            if (useYOLODetection) {
+                msg.yoloModelUrl = chrome.runtime.getURL('paddleocr/model.onnx');
+            }
+            window.postMessage(msg, '*');
         });
     });
 }
