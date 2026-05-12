@@ -437,56 +437,6 @@
     return scaleYoloCoords(nmsResults, ratio, dw, dh, srcW, srcH);
   }
 
-  function mergeYOLODetections(detections) {
-    if (detections.length <= 1) return detections;
-
-    var sorted = detections.slice().sort(function(a, b) {
-      var ay = (a.bbox[1] + a.bbox[3]) / 2;
-      var by = (b.bbox[1] + b.bbox[3]) / 2;
-      if (Math.abs(ay - by) < 10) return a.bbox[0] - b.bbox[0];
-      return ay - by;
-    });
-
-    var merged = [];
-    var used = new Array(sorted.length).fill(false);
-
-    for (var i = 0; i < sorted.length; i++) {
-      if (used[i]) continue;
-      var base = sorted[i];
-      var bx1 = base.bbox[0], by1 = base.bbox[1], bx2 = base.bbox[2], by2 = base.bbox[3];
-      used[i] = true;
-
-      for (var j = 0; j < sorted.length; j++) {
-        if (used[j]) continue;
-        var cand = sorted[j];
-        var cx1 = cand.bbox[0], cy1 = cand.bbox[1], cx2 = cand.bbox[2], cy2 = cand.bbox[3];
-
-        var overlapTop = Math.max(by1, cy1);
-        var overlapBot = Math.min(by2, cy2);
-        var overlapH = overlapBot - overlapTop;
-        var minH = Math.min(by2 - by1, cy2 - cy1);
-        if (overlapH > 0 && overlapH / minH > 0.5) {
-          var gap = cx1 - bx2;
-          var avgH = (by2 - by1 + cy2 - cy1) / 2;
-          if (gap > 0 && gap < avgH * 2) {
-            bx2 = Math.max(bx2, cx2);
-            by1 = Math.min(by1, cy1);
-            by2 = Math.max(by2, cy2);
-            used[j] = true;
-          }
-        }
-      }
-
-      merged.push({
-        classId: base.classId,
-        confidence: base.confidence,
-        bbox: [bx1, by1, bx2, by2]
-      });
-    }
-
-    return merged;
-  }
-
   async function runYOLO(sourceCanvas) {
     if (!yoloSession) throw new Error("YOLO model not loaded");
 
@@ -504,7 +454,7 @@
   async function ensureYOLOModel(yoloUrl) {
     if (yoloSession && yoloModelUrl === yoloUrl) return;
     yoloModelUrl = yoloUrl;
-    var sessionOpts = { executionProviders: ["webgpu", "webgl", "wasm"], graphOptimizationLevel: "all" };
+    var sessionOpts = { executionProviders: ["wasm"], graphOptimizationLevel: "all" };
     yoloSession = await window.ort.InferenceSession.create(yoloUrl, sessionOpts);
   }
 
@@ -526,32 +476,29 @@
 
     // YOLOv8 detection
     var detections = await runYOLO(canvas);
-    detections = mergeYOLODetections(detections);
-
+    console.log("YOLO detections:", detections);
     // Recognize each text region with Paddle.recognize
     var srcItems = [];
     for (var i = 0; i < detections.length; i++) {
-      var det = detections[i];
-      var b = det.bbox;
-      var w = b[2] - b[0];
-      var h = b[3] - b[1];
-      if (w < 4 || h < 4) continue;
-
-      var cropCanvas = document.createElement("canvas");
-      cropCanvas.width = w;
-      cropCanvas.height = h;
-      var cropCtx = cropCanvas.getContext("2d");
-      cropCtx.drawImage(canvas, b[0], b[1], w, h, 0, 0, w, h);
-
       try {
+        var det = detections[i];
+        var b = det.bbox;
+        var w = b[2] - b[0];
+        var h = b[3] - b[1];
+        if (w < 10 || h < 10) continue;
+
+        var cropCanvas = document.createElement("canvas");
+        cropCanvas.width = w;
+        cropCanvas.height = h;
+        var cropCtx = cropCanvas.getContext("2d");
+        cropCtx.drawImage(canvas, b[0], b[1], w, h + 20, 0, 0, w, h + 20);
+
         var recResult = await Paddle.recognize(cropCanvas);
-        var text = typeof recResult === 'string' ? recResult : (recResult.text || '');
-        if (text && text.trim()) {
-          srcItems.push({
-            text: text.trim(),
-            box: [[b[0], b[1]], [b[2], b[1]], [b[2], b[3]], [b[0], b[3]]]
-          });
-        }
+        var text = recResult[0].text;
+        srcItems.push({
+          text: text.trim(),
+          box: [[b[0], b[1]], [b[2], b[1]], [b[2], b[3]], [b[0], b[3]]]
+        });
       } catch (e) {
         console.error("Paddle.recognize failed for region " + i, e);
       }
