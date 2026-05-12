@@ -1064,7 +1064,7 @@ function injectPaddleLibraries() {
             loadLibrary(chrome.runtime.getURL('paddleocr/opencv.js'), 'text/javascript'),
             loadLibrary(chrome.runtime.getURL('paddleocr/ort.min.js'), 'text/javascript')
         ]).then(function() {
-            return loadLibrary(chrome.runtime.getURL('paddleocr/esearch-ocr/dist/esearch-ocr.umd.cjs'), 'text/javascript');
+            return loadLibrary(chrome.runtime.getURL('paddleocr/esearch-ocr/dist/esearch-ocr.umd.js'), 'text/javascript');
         }).then(function() {
             return loadLibrary(chrome.runtime.getURL('paddleocr/page-ocr.js'), 'text/javascript');
         }).then(function() {

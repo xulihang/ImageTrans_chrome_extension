@@ -49,7 +49,7 @@
       "resources": [
         "paddleocr/opencv.js",
         "paddleocr/ort.min.js",
-        "paddleocr/esearch-ocr/dist/esearch-ocr.umd.cjs",
+        "paddleocr/esearch-ocr/dist/esearch-ocr.umd.js",
         "paddleocr/page-ocr.js",
         "paddleocr/ppocr_v5_mobile_det.onnx",
         "paddleocr/ppocr_v5_mobile_rec.onnx",
