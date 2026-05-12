@@ -489,7 +489,7 @@
 
         var cropCanvas = document.createElement("canvas");
         cropCanvas.width = w;
-        cropCanvas.height = h;
+        cropCanvas.height = h + 20; // 加高一点，避免切掉文字上半部分
         var cropCtx = cropCanvas.getContext("2d");
         cropCtx.drawImage(canvas, b[0], b[1], w, h + 20, 0, 0, w, h + 20);
 
