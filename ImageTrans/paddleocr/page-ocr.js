@@ -489,9 +489,9 @@
 
         var cropCanvas = document.createElement("canvas");
         cropCanvas.width = w;
-        cropCanvas.height = h + 20; // 加高一点，避免切掉文字上半部分
+        cropCanvas.height = h;
         var cropCtx = cropCanvas.getContext("2d");
-        cropCtx.drawImage(canvas, b[0], b[1], w, h + 20, 0, 0, w, h + 20);
+        cropCtx.drawImage(canvas, b[0], b[1], w, h, 0, 0, w, h);
 
         var recResult = await Paddle.recognize(cropCanvas);
         var text = recResult[0].text;
