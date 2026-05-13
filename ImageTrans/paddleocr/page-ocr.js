@@ -499,11 +499,6 @@
     var ctx = canvas.getContext("2d");
     ctx.drawImage(img, 0, 0);
 
-    // Use Tesseract single-line mode for Japanese vertical text
-    var useTesseract = sourceLang === 'ja' && (canvas.height / canvas.width) > 1.1  && (canvas.height / canvas.width) < 8;
-    if (useTesseract) {
-      await ensureTessWorker(tessWorkerPath, tessCorePath, tessLangPath);
-    }
 
     // YOLOv8 detection
     var detections = await runYOLO(canvas);
@@ -523,13 +518,20 @@
         cropCanvas.height = h;
         var cropCtx = cropCanvas.getContext("2d");
         cropCtx.drawImage(canvas, b[0], b[1], w, h, 0, 0, w, h);
-
+        // Use Tesseract single-line mode for Japanese vertical text
+        var useTesseract = sourceLang === 'ja' && (cropCanvas.height / cropCanvas.width) > 1.1  && (cropCanvas.height / cropCanvas.width) < 8;
+        if (useTesseract) {
+          await ensureTessWorker(tessWorkerPath, tessCorePath, tessLangPath);
+        }
+        console.log(sourceLang, 'use Tesseract:', useTesseract);
+        console.log(cropCanvas.width, cropCanvas.height);
         var text;
         if (useTesseract) {
           console.log("Using Tesseract");
           var tessResult = await tessWorker.recognize(cropCanvas);
           text = tessResult.data.text.replace(/[\r\n]+/g, '').replace(/\s+/g, '').trim();
         } else {
+          console.log("Using PaddleOCR");
           var recResult = await Paddle.recognize(cropCanvas);
           text = recResult[0].text;
         }
