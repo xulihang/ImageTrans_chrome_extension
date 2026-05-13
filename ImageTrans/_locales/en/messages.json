@@ -52,6 +52,8 @@
   "options_ocr_paddleocr": { "message": "PaddleOCR (local)" },
   "options_use_yolo_detection": { "message": "Use YOLOv8 for text line detection" },
   "options_use_yolo_detection_hint": { "message": "Use YOLOv8 to detect text lines, then recognize with PaddleOCR. May improve detection for manga and complex layouts." },
+  "options_use_yolo_for_japanese": { "message": "Use YOLO for Japanese text detection" },
+  "options_use_yolo_for_japanese_hint": { "message": "When source language is Japanese, use YOLOv8 for text line detection with Tesseract for vertical text recognition." },
   "options_ocr_imagetrans": { "message": "ImageTrans" },
   "options_api_url": { "message": "API URL" },
   "options_api_key": { "message": "API Key" },

@@ -76,6 +76,7 @@ function save() {
   const ocrMethod = document.getElementById("ocrMethod").value;
   const translationMode = document.getElementById("translationMode").value;
   const useYOLODetection = document.getElementById("useYOLODetection").checked;
+  const useYOLOForJapanese = document.getElementById("useYOLOForJapanese").checked;
   const xSpacing = parseInt(document.getElementById("xSpacing").value) || 15;
   const ySpacing = parseInt(document.getElementById("ySpacing").value) || 15;
   const uiLanguage = document.getElementById("uiLanguage").value;
@@ -98,6 +99,7 @@ function save() {
     ocrMethod: ocrMethod,
     translationMode: translationMode,
     useYOLODetection: useYOLODetection,
+    useYOLOForJapanese: useYOLOForJapanese,
     xSpacing: xSpacing,
     ySpacing: ySpacing,
     uiLanguage: uiLanguage
@@ -127,6 +129,7 @@ function load() {
     ocrMethod: 'paddleocr',
     translationMode: 'imagetrans',
     useYOLODetection: false,
+    useYOLOForJapanese: true,
     xSpacing: 15,
     ySpacing: 15,
     uiLanguage: ''
@@ -172,6 +175,7 @@ function load() {
       document.getElementById("translationMode").value = items.translationMode;
     }
     document.getElementById("useYOLODetection").checked = items.useYOLODetection;
+    document.getElementById("useYOLOForJapanese").checked = items.useYOLOForJapanese;
     document.getElementById("xSpacing").value = items.xSpacing;
     document.getElementById("ySpacing").value = items.ySpacing;
     if (items.uiLanguage) {
