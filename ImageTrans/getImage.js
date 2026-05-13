@@ -179,7 +179,6 @@ chrome.runtime.onMessage.addListener(
         document.body.classList.add("imagetrans-wait");
         var e=getImage(coordinate.x, coordinate.y, request.check);
         var src=getImageSrc(e);
-        console.log(src);
         ajax(src,e,true);
     }else if (message == "translateWithMenu") {
         var e = getImageBySrc(request.info.srcUrl)
@@ -188,14 +187,10 @@ chrome.runtime.onMessage.addListener(
         console.log("alter")
         console.log(request.info)
         var e = getImageBySrc(request.info.srcUrl)
-        console.log(e)
         alterLanguage(e);
     }else if (message == "getsrconly"){
-        console.log("x: "+x+" y: "+y);
-        console.log("check in display: "+request.check)
         var e=getImage(coordinate.x,coordinate.y,request.check);
         var src=getImageSrc(e);
-        console.log(src);
         setTimeout(function(){
           navigator.clipboard.writeText(src)
             .then(() => {
