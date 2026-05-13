@@ -1,7 +1,7 @@
 // --- Custom i18n: allow user to override UI language ---
 (async function() {
   const { uiLanguage } = await chrome.storage.sync.get({ uiLanguage: '' });
-  if (uiLanguage) {
+  if (uiLanguage && /^[a-z]{2,3}([-_][A-Za-z]{2,4})?$/.test(uiLanguage)) {
     try {
       const url = chrome.runtime.getURL('_locales/' + uiLanguage + '/messages.json');
       const resp = await fetch(url);

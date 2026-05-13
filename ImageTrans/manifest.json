@@ -47,6 +47,7 @@
   "web_accessible_resources": [
     {
       "resources": [
+        "_locales/*",
         "paddleocr/opencv.js",
         "paddleocr/ort.min.js",
         "paddleocr/esearch-ocr/dist/esearch-ocr.umd.js",
