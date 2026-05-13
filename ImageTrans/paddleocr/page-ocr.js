@@ -500,7 +500,7 @@
     ctx.drawImage(img, 0, 0);
 
     // Use Tesseract single-line mode for Japanese vertical text
-    var useTesseract = sourceLang === 'ja' && (canvas.height / canvas.width) > 1.1;
+    var useTesseract = sourceLang === 'ja' && (canvas.height / canvas.width) > 1.1  && (canvas.height / canvas.width) < 8;
     if (useTesseract) {
       await ensureTessWorker(tessWorkerPath, tessCorePath, tessLangPath);
     }
@@ -526,6 +526,7 @@
 
         var text;
         if (useTesseract) {
+          console.log("Using Tesseract");
           var tessResult = await tessWorker.recognize(cropCanvas);
           text = tessResult.data.text.replace(/[\r\n]+/g, '').replace(/\s+/g, '').trim();
         } else {
