@@ -75,6 +75,7 @@ function save() {
   const openaiPrompt = document.getElementById("openaiPrompt").value;
   const ocrMethod = document.getElementById("ocrMethod").value;
   const translationMode = document.getElementById("translationMode").value;
+  const defaultPresetTranslation = document.getElementById("defaultPresetTranslation").value;
   const useYOLODetection = document.getElementById("useYOLODetection").checked;
   const useYOLOForJapanese = document.getElementById("useYOLOForJapanese").checked;
   const xSpacing = parseInt(document.getElementById("xSpacing").value) || 15;
@@ -106,6 +107,7 @@ function save() {
     openaiPrompt: openaiPrompt,
     ocrMethod: ocrMethod,
     translationMode: translationMode,
+    defaultPresetTranslation: defaultPresetTranslation,
     useYOLODetection: useYOLODetection,
     useYOLOForJapanese: useYOLOForJapanese,
     xSpacing: xSpacing,
@@ -136,6 +138,7 @@ function load() {
     openaiPrompt: DEFAULT_OPENAI_PROMPT,
     ocrMethod: 'paddleocr',
     translationMode: 'imagetrans',
+    defaultPresetTranslation: 'glm4flash',
     useYOLODetection: false,
     useYOLOForJapanese: true,
     xSpacing: 15,
@@ -181,6 +184,9 @@ function load() {
     }
     if (items.translationMode) {
       document.getElementById("translationMode").value = items.translationMode;
+    }
+    if (items.defaultPresetTranslation) {
+      document.getElementById("defaultPresetTranslation").value = items.defaultPresetTranslation;
     }
     document.getElementById("useYOLODetection").checked = items.useYOLODetection;
     document.getElementById("useYOLOForJapanese").checked = items.useYOLOForJapanese;

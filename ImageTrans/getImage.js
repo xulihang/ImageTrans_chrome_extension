@@ -61,6 +61,7 @@ var ocrMethod = "paddleocr";
 var useYOLODetection = false;
 var useYOLOForJapanese = true;
 var translationMode = "imagetrans";
+var defaultPresetTranslation = "glm4flash";
 var xSpacing = 15;
 var ySpacing = 15;
 chrome.storage.sync.get({
@@ -82,6 +83,7 @@ chrome.storage.sync.get({
     useYOLODetection: false,
     useYOLOForJapanese: true,
     translationMode: 'imagetrans',
+    defaultPresetTranslation: defaultPresetTranslation,
     xSpacing: 15,
     ySpacing: 15
 }, async function(items) {
@@ -141,6 +143,9 @@ chrome.storage.sync.get({
     }
     if (items.translationMode) {
         translationMode = items.translationMode;
+    }
+    if (items.defaultPresetTranslation) {
+        defaultPresetTranslation = items.defaultPresetTranslation;
     }
     if (items.xSpacing != undefined) {
         xSpacing = items.xSpacing;
@@ -385,11 +390,19 @@ async function ajaxMyMemory(src, img, checkData) {
             return;
         }
 
-        for (let i = 0; i < boxes.length; i++) {
-            if (sourceTexts[i]) {
-                boxes[i].target = await translateUsingMyMemory(sourceTexts[i]);
-            } else {
-                boxes[i].target = '';
+        if (defaultPresetTranslation === "glm4flash") {
+            let reflowedTexts = sourceTexts.map(function(t) { return reflowText(sourceLang, t); });
+            let translations = await translateUsingGlm4Flash(reflowedTexts);
+            for (let i = 0; i < boxes.length && i < translations.length; i++) {
+                boxes[i].target = translations[i] || '';
+            }
+        } else {
+            for (let i = 0; i < boxes.length; i++) {
+                if (sourceTexts[i]) {
+                    boxes[i].target = await translateUsingMyMemory(sourceTexts[i]);
+                } else {
+                    boxes[i].target = '';
+                }
             }
         }
 
@@ -420,6 +433,24 @@ async function translateUsingMyMemory(source) {
         console.error(error);
         return "";
     }
+}
+
+function translateUsingGlm4Flash(sourceTexts) {
+    return new Promise(function(resolve) {
+        let tl = targetLang === "auto" ? "en" : targetLang;
+        chrome.runtime.sendMessage({
+            action: "translateViaGlm4Flash",
+            texts: sourceTexts,
+            targetLang: tl
+        }, function(response) {
+            if (response && response.texts) {
+                resolve(response.texts);
+            } else {
+                console.error("GLM-4-Flash translation failed:", response && response.error);
+                resolve(sourceTexts.map(function() { return ""; }));
+            }
+        });
+    });
 }
 
 function reflowText(sourceLang, source) {
@@ -1969,6 +2000,14 @@ function handleScreenOCRResult(dataURL, boxes) {
         return translateScreenTextsViaOpenAI(sourceTexts).then(function(translations) {
             for (var j = 0; j < boxes.length && j < translations.length; j++) {
                 boxes[j].target = translations[j];
+            }
+            showResultDialog(dataURL, boxes);
+        });
+    } else if (defaultPresetTranslation === "glm4flash") {
+        var reflowedTexts = sourceTexts.map(function(t) { return reflowText(sourceLang, t); });
+        return translateUsingGlm4Flash(reflowedTexts).then(function(translations) {
+            for (var j = 0; j < boxes.length && j < translations.length; j++) {
+                boxes[j].target = translations[j] || '';
             }
             showResultDialog(dataURL, boxes);
         });

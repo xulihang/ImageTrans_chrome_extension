@@ -76,6 +76,26 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       updateCORSStatus(false);
     }
     sendResponse();
+  } else if (request.action === "translateViaGlm4Flash") {
+    (async () => {
+      try {
+        const resp = await fetch("http://service.basiccat.org:5000/translate/batch", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ texts: request.texts, target_lang: request.targetLang })
+        });
+        if (!resp.ok) {
+          sendResponse({ error: "GLM-4-Flash API error: HTTP " + resp.status });
+          return;
+        }
+        const data = await resp.json();
+        const translations = data.results.map(function(r) { return r.translated; });
+        sendResponse({ texts: translations });
+      } catch (err) {
+        sendResponse({ error: err.message });
+      }
+    })();
+    return true; // async sendResponse
   } else if (request.action === "captureVisibleTab") {
     chrome.tabs.captureVisibleTab(null, {format: "png"}, (dataURL) => {
       if (chrome.runtime.lastError) {
