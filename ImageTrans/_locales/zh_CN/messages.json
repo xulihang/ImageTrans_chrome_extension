@@ -60,7 +60,7 @@
   "options_model": { "message": "模型" },
   "options_prompt": { "message": "提示词" },
   "options_prompt_hint": { "message": "({sourceLang}, {targetLang}, {texts})" },
-  "options_image_processing": { "message": "图片处理" },
+  "options_image_processing": { "message": "图片处理（用于PaddleOCR）" },
   "options_x_spacing": { "message": "X 间距（像素）" },
   "options_x_spacing_hint": { "message": "合并相邻文本框的最大水平间距" },
   "options_y_spacing": { "message": "Y 间距（像素）" },

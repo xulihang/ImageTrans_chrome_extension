@@ -60,7 +60,7 @@
   "options_model": { "message": "Model" },
   "options_prompt": { "message": "Prompt" },
   "options_prompt_hint": { "message": "({sourceLang}, {targetLang}, {texts})" },
-  "options_image_processing": { "message": "Image Processing" },
+  "options_image_processing": { "message": "Image Processing (for PaddleOCR)" },
   "options_x_spacing": { "message": "X spacing (px)" },
   "options_x_spacing_hint": { "message": "Max horizontal gap for merging adjacent text boxes" },
   "options_y_spacing": { "message": "Y spacing (px)" },
