@@ -229,6 +229,12 @@ async function ajax(src,img,checkData){
         return ajaxOpenAI(src, img, checkData);
     }
     if (translationMode === "local") {
+        if (sourceLang === "auto" || targetLang === "auto") {
+            alert(chrome.i18n.getMessage("alert_set_langpair"));
+            chrome.runtime.sendMessage("showOptions");
+            document.body.classList.remove("imagetrans-wait");
+            return;
+        }
         return ajaxMyMemory(src, img, checkData);
     }
     let data = {src:src};
@@ -449,6 +455,12 @@ async function ajaxOpenAI(src, img, checkData) {
         // Step 2: OCR (text detection + coordinates)
         let boxes;
         if (ocrMethod === "paddleocr") {
+            if (sourceLang === "auto") {
+                alert(chrome.i18n.getMessage("alert_set_langpair"));
+                chrome.runtime.sendMessage("showOptions");
+                document.body.classList.remove("imagetrans-wait");
+                return;
+            }
             boxes = await paddleOCR(dataURL, sourceLang);
         } else {
             const ocrData = {
@@ -1866,6 +1878,12 @@ function resetToolbarButton() {
 }
 
 function processScreenOCR(dataURL) {
+    if (sourceLang === "auto" && (translationMode === "local" || screenCaptureServerFailed)) {
+        alert(chrome.i18n.getMessage("alert_set_langpair"));
+        chrome.runtime.sendMessage("showOptions");
+        resetToolbarButton();
+        return;
+    }
     if (translationMode === "imagetrans" && !screenCaptureServerFailed) {
         processScreenOCRWithImageTrans(dataURL);
     } else {

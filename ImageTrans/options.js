@@ -80,6 +80,14 @@ function save() {
   const xSpacing = parseInt(document.getElementById("xSpacing").value) || 15;
   const ySpacing = parseInt(document.getElementById("ySpacing").value) || 15;
   const uiLanguage = document.getElementById("uiLanguage").value;
+
+  // PaddleOCR requires a specific language; "auto" is not supported.
+  var usingPaddleOCR = translationMode === "local" || (useOpenAI && ocrMethod === "paddleocr");
+  if (usingPaddleOCR && (sourceLang === "auto" || targetLang === "auto")) {
+    alert(getMessage("options_langpair_hint"));
+    return;
+  }
+
   chrome.storage.sync.set({
     serverURL: URL,
     pickingWay: pickingWay,
