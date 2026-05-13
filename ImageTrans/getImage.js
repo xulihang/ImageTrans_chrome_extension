@@ -342,6 +342,12 @@ async function ajax(src,img,checkData){
                         alert(chrome.i18n.getMessage("alert_connect_failed"));
                     }
                 } else {
+                    if (sourceLang === "auto" || targetLang === "auto") {
+                        alert(chrome.i18n.getMessage("alert_set_langpair"));
+                        chrome.runtime.sendMessage("showOptions");
+                        document.body.classList.remove("imagetrans-wait");
+                        return;
+                    }
                     await ajaxMyMemory(src, img, checkData);
                 }
             } else {
