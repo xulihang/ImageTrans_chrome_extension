@@ -56,7 +56,11 @@
         "paddleocr/ppocrv5_dict.txt",
         "paddleocr/ort-wasm-simd-threaded.jsep.mjs",
         "paddleocr/ort-wasm-simd-threaded.jsep.wasm",
-        "paddleocr/model.onnx"
+        "paddleocr/model.onnx",
+        "paddleocr/tesseract.min.js",
+        "paddleocr/worker.min.js",
+        "paddleocr/tesseract-core-simd-lstm.wasm.js",
+        "paddleocr/jpn_vert.traineddata.gz"
       ],
       "matches": ["<all_urls>"]
     }

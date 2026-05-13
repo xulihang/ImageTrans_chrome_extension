@@ -1066,6 +1066,8 @@ function injectPaddleLibraries() {
         ]).then(function() {
             return loadLibrary(chrome.runtime.getURL('paddleocr/esearch-ocr/dist/esearch-ocr.umd.js'), 'text/javascript');
         }).then(function() {
+            return loadLibrary(chrome.runtime.getURL('paddleocr/tesseract.min.js'), 'text/javascript');
+        }).then(function() {
             return loadLibrary(chrome.runtime.getURL('paddleocr/page-ocr.js'), 'text/javascript');
         }).then(function() {
             resolve();
@@ -1122,6 +1124,9 @@ function paddleOCR(imageDataURL, sourceLang) {
             };
             if (useYOLODetection) {
                 msg.yoloModelUrl = chrome.runtime.getURL('paddleocr/model.onnx');
+                msg.tessWorkerPath = chrome.runtime.getURL('paddleocr/worker.min.js');
+                msg.tessCorePath = chrome.runtime.getURL('paddleocr/tesseract-core-simd-lstm.wasm.js');
+                msg.tessLangPath = chrome.runtime.getURL('paddleocr/');
             }
             window.postMessage(msg, '*');
         });

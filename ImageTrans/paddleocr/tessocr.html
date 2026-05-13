@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tesseract OCR</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 0 20px; }
+        #toolbar { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+        #toolbar label { font-size: 13px; color: #555; display: flex; align-items: center; gap: 4px; }
+        #toolbar select { padding: 4px 8px; border-radius: 4px; border: 1px solid #ccc; }
+        #dropZone { border: 2px dashed #aaa; border-radius: 8px; padding: 40px; text-align: center; color: #888; cursor: pointer; }
+        #dropZone.dragover { border-color: #4a90d9; background: #eef5fd; }
+        #preview { max-width: 100%; max-height: 300px; display: none; margin-top: 16px; }
+        #result { margin-top: 16px; padding: 12px; background: #f5f5f5; border-radius: 4px; white-space: pre-wrap; font-size: 14px; display: none; }
+        #status { margin-top: 8px; color: #666; font-size: 13px; }
+    </style>
+</head>
+<body>
+    <h2>Tesseract OCR (jpn_vert)</h2>
+    <div id="toolbar">
+        <label>模式:
+            <select id="modeSelect">
+                <option value="auto">自动定位 (Auto Detect)</option>
+                <option value="single">单行识别 (Single Line)</option>
+            </select>
+        </label>
+    </div>
+    <div id="dropZone">点击选择图片，或拖放图片到此处</div>
+    <input type="file" id="fileInput" accept="image/*" style="display:none">
+    <img id="preview">
+    <div id="status"></div>
+    <div id="result"></div>
+
+    <script src="./tesseract.min.js"></script>
+    <script>
+        let worker = null;
+        const modeSelect = document.getElementById('modeSelect');
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const preview = document.getElementById('preview');
+        const resultDiv = document.getElementById('result');
+        const statusDiv = document.getElementById('status');
+
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+        dropZone.addEventListener('drop', e => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            handleFile(e.dataTransfer.files[0]);
+        });
+        fileInput.addEventListener('change', e => handleFile(e.target.files[0]));
+
+        function getPSM() {
+            // single → PSM.SINGLE_BLOCK_VERT_TEXT (5): 不自动定位，整图视为单行竖排文字直接识别
+            // auto   → PSM.AUTO (3): 自动版面分析 + 文本区域定位
+            return modeSelect.value === 'single'
+                ? Tesseract.PSM.SINGLE_BLOCK_VERT_TEXT
+                : Tesseract.PSM.AUTO;
+        }
+
+        async function handleFile(file) {
+            if (!file || !file.type.startsWith('image/')) return;
+            preview.src = URL.createObjectURL(file);
+            preview.style.display = 'block';
+            resultDiv.style.display = 'none';
+            statusDiv.textContent = '正在初始化 Tesseract...';
+
+            if (!worker) {
+                worker = await Tesseract.createWorker('jpn_vert', 1, {
+                    langPath: './',
+                    workerPath: './worker.min.js',
+                    corePath: './tesseract-core-simd-lstm.wasm.js',
+                    logger: m => {
+                        if (m.status === 'recognizing text') {
+                            statusDiv.textContent = `识别中... ${Math.round(m.progress * 100)}%`;
+                        }
+                    }
+                });
+            }
+
+            await worker.setParameters({
+                tessedit_pageseg_mode: getPSM()
+            });
+
+            statusDiv.textContent = '正在识别...';
+            const { data } = await worker.recognize(file);
+
+            const minConfidence = modeSelect.value === 'single' ? 0 : 10;
+            const lines = data.lines
+                .filter(line => line.confidence > minConfidence)
+                .map(line => ({
+                    text: line.text,
+                    geometry: {
+                        x: line.bbox.x0,
+                        y: line.bbox.y0,
+                        width: line.bbox.x1 - line.bbox.x0,
+                        height: line.bbox.y1 - line.bbox.y0
+                    }
+                }));
+
+            resultDiv.textContent = lines.map(l => l.text).join('\n') || '(未识别到文字)';
+            resultDiv.style.display = 'block';
+            const modeLabel = modeSelect.value === 'single' ? '单行识别' : '自动定位';
+            statusDiv.textContent = `完成 (${modeLabel})，共识别 ${lines.length} 行文字`;
+        }
+    </script>
+</body>
+</html>
