@@ -1,6 +1,6 @@
 {
   "name": "__MSG_ext_name__",
-  "version": "5.0",
+  "version": "5.1",
   "description": "__MSG_ext_desc__",
   "default_locale": "en",
   "permissions": ["storage","activeTab","contextMenus","clipboardWrite","declarativeNetRequest"],
