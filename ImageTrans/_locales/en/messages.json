@@ -19,7 +19,7 @@
   "options_title": { "message": "ImageTrans Options" },
   "options_translation": { "message": "Translation" },
   "options_translation_mode": { "message": "Translation Mode" },
-  "options_mode_local": { "message": "Local (PaddleOCR + MyMemory or OpenAI)" },
+  "options_mode_local": { "message": "Local PaddleOCR + Free Translation or OpenAI" },
   "options_mode_imagetrans": { "message": "ImageTrans (local or remote server)" },
   "options_source_lang": { "message": "Source lang" },
   "options_target_lang": { "message": "Target lang" },

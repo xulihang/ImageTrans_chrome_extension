@@ -19,7 +19,7 @@
   "options_title": { "message": "ImageTrans 选项" },
   "options_translation": { "message": "翻译" },
   "options_translation_mode": { "message": "翻译模式" },
-  "options_mode_local": { "message": "本地（PaddleOCR + MyMemory 或 OpenAI）" },
+  "options_mode_local": { "message": "本地PaddleOCR + 免费翻译或OpenAI" },
   "options_mode_imagetrans": { "message": "ImageTrans（本地或远程服务器）" },
   "options_source_lang": { "message": "源语言" },
   "options_target_lang": { "message": "目标语言" },
