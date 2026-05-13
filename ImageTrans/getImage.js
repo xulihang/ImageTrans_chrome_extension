@@ -894,10 +894,48 @@ function calcFontSize(ctx, text, maxWidth, maxHeight, textStyle) {
     return Math.floor(bestSize);
 }
 
+function isCJK(ch) {
+    const cp = ch.codePointAt(0);
+    return (cp >= 0x4E00 && cp <= 0x9FFF) ||   // CJK Unified Ideographs
+           (cp >= 0x3400 && cp <= 0x4DBF) ||   // CJK Extension A
+           (cp >= 0x3040 && cp <= 0x309F) ||   // Hiragana
+           (cp >= 0x30A0 && cp <= 0x30FF) ||   // Katakana
+           (cp >= 0xAC00 && cp <= 0xD7AF) ||   // Hangul
+           (cp >= 0x3000 && cp <= 0x303F) ||   // CJK punctuation
+           (cp >= 0xFF00 && cp <= 0xFFEF);     // Fullwidth forms
+}
+
+function tokenizeForWrap(text) {
+    const tokens = [];
+    let i = 0;
+    while (i < text.length) {
+        const ch = text[i];
+        if (isCJK(ch)) {
+            tokens.push(ch);
+            i++;
+        } else if (/\s/.test(ch)) {
+            let space = '';
+            while (i < text.length && /\s/.test(text[i])) {
+                space += text[i];
+                i++;
+            }
+            tokens.push(space);
+        } else {
+            let seq = '';
+            while (i < text.length && !isCJK(text[i]) && !/\s/.test(text[i])) {
+                seq += text[i];
+                i++;
+            }
+            tokens.push(seq);
+        }
+    }
+    return tokens;
+}
+
 function wrapLines(ctx, text, maxWidth) {
     const lines = [];
+    const tokens = tokenizeForWrap(text);
     const hasSpaces = /\s/.test(text);
-    const tokens = hasSpaces ? text.split(/(\s+)/) : text.split('');
     let line = '';
     for (const token of tokens) {
         const testLine = line + token;
