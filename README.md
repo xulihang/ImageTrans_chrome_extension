@@ -12,7 +12,8 @@ https://github.com/user-attachments/assets/7078e908-9526-4945-948f-458543a50d08
 
 Other versions:
 
-[online image translator (web version)](https://www.basiccat.org/online-image-translator/)
+* [Firefox addon](https://github.com/xulihang/ImageTrans_firefox_extension)
+* [online image translator (web version)](https://www.basiccat.org/online-image-translator/)
 
 ## Installation
 
@@ -78,7 +79,8 @@ ImageTrans的Chrome扩展程序。你可以用它来翻译网页上的图像。
 
 其它版本：
 
-[在线图片翻译器（网页版）](https://www.basiccat.org/zh/online-image-translator/)
+* [Firefox扩展](https://github.com/xulihang/ImageTrans_firefox_extension)
+* [在线图片翻译器（网页版）](https://www.basiccat.org/zh/online-image-translator/)
 
 ## 安装
 
