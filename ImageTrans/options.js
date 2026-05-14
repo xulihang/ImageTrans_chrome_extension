@@ -78,6 +78,7 @@ function save() {
   const defaultPresetTranslation = document.getElementById("defaultPresetTranslation").value;
   const useYOLODetection = document.getElementById("useYOLODetection").checked;
   const useYOLOForJapanese = document.getElementById("useYOLOForJapanese").checked;
+  const useTesseractForJapanese = document.getElementById("useTesseractForJapanese").checked;
   const xSpacing = parseInt(document.getElementById("xSpacing").value) || 15;
   const ySpacing = parseInt(document.getElementById("ySpacing").value) || 15;
   const uiLanguage = document.getElementById("uiLanguage").value;
@@ -110,6 +111,7 @@ function save() {
     defaultPresetTranslation: defaultPresetTranslation,
     useYOLODetection: useYOLODetection,
     useYOLOForJapanese: useYOLOForJapanese,
+    useTesseractForJapanese: useTesseractForJapanese,
     xSpacing: xSpacing,
     ySpacing: ySpacing,
     uiLanguage: uiLanguage
@@ -141,6 +143,7 @@ function load() {
     defaultPresetTranslation: 'glm4flash',
     useYOLODetection: false,
     useYOLOForJapanese: true,
+    useTesseractForJapanese: true,
     xSpacing: 15,
     ySpacing: 15,
     uiLanguage: ''
@@ -190,6 +193,7 @@ function load() {
     }
     document.getElementById("useYOLODetection").checked = items.useYOLODetection;
     document.getElementById("useYOLOForJapanese").checked = items.useYOLOForJapanese;
+    document.getElementById("useTesseractForJapanese").checked = items.useTesseractForJapanese;
     document.getElementById("xSpacing").value = items.xSpacing;
     document.getElementById("ySpacing").value = items.ySpacing;
     if (items.uiLanguage) {

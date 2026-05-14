@@ -60,6 +60,7 @@ var openaiPrompt = "";
 var ocrMethod = "paddleocr";
 var useYOLODetection = false;
 var useYOLOForJapanese = true;
+var useTesseractForJapanese = true;
 var translationMode = "imagetrans";
 var defaultPresetTranslation = "glm4flash";
 var xSpacing = 15;
@@ -82,6 +83,7 @@ chrome.storage.sync.get({
     ocrMethod: 'paddleocr',
     useYOLODetection: false,
     useYOLOForJapanese: true,
+    useTesseractForJapanese: true,
     translationMode: 'imagetrans',
     defaultPresetTranslation: defaultPresetTranslation,
     xSpacing: 15,
@@ -140,6 +142,9 @@ chrome.storage.sync.get({
     }
     if (items.useYOLOForJapanese != undefined) {
         useYOLOForJapanese = items.useYOLOForJapanese;
+    }
+    if (items.useTesseractForJapanese != undefined) {
+        useTesseractForJapanese = items.useTesseractForJapanese;
     }
     if (items.translationMode) {
         translationMode = items.translationMode;
@@ -1208,7 +1213,8 @@ function paddleOCR(imageDataURL, sourceLang) {
                 sourceLang: sourceLang || 'auto',
                 requestId: requestId,
                 xSpacing: xSpacing,
-                ySpacing: ySpacing
+                ySpacing: ySpacing,
+                useTesseractForJapanese: useTesseractForJapanese
             };
             if (useYOLO) {
                 msg.yoloModelUrl = chrome.runtime.getURL('paddleocr/model.onnx');

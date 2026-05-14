@@ -483,7 +483,7 @@
     yoloSession = await window.ort.InferenceSession.create(yoloUrl, sessionOpts);
   }
 
-  async function doOCRYolo(imageDataURL, sourceLang, xSpacing, ySpacing, yoloUrl, tessWorkerPath, tessCorePath, tessLangPath) {
+  async function doOCRYolo(imageDataURL, sourceLang, xSpacing, ySpacing, yoloUrl, tessWorkerPath, tessCorePath, tessLangPath, useTesseractForJapanese) {
     await ensureYOLOModel(yoloUrl);
 
     var img = new Image();
@@ -519,7 +519,7 @@
         var cropCtx = cropCanvas.getContext("2d");
         cropCtx.drawImage(canvas, b[0], b[1], w, h, 0, 0, w, h);
         // Use Tesseract single-line mode for Japanese vertical text
-        var useTesseract = sourceLang === 'ja' && (cropCanvas.height / cropCanvas.width) > 1.1  && (cropCanvas.height / cropCanvas.width) < 8;
+        var useTesseract = useTesseractForJapanese && sourceLang === 'ja' && (cropCanvas.height / cropCanvas.width) > 1.1  && (cropCanvas.height / cropCanvas.width) < 8;
         if (useTesseract) {
           await ensureTessWorker(tessWorkerPath, tessCorePath, tessLangPath);
         }
@@ -675,7 +675,7 @@
             if (!paddleReady) {
               throw new Error('PaddleOCR not initialized');
             }
-            const boxes = await doOCRYolo(data.imageDataURL, data.sourceLang, data.xSpacing, data.ySpacing, data.yoloModelUrl, data.tessWorkerPath, data.tessCorePath, data.tessLangPath);
+            const boxes = await doOCRYolo(data.imageDataURL, data.sourceLang, data.xSpacing, data.ySpacing, data.yoloModelUrl, data.tessWorkerPath, data.tessCorePath, data.tessLangPath, data.useTesseractForJapanese);
             window.postMessage({
               source: 'imagetrans-extension',
               type: 'PADDLE_OCR_RESULT',
