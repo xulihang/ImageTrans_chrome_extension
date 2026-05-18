@@ -91,6 +91,7 @@
   "lang_indonesian": { "message": "印度尼西亚语" },
   "lang_vietnamese": { "message": "越南语" },
   "lang_thai": { "message": "泰语" },
+  "lang_malay": { "message": "马来语" },
   "lang_auto": { "message": "自动" },
 
   "ctxmenu_parent": { "message": "ImageTrans" },

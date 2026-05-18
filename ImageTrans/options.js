@@ -53,6 +53,7 @@ function buildLanguageCodes() {
     {name: getMessage("lang_indonesian"), code:"id"},
     {name: getMessage("lang_vietnamese"), code:"vi"},
     {name: getMessage("lang_thai"), code:"th"},
+    {name: getMessage("lang_malay"), code:"ms"},
     {name: getMessage("lang_auto"), code:"auto"}
   ];
 }
