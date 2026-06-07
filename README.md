@@ -22,6 +22,8 @@ Other versions:
 3. Download [ImageTrans_wsServer.jar](https://github.com/xulihang/ImageTrans_wsServer/releases/download/builds/ImageTrans_wsServer.jar) and put it with ImageTrans.
 4. (Optional. The function is already built into the extension.) Install and enable [Allow CORS](https://chromewebstore.google.com/detail/allow-cors-access-control/lhobafahddgcelffkeicbaginigeejlf) to remove restrictions on downloading images for some websites.
 
+For Android, use Kiwi Browser. For iOS, use Orion Browser.
+
 ## Usage
 
 
@@ -88,6 +90,8 @@ ImageTrans的Chrome扩展程序。你可以用它来翻译网页上的图像。
 2. 购买ImageTrans并安装（可选步骤，如果只用PaddleOCR）。
 3. 下载[ImageTrans_wsServer.jar](https://github.com/xulihang/ImageTrans_wsServer/releases/download/builds/ImageTrans_wsServer.jar)并将其与ImageTrans放在一起。
 4. （可选，本插件已经包含该功能）安装并启用[Allow CORS](https://chromewebstore.google.com/detail/allow-cors-access-control/lhobafahddgcelffkeicbaginigeejlf)以移除某些站点对下载图片的限制。
+
+安卓系统请使用Kiwi浏览器，iOS系统请使用Orion浏览器。
 
 ## 用法
 
