@@ -2094,6 +2094,235 @@ function cleanupScreenCaptureAll() {
     screenCaptureRect = null;
 }
 
+// Fallback screen capture for Android/Kiwi Browser where chrome.tabs.captureVisibleTab
+// is not supported. Two strategies, tried in order:
+//   1. If the selected region overlaps an <img> element, fetch the image data
+//      directly (reusing the existing captureImageViaFetch CORS-bypass pipeline),
+//      then crop to the selection. This handles the common manga/comics use case.
+//   2. Otherwise, use SVG foreignObject to render the visible viewport into a
+//      canvas. This works for text-heavy pages but has limitations with
+//      cross-origin resources and external stylesheets.
+function tryCaptureViewportFallback(rect) {
+    // Overall timeout (15s) to avoid hanging on mobile
+    var timeoutMs = 15000;
+    var fallbackPromise;
+
+    // Strategy 1: Try to capture from an <img> element in the selected region
+    var centerX = rect.left + rect.width / 2;
+    var centerY = rect.top + rect.height / 2;
+
+    var imgElement = findImgInRect(rect, centerX, centerY);
+
+    if (imgElement) {
+        fallbackPromise = captureFromImageElement(imgElement, rect);
+    } else {
+        // Strategy 2: No <img> found — use SVG foreignObject for text content
+        fallbackPromise = captureViaSVGForeignObject(rect);
+    }
+
+    // Wrap with a timeout so we never hang
+    return new Promise(function(resolve, reject) {
+        var timer = setTimeout(function() {
+            reject(new Error('Viewport capture timed out after ' + (timeoutMs / 1000) + 's'));
+        }, timeoutMs);
+
+        fallbackPromise.then(function(dataURL) {
+            clearTimeout(timer);
+            resolve(dataURL);
+        }).catch(function(err) {
+            clearTimeout(timer);
+            reject(err);
+        });
+    });
+}
+
+// Walk up from the point to find an <img> element
+function findImgInRect(rect, cx, cy) {
+    // Check elements at the center point first
+    var elements = document.elementsFromPoint(cx, cy);
+    if (elements) {
+        for (var i = 0; i < elements.length; i++) {
+            if (elements[i].tagName && elements[i].tagName.toLowerCase() === 'img') {
+                var imgRect = elements[i].getBoundingClientRect();
+                if (rectsOverlap(rect, imgRect)) {
+                    return elements[i];
+                }
+            }
+        }
+    }
+
+    // Fallback: scan all images in the document for overlap
+    var imgs = document.getElementsByTagName('img');
+    var bestImg = null;
+    var bestArea = 0;
+    for (var j = 0; j < imgs.length; j++) {
+        var r = imgs[j].getBoundingClientRect();
+        if (rectsOverlap(rect, r)) {
+            var overlapArea = overlapAmount(rect, r);
+            if (overlapArea > bestArea) {
+                bestArea = overlapArea;
+                bestImg = imgs[j];
+            }
+        }
+    }
+    return bestImg;
+}
+
+function rectsOverlap(a, b) {
+    return !(a.left >= b.right || a.right <= b.left || a.top >= b.bottom || a.bottom <= b.top);
+}
+
+function overlapAmount(a, b) {
+    var xOverlap = Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left));
+    var yOverlap = Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
+    return xOverlap * yOverlap;
+}
+
+// Capture from an <img> element using the existing CORS-enabled pipeline
+function captureFromImageElement(imgElement, rect) {
+    return new Promise(function(resolve, reject) {
+        var imgRect = imgElement.getBoundingClientRect();
+
+        // Get the image data via the existing pipeline (handles CORS and WebP compression)
+        getDataURLFromImg(imgElement).then(function(dataURL) {
+            // Now crop the selected region from the image
+            var img = new Image();
+            img.onload = function() {
+                // The image natural size vs displayed size
+                var scaleX = img.naturalWidth / imgRect.width;
+                var scaleY = img.naturalHeight / imgRect.height;
+
+                // Selection offset relative to the image element
+                var offsetX = rect.left - imgRect.left;
+                var offsetY = rect.top - imgRect.top;
+
+                var sx = Math.round(offsetX * scaleX);
+                var sy = Math.round(offsetY * scaleY);
+                var sw = Math.round(rect.width * scaleX);
+                var sh = Math.round(rect.height * scaleY);
+
+                // Clamp to image bounds
+                sx = Math.max(0, sx);
+                sy = Math.max(0, sy);
+                sw = Math.min(img.naturalWidth - sx, sw);
+                sh = Math.min(img.naturalHeight - sy, sh);
+
+                if (sw <= 0 || sh <= 0) {
+                    reject(new Error('Selection is outside the image bounds'));
+                    return;
+                }
+
+                var c = document.createElement('canvas');
+                c.width = sw;
+                c.height = sh;
+                var ctx = c.getContext('2d');
+                ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+                resolve(c.toDataURL('image/jpeg', 0.9));
+            };
+            img.onerror = function() {
+                reject(new Error('Failed to decode image data for cropping'));
+            };
+            img.src = dataURL;
+        }).catch(function(err) {
+            // Image fetch failed (CORS, network, etc.) — try SVG as last resort
+            console.warn('Image element capture failed:', err.message);
+            captureViaSVGForeignObject(rect).then(resolve).catch(reject);
+        });
+    });
+}
+
+// SVG foreignObject approach for text-heavy pages without images
+function captureViaSVGForeignObject(rect) {
+    return new Promise(function(resolve, reject) {
+        try {
+            // Collect accessible CSS rules for inline styling
+            var styles = '';
+            try {
+                var styleSheets = document.styleSheets;
+                for (var i = 0; i < styleSheets.length; i++) {
+                    try {
+                        var rules = styleSheets[i].cssRules || styleSheets[i].rules;
+                        if (rules) {
+                            for (var j = 0; j < rules.length; j++) {
+                                var cssText = rules[j].cssText;
+                                if (cssText) {
+                                    styles += cssText + '\n';
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        // Cross-origin stylesheet — skip silently
+                    }
+                }
+            } catch (e) {
+                // Stylesheet access denied entirely
+            }
+
+            var svgNS = 'http://www.w3.org/2000/svg';
+            var svg = document.createElementNS(svgNS, 'svg');
+            svg.setAttribute('width', window.innerWidth);
+            svg.setAttribute('height', window.innerHeight);
+
+            var fo = document.createElementNS(svgNS, 'foreignObject');
+            fo.setAttribute('width', '100%');
+            fo.setAttribute('height', '100%');
+
+            var wrapper = document.createElement('div');
+            wrapper.setAttribute('xmlns', 'http://www.w3.org/1999/xhtml');
+
+            if (styles) {
+                var styleEl = document.createElement('style');
+                styleEl.setAttribute('type', 'text/css');
+                styleEl.textContent = styles;
+                wrapper.appendChild(styleEl);
+            }
+
+            // Clone visible body content (shallow — images/canvases won't render)
+            var bodyClone = document.body.cloneNode(true);
+            var scripts = bodyClone.querySelectorAll('script');
+            for (var s = 0; s < scripts.length; s++) {
+                scripts[s].remove();
+            }
+            wrapper.appendChild(bodyClone);
+            fo.appendChild(wrapper);
+            svg.appendChild(fo);
+
+            var svgData = new XMLSerializer().serializeToString(svg);
+            var svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+            var url = URL.createObjectURL(svgBlob);
+
+            var img = new Image();
+            img.onload = function() {
+                URL.revokeObjectURL(url);
+                var scale = img.naturalWidth / window.innerWidth;
+                var sx = Math.round(rect.left * scale);
+                var sy = Math.round(rect.top * scale);
+                var sw = Math.round(rect.width * scale);
+                var sh = Math.round(rect.height * scale);
+
+                if (sw <= 0 || sh <= 0) {
+                    reject(new Error('Invalid crop dimensions'));
+                    return;
+                }
+
+                var c = document.createElement('canvas');
+                c.width = sw;
+                c.height = sh;
+                var ctx = c.getContext('2d');
+                ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+                resolve(c.toDataURL('image/jpeg', 0.9));
+            };
+            img.onerror = function() {
+                URL.revokeObjectURL(url);
+                reject(new Error('Viewport capture is not available on this browser.'));
+            };
+            img.src = url;
+        } catch (e) {
+            reject(e);
+        }
+    });
+}
+
 function doScreenOCR() {
     var rect = screenCaptureRect;
     if (screenCaptureToolbar) {
@@ -2106,8 +2335,23 @@ function doScreenOCR() {
 
     chrome.runtime.sendMessage({action: "captureVisibleTab"}, function(response) {
         if (chrome.runtime.lastError || !response || !response.dataURL) {
-            alert(chrome.i18n.getMessage("sc_failed_capture", (chrome.runtime.lastError ? chrome.runtime.lastError.message : 'unknown error')));
-            resetToolbarButton();
+            // Use the error from background's captureVisibleTab if available
+            var errMsg = 'unknown error';
+            if (chrome.runtime.lastError && chrome.runtime.lastError.message) {
+                errMsg = chrome.runtime.lastError.message;
+            } else if (response && response.error) {
+                errMsg = response.error;
+            }
+            console.log('captureVisibleTab failed: ' + errMsg + '. Trying fallback...');
+            // On Android/Kiwi Browser, captureVisibleTab is not supported.
+            // Try a canvas-based fallback to capture the viewport.
+            tryCaptureViewportFallback(rect).then(function(croppedDataURL) {
+                processScreenOCR(croppedDataURL);
+            }).catch(function(fallbackErr) {
+                console.error('Viewport fallback also failed:', fallbackErr);
+                alert(chrome.i18n.getMessage("sc_failed_capture", errMsg));
+                resetToolbarButton();
+            });
             return;
         }
 
