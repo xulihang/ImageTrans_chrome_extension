@@ -398,9 +398,31 @@ async function ajaxMyMemory(src, img, checkData) {
 
         if (defaultPresetTranslation === "glm4flash") {
             let reflowedTexts = sourceTexts.map(function(t) { return reflowText(sourceLang, t); });
-            let translations = await translateUsingGlm4Flash(reflowedTexts);
-            for (let i = 0; i < boxes.length && i < translations.length; i++) {
-                boxes[i].target = translations[i] || '';
+            let translations;
+            try {
+                translations = await Promise.race([
+                    translateUsingGlm4Flash(reflowedTexts),
+                    new Promise(function(_, reject) {
+                        setTimeout(function() { reject(new Error("glm4flash timeout")); }, 20000);
+                    })
+                ]);
+            } catch (e) {
+                console.warn("glm4flash translation timed out or failed, falling back to mymemory:", e);
+                translations = null;
+            }
+            if (translations) {
+                for (let i = 0; i < boxes.length && i < translations.length; i++) {
+                    boxes[i].target = translations[i] || '';
+                }
+            } else {
+                // Fallback to mymemory
+                for (let i = 0; i < boxes.length; i++) {
+                    if (sourceTexts[i]) {
+                        boxes[i].target = await translateUsingMyMemory(sourceTexts[i]);
+                    } else {
+                        boxes[i].target = '';
+                    }
+                }
             }
         } else {
             for (let i = 0; i < boxes.length; i++) {
@@ -442,7 +464,7 @@ async function translateUsingMyMemory(source) {
 }
 
 function translateUsingGlm4Flash(sourceTexts) {
-    return new Promise(function(resolve) {
+    return new Promise(function(resolve, reject) {
         let tl = targetLang === "auto" ? "en" : targetLang;
         chrome.runtime.sendMessage({
             action: "translateViaGlm4Flash",
@@ -452,8 +474,9 @@ function translateUsingGlm4Flash(sourceTexts) {
             if (response && response.texts) {
                 resolve(response.texts);
             } else {
-                console.error("GLM-4-Flash translation failed:", response && response.error);
-                resolve(sourceTexts.map(function() { return ""; }));
+                var errMsg = "GLM-4-Flash translation failed: " + (response && response.error);
+                console.error(errMsg);
+                reject(new Error(errMsg));
             }
         });
     });
@@ -2220,11 +2243,24 @@ function handleScreenOCRResult(dataURL, boxes) {
         });
     } else if (defaultPresetTranslation === "glm4flash") {
         var reflowedTexts = sourceTexts.map(function(t) { return reflowText(sourceLang, t); });
-        return translateUsingGlm4Flash(reflowedTexts).then(function(translations) {
+        return Promise.race([
+            translateUsingGlm4Flash(reflowedTexts),
+            new Promise(function(_, reject) {
+                setTimeout(function() { reject(new Error("glm4flash timeout")); }, 10000);
+            })
+        ]).then(function(translations) {
             for (var j = 0; j < boxes.length && j < translations.length; j++) {
                 boxes[j].target = translations[j] || '';
             }
             showResultDialog(dataURL, boxes);
+        }).catch(function(e) {
+            console.warn("glm4flash translation timed out or failed, falling back to mymemory:", e);
+            return translateScreenTextsViaMyMemory(sourceTexts).then(function(translations) {
+                for (var j = 0; j < boxes.length && j < translations.length; j++) {
+                    boxes[j].target = translations[j];
+                }
+                showResultDialog(dataURL, boxes);
+            });
         });
     } else {
         return translateScreenTextsViaMyMemory(sourceTexts).then(function(translations) {
