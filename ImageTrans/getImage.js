@@ -1787,9 +1787,13 @@ function showSelectionToolbar(rect) {
     screenCaptureToolbar.id = 'imagetrans-sc-toolbar';
     placeToolbar(rect);
 
+    var toolbarMobile = window.innerWidth < 600;
+    var tBtnPad = toolbarMobile ? '10px 18px' : '6px 16px';
+    var tBtnFont = toolbarMobile ? '15px' : '14px';
+
     var btnOCR = document.createElement('button');
     btnOCR.textContent = chrome.i18n.getMessage("sc_recognize");
-    btnOCR.style.cssText = 'padding:6px 16px;background:#4A90D9;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,0.2);';
+    btnOCR.style.cssText = 'padding:' + tBtnPad + ';background:#4A90D9;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:' + tBtnFont + ';box-shadow:0 2px 8px rgba(0,0,0,0.2);white-space:nowrap;touch-action:manipulation;';
     btnOCR.addEventListener('mousedown', function(e) { e.stopPropagation(); });
     btnOCR.addEventListener('touchstart', function(e) { e.stopPropagation(); });
     btnOCR.addEventListener('click', function(e) {
@@ -1799,7 +1803,7 @@ function showSelectionToolbar(rect) {
 
     var btnClose = document.createElement('button');
     btnClose.textContent = chrome.i18n.getMessage("sc_close");
-    btnClose.style.cssText = 'padding:6px 16px;background:#fff;color:#333;border:1px solid #ccc;border-radius:4px;cursor:pointer;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,0.2);';
+    btnClose.style.cssText = 'padding:' + tBtnPad + ';background:#fff;color:#333;border:1px solid #ccc;border-radius:4px;cursor:pointer;font-size:' + tBtnFont + ';box-shadow:0 2px 8px rgba(0,0,0,0.2);white-space:nowrap;touch-action:manipulation;';
     btnClose.addEventListener('mousedown', function(e) { e.stopPropagation(); });
     btnClose.addEventListener('touchstart', function(e) { e.stopPropagation(); });
     btnClose.addEventListener('click', function(e) {
@@ -1825,17 +1829,20 @@ var screenCaptureHandles = [];
 
 function addResizeHandles(rect) {
     removeResizeHandles();
+    var handleMobile = window.innerWidth < 600;
+    var handleSize = handleMobile ? 16 : 8;
+    var handleOffset = handleSize / 2;
     var corners = [
-        { id: 'nw', left: rect.left - 4, top: rect.top - 4, cursor: 'nwse-resize' },
-        { id: 'ne', left: rect.left + rect.width - 4, top: rect.top - 4, cursor: 'nesw-resize' },
-        { id: 'sw', left: rect.left - 4, top: rect.top + rect.height - 4, cursor: 'nesw-resize' },
-        { id: 'se', left: rect.left + rect.width - 4, top: rect.top + rect.height - 4, cursor: 'nwse-resize' }
+        { id: 'nw', left: rect.left - handleOffset, top: rect.top - handleOffset, cursor: 'nwse-resize' },
+        { id: 'ne', left: rect.left + rect.width - handleOffset, top: rect.top - handleOffset, cursor: 'nesw-resize' },
+        { id: 'sw', left: rect.left - handleOffset, top: rect.top + rect.height - handleOffset, cursor: 'nesw-resize' },
+        { id: 'se', left: rect.left + rect.width - handleOffset, top: rect.top + rect.height - handleOffset, cursor: 'nwse-resize' }
     ];
     for (var i = 0; i < corners.length; i++) {
         var h = document.createElement('div');
         h.className = 'imagetrans-sc-handle';
         h.setAttribute('data-corner', corners[i].id);
-        h.style.cssText = 'position:fixed;z-index:2147483648;width:8px;height:8px;background:#4A90D9;border:1px solid #fff;cursor:' + corners[i].cursor + ';left:' + corners[i].left + 'px;top:' + corners[i].top + 'px;';
+        h.style.cssText = 'position:fixed;z-index:2147483648;width:' + handleSize + 'px;height:' + handleSize + 'px;background:#4A90D9;border:1px solid #fff;cursor:' + corners[i].cursor + ';left:' + corners[i].left + 'px;top:' + corners[i].top + 'px;';
         h.addEventListener('mousedown', function(e) {
             e.stopPropagation();
             e.preventDefault();
@@ -1859,11 +1866,13 @@ function removeResizeHandles() {
 }
 
 function updateHandlePositions(rect) {
+    var handleMobile = window.innerWidth < 600;
+    var handleOffset = handleMobile ? 8 : 4;
     var corners = [
-        { id: 'nw', left: rect.left - 4, top: rect.top - 4 },
-        { id: 'ne', left: rect.left + rect.width - 4, top: rect.top - 4 },
-        { id: 'sw', left: rect.left - 4, top: rect.top + rect.height - 4 },
-        { id: 'se', left: rect.left + rect.width - 4, top: rect.top + rect.height - 4 }
+        { id: 'nw', left: rect.left - handleOffset, top: rect.top - handleOffset },
+        { id: 'ne', left: rect.left + rect.width - handleOffset, top: rect.top - handleOffset },
+        { id: 'sw', left: rect.left - handleOffset, top: rect.top + rect.height - handleOffset },
+        { id: 'se', left: rect.left + rect.width - handleOffset, top: rect.top + rect.height - handleOffset }
     ];
     for (var i = 0; i < screenCaptureHandles.length; i++) {
         var handle = screenCaptureHandles[i];
@@ -1882,7 +1891,14 @@ function placeToolbar(rect) {
     if (toolbarTop + 42 > window.innerHeight) {
         toolbarTop = rect.top - 42;
     }
-    screenCaptureToolbar.style.cssText = 'position:fixed;z-index:2147483647;left:' + rect.left + 'px;top:' + toolbarTop + 'px;display:flex;gap:8px;';
+    // Keep toolbar within horizontal viewport
+    var toolbarLeft = rect.left;
+    if (toolbarLeft < 4) toolbarLeft = 4;
+    screenCaptureToolbar.style.cssText = 'position:fixed;z-index:2147483647;left:' + toolbarLeft + 'px;top:' + toolbarTop + 'px;display:flex;gap:8px;';
+    // Ensure toolbar doesn't overflow right edge on mobile
+    if (window.innerWidth < 600 && toolbarLeft + 200 > window.innerWidth) {
+        screenCaptureToolbar.style.left = Math.max(4, window.innerWidth - 210) + 'px';
+    }
 }
 
 function applyRect(rect) {
@@ -2590,31 +2606,31 @@ function showResultDialog(dataURL, boxes, message) {
     backdrop.id = 'imagetrans-sc-backdrop';
     backdrop.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:2147483647;background:rgba(0,0,0,0.3);';
     backdrop.addEventListener('click', function() {
-        backdrop.remove();
-        dialog.remove();
+        cleanupScreenCaptureAll();
     });
 
+    var isMobile = window.innerWidth < 600;
     var dialog = document.createElement('div');
     dialog.id = 'imagetrans-sc-dialog';
-    dialog.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:2147483648;background:#fff;border-radius:8px;box-shadow:0 4px 24px rgba(0,0,0,0.25);width:520px;max-height:80vh;display:flex;flex-direction:column;font-family:sans-serif;';
+    dialog.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:2147483648;background:#fff;border-radius:8px;box-shadow:0 4px 24px rgba(0,0,0,0.25);width:' + (isMobile ? 'calc(100vw - 16px)' : '520px') + ';max-width:520px;max-height:85vh;display:flex;flex-direction:column;font-family:sans-serif;';
     dialog.addEventListener('click', function(e) { e.stopPropagation(); });
 
     // Header
     var header = document.createElement('div');
-    header.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #eee;flex-shrink:0;';
+    header.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:' + (isMobile ? '14px 12px' : '12px 16px') + ';border-bottom:1px solid #eee;flex-shrink:0;';
     var title = document.createElement('span');
     title.textContent = chrome.i18n.getMessage("sc_title");
-    title.style.cssText = 'font-size:16px;font-weight:600;color:#333;';
+    title.style.cssText = 'font-size:' + (isMobile ? '15px' : '16px') + ';font-weight:600;color:#333;';
     var closeBtn = document.createElement('button');
     closeBtn.innerHTML = '&#x2715;';
-    closeBtn.style.cssText = 'background:none;border:none;font-size:18px;cursor:pointer;color:#999;padding:0;line-height:1;';
-    closeBtn.addEventListener('click', function() { backdrop.remove(); dialog.remove(); });
+    closeBtn.style.cssText = 'background:none;border:none;font-size:' + (isMobile ? '22px' : '18px') + ';cursor:pointer;color:#999;padding:' + (isMobile ? '4px' : '0') + ';line-height:1;min-width:32px;min-height:32px;';
+    closeBtn.addEventListener('click', function() { cleanupScreenCaptureAll(); });
     header.appendChild(title);
     header.appendChild(closeBtn);
 
     // Body
     var body = document.createElement('div');
-    body.style.cssText = 'padding:16px;overflow-y:auto;flex:1;';
+    body.style.cssText = 'padding:' + (isMobile ? '12px' : '16px') + ';overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch;';
 
     if (message) {
         var msgDiv = document.createElement('div');
@@ -2647,13 +2663,16 @@ function showResultDialog(dataURL, boxes, message) {
             var row = document.createElement('div');
             row.style.cssText = 'border-left:3px solid #4A90D9;padding-left:10px;';
 
+            var resultFontSource = isMobile ? '15px' : '14px';
+            var resultFontTarget = isMobile ? '14px' : '13px';
+
             var sourceDiv = document.createElement('div');
             sourceDiv.textContent = source;
-            sourceDiv.style.cssText = 'font-size:14px;color:#333;margin-bottom:4px;line-height:1.4;';
+            sourceDiv.style.cssText = 'font-size:' + resultFontSource + ';color:#333;margin-bottom:4px;line-height:1.4;word-break:break-word;';
 
             var transDiv = document.createElement('div');
             transDiv.textContent = chrome.i18n.getMessage("sc_arrow") + target;
-            transDiv.style.cssText = 'font-size:13px;color:#4A90D9;line-height:1.4;';
+            transDiv.style.cssText = 'font-size:' + resultFontTarget + ';color:#4A90D9;line-height:1.4;word-break:break-word;';
 
             row.appendChild(sourceDiv);
             row.appendChild(transDiv);
@@ -2663,16 +2682,18 @@ function showResultDialog(dataURL, boxes, message) {
     }
 
     // Footer
+    var btnPad = isMobile ? '10px 14px' : '6px 16px';
+    var btnFont = isMobile ? '15px' : '14px';
     var footer = document.createElement('div');
-    footer.style.cssText = 'padding:12px 16px;border-top:1px solid #eee;display:flex;justify-content:space-between;gap:8px;flex-shrink:0;';
+    footer.style.cssText = 'padding:' + (isMobile ? '12px 10px' : '12px 16px') + ';border-top:1px solid #eee;display:flex;justify-content:space-between;gap:6px;flex-shrink:0;flex-wrap:wrap;';
     var footerLeft = document.createElement('div');
-    footerLeft.style.cssText = 'display:flex;gap:8px;';
+    footerLeft.style.cssText = 'display:flex;gap:6px;';
     var footerRight = document.createElement('div');
-    footerRight.style.cssText = 'display:flex;gap:8px;';
+    footerRight.style.cssText = 'display:flex;gap:6px;';
 
     var btnContinue = document.createElement('button');
     btnContinue.textContent = chrome.i18n.getMessage("sc_new_region");
-    btnContinue.style.cssText = 'padding:6px 16px;background:#5cb85c;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:14px;';
+    btnContinue.style.cssText = 'padding:' + btnPad + ';background:#5cb85c;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:' + btnFont + ';white-space:nowrap;touch-action:manipulation;';
     btnContinue.addEventListener('click', function() {
         backdrop.remove();
         dialog.remove();
@@ -2682,7 +2703,7 @@ function showResultDialog(dataURL, boxes, message) {
 
     var btnReOCR = document.createElement('button');
     btnReOCR.textContent = chrome.i18n.getMessage("sc_recognize");
-    btnReOCR.style.cssText = 'padding:6px 16px;background:#4A90D9;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:14px;';
+    btnReOCR.style.cssText = 'padding:' + btnPad + ';background:#4A90D9;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:' + btnFont + ';white-space:nowrap;touch-action:manipulation;';
     btnReOCR.addEventListener('click', function() {
         backdrop.remove();
         dialog.remove();
@@ -2691,8 +2712,8 @@ function showResultDialog(dataURL, boxes, message) {
 
     var btnClose = document.createElement('button');
     btnClose.textContent = chrome.i18n.getMessage("sc_close");
-    btnClose.style.cssText = 'padding:6px 16px;background:#fff;color:#333;border:1px solid #ccc;border-radius:4px;cursor:pointer;font-size:14px;';
-    btnClose.addEventListener('click', function() { backdrop.remove(); dialog.remove(); });
+    btnClose.style.cssText = 'padding:' + btnPad + ';background:#fff;color:#333;border:1px solid #ccc;border-radius:4px;cursor:pointer;font-size:' + btnFont + ';white-space:nowrap;touch-action:manipulation;';
+    btnClose.addEventListener('click', function() { cleanupScreenCaptureAll(); });
 
     footerLeft.appendChild(btnContinue);
     footerRight.appendChild(btnReOCR);
