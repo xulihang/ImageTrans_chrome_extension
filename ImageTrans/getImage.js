@@ -1615,6 +1615,11 @@ function startScreenCapture() {
     window.addEventListener('mousemove', onScreenCaptureMouseMove);
     window.addEventListener('mouseup', onScreenCaptureMouseUp);
     window.addEventListener('keydown', onScreenCaptureKeyDown);
+
+    screenCaptureOverlay.addEventListener('touchstart', onScreenCaptureTouchStart, { passive: false });
+    window.addEventListener('touchmove', onScreenCaptureTouchMove, { passive: false });
+    window.addEventListener('touchend', onScreenCaptureTouchEnd);
+    window.addEventListener('touchcancel', onScreenCaptureTouchEnd);
 }
 
 function onScreenCaptureMouseDown(e) {
@@ -1669,6 +1674,62 @@ function onScreenCaptureKeyDown(e) {
     }
 }
 
+function onScreenCaptureTouchStart(e) {
+    if (e.touches.length !== 1) return;
+    var touch = e.touches[0];
+    screenCaptureStartX = touch.clientX;
+    screenCaptureStartY = touch.clientY;
+    screenCaptureSelection.style.display = 'block';
+    screenCaptureSelection.style.left = screenCaptureStartX + 'px';
+    screenCaptureSelection.style.top = screenCaptureStartY + 'px';
+    screenCaptureSelection.style.width = '0px';
+    screenCaptureSelection.style.height = '0px';
+    e.preventDefault();
+    e.stopPropagation();
+}
+
+function onScreenCaptureTouchMove(e) {
+    if (e.touches.length !== 1) return;
+    if (screenCaptureSelection.style.display === 'none') return;
+    var touch = e.touches[0];
+    var x = Math.min(screenCaptureStartX, touch.clientX);
+    var y = Math.min(screenCaptureStartY, touch.clientY);
+    var w = Math.abs(touch.clientX - screenCaptureStartX);
+    var h = Math.abs(touch.clientY - screenCaptureStartY);
+    screenCaptureSelection.style.left = x + 'px';
+    screenCaptureSelection.style.top = y + 'px';
+    screenCaptureSelection.style.width = w + 'px';
+    screenCaptureSelection.style.height = h + 'px';
+    e.preventDefault();
+}
+
+function onScreenCaptureTouchEnd(e) {
+    var touch = e.changedTouches[0];
+    if (!touch) {
+        cleanupScreenCaptureAll();
+        return;
+    }
+    var endX = touch.clientX;
+    var endY = touch.clientY;
+
+    var rect = {
+        left: Math.min(screenCaptureStartX, endX),
+        top: Math.min(screenCaptureStartY, endY),
+        width: Math.abs(endX - screenCaptureStartX),
+        height: Math.abs(endY - screenCaptureStartY)
+    };
+
+    cleanupScreenCaptureOverlay();
+
+    if (rect.width < 10 || rect.height < 10) {
+        cleanupScreenCaptureAll();
+        return;
+    }
+
+    screenCaptureRect = rect;
+    showSelectionToolbar(rect);
+}
+
 function cleanupScreenCaptureOverlay() {
     if (screenCaptureOverlay) {
         screenCaptureOverlay.remove();
@@ -1677,6 +1738,9 @@ function cleanupScreenCaptureOverlay() {
     window.removeEventListener('mousemove', onScreenCaptureMouseMove);
     window.removeEventListener('mouseup', onScreenCaptureMouseUp);
     window.removeEventListener('keydown', onScreenCaptureKeyDown);
+    window.removeEventListener('touchmove', onScreenCaptureTouchMove);
+    window.removeEventListener('touchend', onScreenCaptureTouchEnd);
+    window.removeEventListener('touchcancel', onScreenCaptureTouchEnd);
 }
 
 function showSelectionToolbar(rect) {
@@ -1693,6 +1757,7 @@ function showSelectionToolbar(rect) {
 
     // Drag support
     screenCaptureSelection.addEventListener('mousedown', onSelectionDragStart);
+    screenCaptureSelection.addEventListener('touchstart', onSelectionDragTouchStart, { passive: false });
 
     // Create toolbar
     screenCaptureToolbar = document.createElement('div');
@@ -1703,6 +1768,7 @@ function showSelectionToolbar(rect) {
     btnOCR.textContent = chrome.i18n.getMessage("sc_recognize");
     btnOCR.style.cssText = 'padding:6px 16px;background:#4A90D9;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,0.2);';
     btnOCR.addEventListener('mousedown', function(e) { e.stopPropagation(); });
+    btnOCR.addEventListener('touchstart', function(e) { e.stopPropagation(); });
     btnOCR.addEventListener('click', function(e) {
         e.stopPropagation();
         doScreenOCR();
@@ -1712,6 +1778,7 @@ function showSelectionToolbar(rect) {
     btnClose.textContent = chrome.i18n.getMessage("sc_close");
     btnClose.style.cssText = 'padding:6px 16px;background:#fff;color:#333;border:1px solid #ccc;border-radius:4px;cursor:pointer;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,0.2);';
     btnClose.addEventListener('mousedown', function(e) { e.stopPropagation(); });
+    btnClose.addEventListener('touchstart', function(e) { e.stopPropagation(); });
     btnClose.addEventListener('click', function(e) {
         e.stopPropagation();
         cleanupScreenCaptureAll();
@@ -1751,6 +1818,11 @@ function addResizeHandles(rect) {
             e.preventDefault();
             onSelectionResizeStart(e);
         });
+        h.addEventListener('touchstart', function(e) {
+            e.stopPropagation();
+            e.preventDefault();
+            onSelectionResizeTouchStart(e);
+        }, { passive: false });
         document.body.appendChild(h);
         screenCaptureHandles.push(h);
     }
@@ -1868,6 +1940,95 @@ function onSelectionResizeEnd(e) {
     screenCaptureResizeCorner = null;
     window.removeEventListener('mousemove', onSelectionResizeMove);
     window.removeEventListener('mouseup', onSelectionResizeEnd);
+    window.removeEventListener('touchmove', onSelectionResizeTouchMove);
+    window.removeEventListener('touchend', onSelectionResizeTouchEnd);
+    window.removeEventListener('touchcancel', onSelectionResizeTouchEnd);
+}
+
+// === Touch event handlers for drag & resize ===
+
+function onSelectionDragTouchStart(e) {
+    if (screenCaptureResizing) return;
+    if (e.touches.length !== 1) return;
+    var touch = e.touches[0];
+    screenCaptureDragging = true;
+    screenCaptureDragOffsetX = touch.clientX - screenCaptureRect.left;
+    screenCaptureDragOffsetY = touch.clientY - screenCaptureRect.top;
+    window.addEventListener('touchmove', onSelectionDragTouchMove, { passive: false });
+    window.addEventListener('touchend', onSelectionDragTouchEnd);
+    window.addEventListener('touchcancel', onSelectionDragTouchEnd);
+    e.preventDefault();
+    e.stopPropagation();
+}
+
+function onSelectionDragTouchMove(e) {
+    if (!screenCaptureDragging) return;
+    if (e.touches.length !== 1) return;
+    var touch = e.touches[0];
+    var newLeft = touch.clientX - screenCaptureDragOffsetX;
+    var newTop = touch.clientY - screenCaptureDragOffsetY;
+    applyRect({
+        left: newLeft,
+        top: newTop,
+        width: screenCaptureRect.width,
+        height: screenCaptureRect.height
+    });
+    e.preventDefault();
+}
+
+function onSelectionDragTouchEnd(e) {
+    screenCaptureDragging = false;
+    window.removeEventListener('touchmove', onSelectionDragTouchMove);
+    window.removeEventListener('touchend', onSelectionDragTouchEnd);
+    window.removeEventListener('touchcancel', onSelectionDragTouchEnd);
+}
+
+function onSelectionResizeTouchStart(e) {
+    if (e.touches.length !== 1) return;
+    screenCaptureResizing = true;
+    screenCaptureResizeCorner = e.currentTarget.getAttribute('data-corner');
+    // Anchor is the opposite corner
+    switch (screenCaptureResizeCorner) {
+        case 'nw':
+            screenCaptureResizeAnchorX = screenCaptureRect.left + screenCaptureRect.width;
+            screenCaptureResizeAnchorY = screenCaptureRect.top + screenCaptureRect.height;
+            break;
+        case 'ne':
+            screenCaptureResizeAnchorX = screenCaptureRect.left;
+            screenCaptureResizeAnchorY = screenCaptureRect.top + screenCaptureRect.height;
+            break;
+        case 'sw':
+            screenCaptureResizeAnchorX = screenCaptureRect.left + screenCaptureRect.width;
+            screenCaptureResizeAnchorY = screenCaptureRect.top;
+            break;
+        case 'se':
+            screenCaptureResizeAnchorX = screenCaptureRect.left;
+            screenCaptureResizeAnchorY = screenCaptureRect.top;
+            break;
+    }
+    window.addEventListener('touchmove', onSelectionResizeTouchMove, { passive: false });
+    window.addEventListener('touchend', onSelectionResizeTouchEnd);
+    window.addEventListener('touchcancel', onSelectionResizeTouchEnd);
+}
+
+function onSelectionResizeTouchMove(e) {
+    if (!screenCaptureResizing) return;
+    if (e.touches.length !== 1) return;
+    var touch = e.touches[0];
+    var newLeft = Math.min(screenCaptureResizeAnchorX, touch.clientX);
+    var newTop = Math.min(screenCaptureResizeAnchorY, touch.clientY);
+    var newWidth = Math.abs(touch.clientX - screenCaptureResizeAnchorX);
+    var newHeight = Math.abs(touch.clientY - screenCaptureResizeAnchorY);
+    applyRect({ left: newLeft, top: newTop, width: newWidth, height: newHeight });
+    e.preventDefault();
+}
+
+function onSelectionResizeTouchEnd(e) {
+    screenCaptureResizing = false;
+    screenCaptureResizeCorner = null;
+    window.removeEventListener('touchmove', onSelectionResizeTouchMove);
+    window.removeEventListener('touchend', onSelectionResizeTouchEnd);
+    window.removeEventListener('touchcancel', onSelectionResizeTouchEnd);
 }
 
 function cleanupScreenCaptureAll() {
@@ -1885,6 +2046,15 @@ function cleanupScreenCaptureAll() {
     window.removeEventListener('mouseup', onSelectionDragEnd);
     window.removeEventListener('mousemove', onSelectionResizeMove);
     window.removeEventListener('mouseup', onSelectionResizeEnd);
+    window.removeEventListener('touchmove', onScreenCaptureTouchMove);
+    window.removeEventListener('touchend', onScreenCaptureTouchEnd);
+    window.removeEventListener('touchcancel', onScreenCaptureTouchEnd);
+    window.removeEventListener('touchmove', onSelectionDragTouchMove);
+    window.removeEventListener('touchend', onSelectionDragTouchEnd);
+    window.removeEventListener('touchcancel', onSelectionDragTouchEnd);
+    window.removeEventListener('touchmove', onSelectionResizeTouchMove);
+    window.removeEventListener('touchend', onSelectionResizeTouchEnd);
+    window.removeEventListener('touchcancel', onSelectionResizeTouchEnd);
     if (screenCaptureSelection) {
         screenCaptureSelection.remove();
         screenCaptureSelection = null;
