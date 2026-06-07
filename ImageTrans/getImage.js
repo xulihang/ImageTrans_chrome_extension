@@ -2606,7 +2606,8 @@ function showResultDialog(dataURL, boxes, message) {
     backdrop.id = 'imagetrans-sc-backdrop';
     backdrop.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:2147483647;background:rgba(0,0,0,0.3);';
     backdrop.addEventListener('click', function() {
-        cleanupScreenCaptureAll();
+        backdrop.remove();
+        dialog.remove();
     });
 
     var isMobile = window.innerWidth < 600;
@@ -2624,7 +2625,7 @@ function showResultDialog(dataURL, boxes, message) {
     var closeBtn = document.createElement('button');
     closeBtn.innerHTML = '&#x2715;';
     closeBtn.style.cssText = 'background:none;border:none;font-size:' + (isMobile ? '22px' : '18px') + ';cursor:pointer;color:#999;padding:' + (isMobile ? '4px' : '0') + ';line-height:1;min-width:32px;min-height:32px;';
-    closeBtn.addEventListener('click', function() { cleanupScreenCaptureAll(); });
+    closeBtn.addEventListener('click', function() { backdrop.remove(); dialog.remove(); });
     header.appendChild(title);
     header.appendChild(closeBtn);
 
@@ -2713,7 +2714,7 @@ function showResultDialog(dataURL, boxes, message) {
     var btnClose = document.createElement('button');
     btnClose.textContent = chrome.i18n.getMessage("sc_close");
     btnClose.style.cssText = 'padding:' + btnPad + ';background:#fff;color:#333;border:1px solid #ccc;border-radius:4px;cursor:pointer;font-size:' + btnFont + ';white-space:nowrap;touch-action:manipulation;';
-    btnClose.addEventListener('click', function() { cleanupScreenCaptureAll(); });
+    btnClose.addEventListener('click', function() { backdrop.remove(); dialog.remove(); });
 
     footerLeft.appendChild(btnContinue);
     footerRight.appendChild(btnReOCR);
