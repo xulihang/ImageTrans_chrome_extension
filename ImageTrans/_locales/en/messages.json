@@ -31,6 +31,7 @@
   "options_use_local_server": { "message": "Use local server" },
   "options_instance_name": { "message": "Instance display name" },
   "options_password": { "message": "Password (optional)" },
+  "options_send_bg": { "message": "Send network requests in background.js" },
   "options_check_instances": { "message": "Check existing instances" },
   "options_image_capture": { "message": "Image Capture and Rendering" },
   "options_pick_image_from": { "message": "Pick image from" },

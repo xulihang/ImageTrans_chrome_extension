@@ -63,6 +63,7 @@ var useYOLOForJapanese = true;
 var useTesseractForJapanese = true;
 var translationMode = "imagetrans";
 var defaultPresetTranslation = "glm4flash";
+var sendRequestsViaBackground = false;
 var xSpacing = 15;
 var ySpacing = 15;
 chrome.storage.sync.get({
@@ -86,6 +87,7 @@ chrome.storage.sync.get({
     useTesseractForJapanese: true,
     translationMode: 'imagetrans',
     defaultPresetTranslation: defaultPresetTranslation,
+    sendRequestsViaBackground: false,
     xSpacing: 15,
     ySpacing: 15
 }, async function(items) {
@@ -157,6 +159,9 @@ chrome.storage.sync.get({
     }
     if (items.ySpacing != undefined) {
         ySpacing = items.ySpacing;
+    }
+    if (items.sendRequestsViaBackground != undefined) {
+        sendRequestsViaBackground = items.sendRequestsViaBackground;
     }
 });
 
@@ -249,6 +254,21 @@ function fetchViaBackground(url, options) {
     });
 }
 
+async function doFetch(url, options) {
+    if (sendRequestsViaBackground) {
+        return fetchViaBackground(url, options);
+    }
+    const resp = await fetch(url, options);
+    let data;
+    const contentType = resp.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+        data = await resp.json();
+    } else {
+        data = await resp.text();
+    }
+    return { ok: resp.ok, status: resp.status, data: data };
+}
+
 async function ajax(src,img,checkData){
     if (useOpenAI) {
         return ajaxOpenAI(src, img, checkData);
@@ -311,7 +331,7 @@ async function ajax(src,img,checkData){
                 if (v === undefined || v === null) continue;
                 params.append(k, v);
             }
-            const resp = await fetchViaBackground(url + '/translate', {
+            const resp = await doFetch(url + '/translate', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
@@ -559,7 +579,7 @@ async function ajaxOpenAI(src, img, checkData) {
                 }
             }
 
-            const ocrResponse = await fetchViaBackground(serverURL + '/translate', {
+            const ocrResponse = await doFetch(serverURL + '/translate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
                 body: ocrParams.toString(),
@@ -2457,7 +2477,7 @@ function processScreenOCRWithImageTrans(dataURL) {
         }
     }
 
-    fetchViaBackground(serverURL + '/translate', {
+    doFetch(serverURL + '/translate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
         body: ocrParams.toString(),

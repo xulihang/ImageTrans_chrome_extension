@@ -31,6 +31,7 @@
   "options_use_local_server": { "message": "使用本地服务器" },
   "options_instance_name": { "message": "实例显示名称" },
   "options_password": { "message": "密码（可选）" },
+  "options_send_bg": { "message": "在background.js中发送网络请求" },
   "options_check_instances": { "message": "检查现有实例" },
   "options_image_capture": { "message": "图片捕获与渲染" },
   "options_pick_image_from": { "message": "选择图片来源" },
