@@ -311,7 +311,6 @@ async function ajax(src,img,checkData){
                 if (v === undefined || v === null) continue;
                 params.append(k, v);
             }
-            console.log(fetch);
             const resp = await fetchViaBackground(url + '/translate', {
                 method: 'POST',
                 headers: {
