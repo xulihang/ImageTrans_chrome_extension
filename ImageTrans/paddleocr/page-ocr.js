@@ -39,6 +39,7 @@
 
       if (window.ort.env && window.ort.env.wasm) {
         window.ort.env.wasm.wasmPaths = wasmPath;
+        //window.ort.env.wasm.numThreads = 1;
       }
 
       const res = await fetch(dicUrl);

@@ -5,7 +5,9 @@
       "Bash(powershell -Command \"Get-ChildItem -Path 'c:\\\\Users\\\\admin\\\\Desktop\\\\git\\\\ImageTrans_chrome_extension\\\\ImageTrans\\\\paddleocr\\\\' -Filter 'ort-wasm-simd*'\")",
       "Bash(powershell -Command \"\\(Get-FileHash 'c:\\\\Users\\\\admin\\\\Desktop\\\\git\\\\ImageTrans_chrome_extension\\\\ImageTrans\\\\paddleocr\\\\ort-wasm-simd-threaded.jsep.js'\\).Hash; \\(Get-FileHash 'c:\\\\Users\\\\admin\\\\Desktop\\\\git\\\\ImageTrans_chrome_extension\\\\ImageTrans\\\\paddleocr\\\\ort-wasm-simd-threaded.jsep.mjs'\\).Hash\")",
       "Bash(powershell -Command \"Remove-Item 'c:\\\\Users\\\\admin\\\\Desktop\\\\git\\\\ImageTrans_chrome_extension\\\\ImageTrans\\\\paddleocr\\\\ort-wasm-simd-threaded.jsep.mjs'\")",
-      "Bash(powershell -Command \"Remove-Item -Path 'c:\\\\Users\\\\admin\\\\Desktop\\\\git\\\\ImageTrans_chrome_extension\\\\ImageTrans\\\\paddleocr\\\\ort-wasm-simd-threaded.jsep.mjs' -Force\")"
+      "Bash(powershell -Command \"Remove-Item -Path 'c:\\\\Users\\\\admin\\\\Desktop\\\\git\\\\ImageTrans_chrome_extension\\\\ImageTrans\\\\paddleocr\\\\ort-wasm-simd-threaded.jsep.mjs' -Force\")",
+      "Bash(Get-Content \"c:\\\\Users\\\\admin\\\\Desktop\\\\git\\\\ImageTrans_chrome_extension\\\\ImageTrans\\\\paddleocr\\\\ort-wasm-simd-threaded.jsep.js\" -Tail 20)",
+      "PowerShell(\\(Get-Content \"c:\\\\Users\\\\admin\\\\Desktop\\\\git\\\\ImageTrans_chrome_extension\\\\ImageTrans\\\\paddleocr\\\\ort-wasm-simd-threaded.jsep.js\"\\).Count)"
     ]
   }
 }

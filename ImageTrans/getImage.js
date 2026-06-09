@@ -1158,6 +1158,7 @@ function injectPaddleLibraries() {
             if (!data || data.source !== 'imagetrans-extension') return;
 
             if (data.type === 'PADDLE_INIT_RESULT') {
+                chrome.runtime.sendMessage({action: "disableCORSForFetch"});
                 if (data.success) {
                     paddleInitDone = true;
                     paddleCurrentModelKey = data.modelKey || 'default';
@@ -1220,16 +1221,18 @@ function ensurePaddleModel(sourceLang) {
     }
     return new Promise(function(resolve, reject) {
         paddleInitResolver = {resolve: resolve, reject: reject};
-        window.postMessage({
-            source: 'imagetrans-extension',
-            type: 'PADDLE_INIT',
-            detPath: modelInfo.detUrl,
-            recPath: modelInfo.recUrl,
-            dicPath: modelInfo.dicUrl,
-            modelKey: modelInfo.modelKey,
-            wasmPath: chrome.runtime.getURL('paddleocr/'),
-            requestId: 'init_' + modelInfo.modelKey
-        }, '*');
+        chrome.runtime.sendMessage({action: "enableCORSForFetch"}, function() {
+            window.postMessage({
+                source: 'imagetrans-extension',
+                type: 'PADDLE_INIT',
+                detPath: modelInfo.detUrl,
+                recPath: modelInfo.recUrl,
+                dicPath: modelInfo.dicUrl,
+                modelKey: modelInfo.modelKey,
+                wasmPath: chrome.runtime.getURL('paddleocr/'),
+                requestId: 'init_' + modelInfo.modelKey
+            }, '*');
+        });
     });
 }
 
