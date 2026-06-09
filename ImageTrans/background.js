@@ -57,6 +57,29 @@ function updateCORSStatus(enabled) {
 }
 
 // 监听来自options页面和content script的消息
+// 长连接端口：处理 proxyFetch 请求，同时保持 Service Worker 存活
+chrome.runtime.onConnect.addListener((port) => {
+  if (port.name === 'proxyFetch') {
+    port.onMessage.addListener((msg) => {
+      (async () => {
+        try {
+          const resp = await fetch(msg.url, msg.options);
+          let data;
+          const contentType = resp.headers.get('content-type') || '';
+          if (contentType.includes('application/json')) {
+            data = await resp.json();
+          } else {
+            data = await resp.text();
+          }
+          port.postMessage({ id: msg.id, ok: resp.ok, status: resp.status, data: data });
+        } catch (err) {
+          port.postMessage({ id: msg.id, ok: false, status: 0, data: null, error: err.message });
+        }
+      })();
+    });
+  }
+});
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "updateCORSStatus") {
     useCORS = request.enabled;

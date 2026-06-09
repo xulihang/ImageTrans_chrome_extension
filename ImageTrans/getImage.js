@@ -231,21 +231,32 @@ console.log("loaded");
 
 function fetchViaBackground(url, options) {
     return new Promise(function(resolve, reject) {
-        chrome.runtime.sendMessage({
-            action: 'proxyFetch',
-            url: url,
-            options: options
-        }, function(response) {
-            if (chrome.runtime.lastError) {
-                reject(new Error(chrome.runtime.lastError.message));
-                return;
+        var port;
+        try {
+            port = chrome.runtime.connect({ name: 'proxyFetch' });
+        } catch (e) {
+            reject(new Error('无法连接到后台服务'));
+            return;
+        }
+        var settled = false;
+        function settle(err, result) {
+            if (settled) return;
+            settled = true;
+            try { port.disconnect(); } catch (e) {}
+            if (err) reject(err);
+            else resolve(result);
+        }
+        port.onMessage.addListener(function(msg) {
+            if (msg.error) {
+                settle(new Error(msg.error));
+            } else {
+                settle(null, msg);
             }
-            if (response.error) {
-                reject(new Error(response.error));
-                return;
-            }
-            resolve(response);
         });
+        port.onDisconnect.addListener(function() {
+            settle(new Error('后台连接已断开'));
+        });
+        port.postMessage({ url: url, options: options });
     });
 }
 
