@@ -229,6 +229,26 @@ chrome.runtime.onMessage.addListener(
 
 console.log("loaded");
 
+function fetchViaBackground(url, options) {
+    return new Promise(function(resolve, reject) {
+        chrome.runtime.sendMessage({
+            action: 'proxyFetch',
+            url: url,
+            options: options
+        }, function(response) {
+            if (chrome.runtime.lastError) {
+                reject(new Error(chrome.runtime.lastError.message));
+                return;
+            }
+            if (response.error) {
+                reject(new Error(response.error));
+                return;
+            }
+            resolve(response);
+        });
+    });
+}
+
 async function ajax(src,img,checkData){
     if (useOpenAI) {
         return ajaxOpenAI(src, img, checkData);
@@ -292,7 +312,7 @@ async function ajax(src,img,checkData){
                 params.append(k, v);
             }
             console.log(fetch);
-            const resp = await fetch(url + '/translate', {
+            const resp = await fetchViaBackground(url + '/translate', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
@@ -303,7 +323,7 @@ async function ajax(src,img,checkData){
             if (!resp.ok) {
                 throw new Error('Network response was not ok: ' + resp.status);
             }
-            return await resp.json();
+            return resp.data;
         };
 
         try {
@@ -540,7 +560,7 @@ async function ajaxOpenAI(src, img, checkData) {
                 }
             }
 
-            const ocrResponse = await fetch(serverURL + '/translate', {
+            const ocrResponse = await fetchViaBackground(serverURL + '/translate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
                 body: ocrParams.toString(),
@@ -551,7 +571,7 @@ async function ajaxOpenAI(src, img, checkData) {
                 throw new Error('ImageTrans OCR failed: HTTP ' + ocrResponse.status);
             }
 
-            const ocrResult = await ocrResponse.json();
+            const ocrResult = ocrResponse.data;
             if (!ocrResult["imgMap"] || !ocrResult["imgMap"]["boxes"]) {
                 throw new Error('ImageTrans did not return text boxes. Is it running correctly?');
             }
@@ -2438,7 +2458,7 @@ function processScreenOCRWithImageTrans(dataURL) {
         }
     }
 
-    fetch(serverURL + '/translate', {
+    fetchViaBackground(serverURL + '/translate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
         body: ocrParams.toString(),
@@ -2447,7 +2467,7 @@ function processScreenOCRWithImageTrans(dataURL) {
         if (!ocrResponse.ok) {
             throw new Error('ImageTrans OCR failed: HTTP ' + ocrResponse.status);
         }
-        return ocrResponse.json();
+        return ocrResponse.data;
     }).then(function(ocrResult) {
         if (!ocrResult["imgMap"] || !ocrResult["imgMap"]["boxes"]) {
             throw new Error('ImageTrans did not return text boxes');

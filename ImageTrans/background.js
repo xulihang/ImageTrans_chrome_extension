@@ -76,6 +76,23 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       updateCORSStatus(false);
     }
     sendResponse();
+  } else if (request.action === "proxyFetch") {
+    (async () => {
+      try {
+        const resp = await fetch(request.url, request.options);
+        let data;
+        const contentType = resp.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          data = await resp.json();
+        } else {
+          data = await resp.text();
+        }
+        sendResponse({ ok: resp.ok, status: resp.status, data: data });
+      } catch (err) {
+        sendResponse({ ok: false, status: 0, data: null, error: err.message });
+      }
+    })();
+    return true;
   } else if (request.action === "translateViaGlm4Flash") {
     (async () => {
       try {
