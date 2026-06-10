@@ -1598,7 +1598,19 @@ function autoTranslateImage(img, src) {
     return new Promise(function(resolve) {
         var origAlert = window.alert;
         var origConfirm = window.confirm;
-        window.alert = function(msg) { console.log('[AutoTranslate]', msg); };
+        var langpairAlertMsg = chrome.i18n.getMessage("alert_set_langpair");
+        window.alert = function(msg) {
+            if (msg === langpairAlertMsg) {
+                window.alert = origAlert;
+                window.confirm = origConfirm;
+                stopAutoTranslate();
+                delete translatedSrcs[src];
+                origAlert(msg);
+                resolve();
+                return;
+            }
+            console.log('[AutoTranslate]', msg);
+        };
         window.confirm = function(msg) { console.log('[AutoTranslate]', msg); return false; };
 
         var savedBodyClass = document.body.className;
