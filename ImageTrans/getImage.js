@@ -269,9 +269,9 @@ async function doFetch(url, options) {
     return { ok: resp.ok, status: resp.status, data: data };
 }
 
-async function ajax(src,img,checkData){
+async function ajax(src,img,checkData,showOverlay){
     if (useOpenAI) {
-        return ajaxOpenAI(src, img, checkData);
+        return ajaxOpenAI(src, img, checkData, showOverlay);
     }
     if (translationMode === "local") {
         if (sourceLang === "auto" || targetLang === "auto") {
@@ -280,7 +280,7 @@ async function ajax(src,img,checkData){
             document.body.classList.remove("imagetrans-wait");
             return;
         }
-        return ajaxMyMemory(src, img, checkData);
+        return ajaxMyMemory(src, img, checkData, showOverlay);
     }
     let data = {src:src};
     if ((src.startsWith("blob:") || useCanvas || renderTextInFrontend) && img) {
@@ -296,6 +296,9 @@ async function ajax(src,img,checkData){
         } catch (error) {
             console.log(error);
         }
+    }
+    if (showOverlay && img) {
+        showTranslatingOverlay(img);
     }
     if (sourceLang != "auto") {
         data["sourceLang"] = sourceLang;
@@ -392,7 +395,7 @@ async function ajax(src,img,checkData){
                         document.body.classList.remove("imagetrans-wait");
                         return;
                     }
-                    await ajaxMyMemory(src, img, checkData);
+                    await ajaxMyMemory(src, img, checkData, showOverlay);
                 }
             } else {
                 alert(chrome.i18n.getMessage("alert_connect_failed"));
@@ -404,7 +407,7 @@ async function ajax(src,img,checkData){
     }
 }
 
-async function ajaxMyMemory(src, img, checkData) {
+async function ajaxMyMemory(src, img, checkData, showOverlay) {
     console.log("Using PaddleOCR + MyMemory for translation");
     document.body.classList.add("imagetrans-wait");
     // Yield so the browser renders the wait cursor before OCR blocks the thread
@@ -420,7 +423,9 @@ async function ajaxMyMemory(src, img, checkData) {
         } else {
             throw new Error("Cannot get image data for OCR");
         }
-
+        if (showOverlay && img) {
+            showTranslatingOverlay(img);
+        }
         let boxes = await paddleOCR(dataURL, sourceLang);
 
         const sourceTexts = [];
@@ -528,7 +533,7 @@ function reflowText(sourceLang, source) {
     return source.replace(/\n/g, " ");
 }
 
-async function ajaxOpenAI(src, img, checkData) {
+async function ajaxOpenAI(src, img, checkData, showOverlay) {
     console.log("Using OpenAI for translation");
     if (!openaiURL || !openaiKey) {
         alert(chrome.i18n.getMessage("alert_openai_not_configured"));
@@ -549,6 +554,10 @@ async function ajaxOpenAI(src, img, checkData) {
             dataURLMap[src] = dataURL;
         } else {
             throw new Error("Cannot get image data for OCR");
+        }
+
+        if (showOverlay && img) {
+            showTranslatingOverlay(img);
         }
 
         // Step 2: OCR (text detection + coordinates)
@@ -1575,8 +1584,6 @@ function processQueue() {
 
 function autoTranslateImage(img, src) {
     return new Promise(function(resolve) {
-        showTranslatingOverlay(img);
-
         var origAlert = window.alert;
         var origConfirm = window.confirm;
         window.alert = function(msg) { console.log('[AutoTranslate]', msg); };
@@ -1593,7 +1600,7 @@ function autoTranslateImage(img, src) {
         };
 
         try {
-            var promise = ajax(src, img, true);
+            var promise = ajax(src, img, true, true);
             if (promise && promise.then) {
                 promise.then(done).catch(function(e) {
                     console.error('[AutoTranslate] Error:', e);
