@@ -1634,7 +1634,12 @@ function showTranslatingOverlay(img) {
     hideTranslatingOverlay(img);
     var overlay = document.createElement('div');
     overlay.className = 'imagetrans-overlay';
-    overlay.innerHTML = '<div class="imagetrans-spinner"></div><div>' + chrome.i18n.getMessage("overlay_translating") + '</div>';
+    var spinner = document.createElement('div');
+    spinner.className = 'imagetrans-spinner';
+    var textDiv = document.createElement('div');
+    textDiv.textContent = chrome.i18n.getMessage("overlay_translating");
+    overlay.appendChild(spinner);
+    overlay.appendChild(textDiv);
     updateOverlayPosition(overlay, img);
     document.body.appendChild(overlay);
     img._imagetransOverlay = overlay;
@@ -2681,7 +2686,7 @@ function showResultDialog(dataURL, boxes, message) {
     title.textContent = chrome.i18n.getMessage("sc_title");
     title.style.cssText = 'font-size:' + (isMobile ? '15px' : '16px') + ';font-weight:600;color:#333;';
     var closeBtn = document.createElement('button');
-    closeBtn.innerHTML = '&#x2715;';
+    closeBtn.textContent = '✕';
     closeBtn.style.cssText = 'background:none;border:none;font-size:' + (isMobile ? '22px' : '18px') + ';cursor:pointer;color:#999;padding:' + (isMobile ? '4px' : '0') + ';line-height:1;min-width:32px;min-height:32px;';
     closeBtn.addEventListener('click', function() { backdrop.remove(); dialog.remove(); });
     header.appendChild(title);
