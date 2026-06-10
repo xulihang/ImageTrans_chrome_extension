@@ -189,10 +189,10 @@ chrome.runtime.onMessage.addListener(
         document.body.classList.add("imagetrans-wait");
         var e=getImage(coordinate.x, coordinate.y, request.check);
         var src=getImageSrc(e);
-        ajax(src,e,true);
+        ajax(src,e,true,true);
     }else if (message == "translateWithMenu") {
         var e = getImageBySrc(request.info.srcUrl)
-        ajax(request.info.srcUrl,e,true);
+        ajax(request.info.srcUrl,e,true,true);
     }else if (message == "alterWithMenu") {
         console.log("alter")
         console.log(request.info)
@@ -405,6 +405,9 @@ async function ajax(src,img,checkData,showOverlay){
         document.body.classList.remove("imagetrans-wait");
         console.log(e);
     }
+    if (showOverlay && img) {
+        hideTranslatingOverlay(img);
+    }
 }
 
 async function ajaxMyMemory(src, img, checkData, showOverlay) {
@@ -437,6 +440,9 @@ async function ajaxMyMemory(src, img, checkData, showOverlay) {
         if (sourceTexts.length === 0 || sourceTexts.every(function(t) { return !t; })) {
             document.body.classList.remove("imagetrans-wait");
             alert(chrome.i18n.getMessage("alert_no_text"));
+            if (showOverlay && img) {
+                hideTranslatingOverlay(img);
+            }
             return;
         }
 
@@ -487,6 +493,9 @@ async function ajaxMyMemory(src, img, checkData, showOverlay) {
         document.body.classList.remove("imagetrans-wait");
         console.error('Translation failed:', err);
         alert(chrome.i18n.getMessage("alert_translation_failed", err.message));
+    }
+    if (showOverlay && img) {
+        hideTranslatingOverlay(img);
     }
 }
 
@@ -689,6 +698,9 @@ async function ajaxOpenAI(src, img, checkData, showOverlay) {
         document.body.classList.remove("imagetrans-wait");
         console.error('Translation failed:', err);
         alert(chrome.i18n.getMessage("alert_translation_failed", err.message));
+    }
+    if (showOverlay && img) {
+        hideTranslatingOverlay(img);
     }
 }
 
