@@ -121,5 +121,7 @@
   "sc_no_text_detected": { "message": "所选区域未检测到文本。" },
   "sc_no_text": { "message": "未检测到文本。" },
   "sc_new_region": { "message": "新建区域" },
-  "sc_arrow": { "message": "→ " }
+  "sc_arrow": { "message": "→ " },
+  "options_screen_capture_overlay": { "message": "屏幕截图OCR启用贴图模式" },
+  "options_screen_capture_overlay_hint": { "message": "翻译结果直接覆盖显示在原图上，不弹对话框。" }
 }

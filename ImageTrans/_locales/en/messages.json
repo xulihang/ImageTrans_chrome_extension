@@ -121,5 +121,7 @@
   "sc_no_text_detected": { "message": "No text detected in the selected area." },
   "sc_no_text": { "message": "No text detected." },
   "sc_new_region": { "message": "New Region" },
-  "sc_arrow": { "message": "→ " }
+  "sc_arrow": { "message": "→ " },
+  "options_screen_capture_overlay": { "message": "Screen Capture OCR overlay mode" },
+  "options_screen_capture_overlay_hint": { "message": "Overlay translated text directly on the image instead of showing a dialog." }
 }

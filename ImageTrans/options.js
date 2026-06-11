@@ -64,6 +64,7 @@ function save() {
   const useCanvas = document.getElementById("useCanvas").checked;
   const useCORS = document.getElementById("useCORS").checked;
   const renderTextInFrontend = document.getElementById("renderTextInFrontend").checked;
+  const screenCaptureOverlay = document.getElementById("screenCaptureOverlay").checked;
   const renderTextCSS = document.getElementById("renderTextCSS").value;
   const imagetransInstanceDisplayName = document.getElementById("imagetransInstanceInput").value;
   const password = document.getElementById("imagetransPasswordInput").value;
@@ -98,6 +99,7 @@ function save() {
     useCanvas: useCanvas,
     useCORS: useCORS,
     renderTextInFrontend: renderTextInFrontend,
+    screenCaptureOverlay: screenCaptureOverlay,
     renderTextCSS: renderTextCSS,
     displayName: imagetransInstanceDisplayName,
     password: password,
@@ -131,6 +133,7 @@ function load() {
     useCanvas: true,
     useCORS: true,
     renderTextInFrontend: false,
+    screenCaptureOverlay: false,
     renderTextCSS: 'text-align: center;\nborder-radius: 10%;',
     displayName: "",
     password:"",
@@ -178,6 +181,7 @@ function load() {
     document.getElementById("useCanvas").checked = items.useCanvas;
     document.getElementById("useCORS").checked = items.useCORS;
     document.getElementById("renderTextInFrontend").checked = items.renderTextInFrontend;
+    document.getElementById("screenCaptureOverlay").checked = items.screenCaptureOverlay;
     document.getElementById("renderTextCSS").value = items.renderTextCSS || '';
     document.getElementById("imagetransInstanceInput").value = items.displayName;
     document.getElementById("imagetransPasswordInput").value = items.password;
