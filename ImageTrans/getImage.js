@@ -1118,12 +1118,17 @@ var paddleInitDone = false;
 var paddleCurrentModelKey = null;
 var paddleInitResolver = null;
 var paddlePendingRequests = {};
-
+var ppocrv6_small_rec = chrome.runtime.getURL('paddleocr/rec.onnx');
+var ppocrv6_small_dict = chrome.runtime.getURL('paddleocr/ppocrv6_dict.txt');
 var PADDLE_MODEL_URLS = {
-    default: {
+    defaultv5: {
         det: 'https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.4.0/onnx/PP-OCRv5/det/ch_PP-OCRv5_mobile_det.onnx',
         rec: 'https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.4.0/onnx/PP-OCRv5/rec/ch_PP-OCRv5_rec_mobile_infer.onnx',
         dict: 'https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.4.0/paddle/PP-OCRv5/rec/ch_PP-OCRv5_rec_mobile_infer/ppocrv5_dict.txt'
+    },
+    japanese: {
+        rec: ppocrv6_small_rec,
+        dict: ppocrv6_small_dict
     },
     arabic: {
         det: 'https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.4.0/onnx/PP-OCRv4/det/Multilingual_PP-OCRv3_det_infer.onnx',
@@ -1149,6 +1154,7 @@ var PADDLE_MODEL_URLS = {
 };
 
 var PADDLE_LANG_TO_MODEL = {
+    ja: 'japanese',
     ar: 'arabic',
     ko: 'korean',
     ru: 'eslav',
@@ -1162,7 +1168,7 @@ var PADDLE_LANG_TO_MODEL = {
 
 function getPaddleModelInfo(sourceLang) {
     var modelKey = PADDLE_LANG_TO_MODEL[sourceLang] || 'default';
-    var defaultDetUrl = chrome.runtime.getURL('paddleocr/ppocr_v5_mobile_det.onnx');
+    var defaultDetUrl = chrome.runtime.getURL('paddleocr/tiny/det.onnx');
     var modelInfo = PADDLE_MODEL_URLS[modelKey];
     if (modelInfo) {
         return {
@@ -1175,8 +1181,8 @@ function getPaddleModelInfo(sourceLang) {
     return {
         modelKey: 'default',
         detUrl: defaultDetUrl,
-        recUrl: chrome.runtime.getURL('paddleocr/ppocr_v5_mobile_rec.onnx'),
-        dicUrl: chrome.runtime.getURL('paddleocr/ppocrv5_dict.txt')
+        recUrl: chrome.runtime.getURL('paddleocr/tiny/rec.onnx'),
+        dicUrl: chrome.runtime.getURL('paddleocr/tiny/ppocrv6_tiny_dict.txt')
     };
 }
 
@@ -1250,8 +1256,6 @@ function injectPaddleLibraries() {
             loadLibrary(chrome.runtime.getURL('paddleocr/ort.min.js'), 'text/javascript')
         ]).then(function() {
             return loadLibrary(chrome.runtime.getURL('paddleocr/esearch-ocr/dist/esearch-ocr.umd.js'), 'text/javascript');
-        }).then(function() {
-            return loadLibrary(chrome.runtime.getURL('paddleocr/tesseract.min.js'), 'text/javascript');
         }).then(function() {
             return loadLibrary(chrome.runtime.getURL('paddleocr/page-ocr.js'), 'text/javascript');
         }).then(function() {
