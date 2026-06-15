@@ -59,31 +59,6 @@
     })();
     return initPromise;
   }
-  // --- Tesseract worker for Japanese vertical text ---
-  let tessWorker = null;
-  let tessWorkerLoading = null;
-
-  async function ensureTessWorker(workerPath, corePath, langPath) {
-    if (tessWorker) return tessWorker;
-    if (tessWorkerLoading) return tessWorkerLoading;
-
-    tessWorkerLoading = (async function() {
-      while (typeof window.Tesseract === 'undefined') {
-        await new Promise(function(r) { setTimeout(r, 100); });
-      }
-      tessWorker = await Tesseract.createWorker('jpn_vert', 1, {
-        langPath: langPath,
-        workerPath: workerPath,
-        corePath: corePath
-      });
-      await tessWorker.setParameters({
-        tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK_VERT_TEXT
-      });
-      return tessWorker;
-    })();
-    return tessWorkerLoading;
-  }
-
   // --- 合并逻辑 ---
   function mergeTextBoxes(items, sourceLang, xSpacing, ySpacing) {
     if (items.length === 0) return [];
@@ -483,7 +458,7 @@
     yoloSession = await window.ort.InferenceSession.create(yoloUrl, sessionOpts);
   }
 
-  async function doOCRYolo(imageDataURL, sourceLang, xSpacing, ySpacing, yoloUrl, tessWorkerPath, tessCorePath, tessLangPath, useTesseractForJapanese) {
+  async function doOCRYolo(imageDataURL, sourceLang, xSpacing, ySpacing, yoloUrl) {
     await ensureYOLOModel(yoloUrl);
 
     var img = new Image();
@@ -518,23 +493,9 @@
         cropCanvas.height = h;
         var cropCtx = cropCanvas.getContext("2d");
         cropCtx.drawImage(canvas, b[0], b[1], w, h, 0, 0, w, h);
-        // Use Tesseract single-line mode for Japanese vertical text
-        var useTesseract = useTesseractForJapanese && sourceLang === 'ja' && (cropCanvas.height / cropCanvas.width) > 1.1  && (cropCanvas.height / cropCanvas.width) < 8;
-        if (useTesseract) {
-          await ensureTessWorker(tessWorkerPath, tessCorePath, tessLangPath);
-        }
-        console.log(sourceLang, 'use Tesseract:', useTesseract);
         console.log(cropCanvas.width, cropCanvas.height);
-        var text;
-        if (useTesseract) {
-          console.log("Using Tesseract");
-          var tessResult = await tessWorker.recognize(cropCanvas);
-          text = tessResult.data.text.replace(/[\r\n]+/g, '').replace(/\s+/g, '').trim();
-        } else {
-          console.log("Using PaddleOCR");
-          var recResult = await Paddle.recognize(cropCanvas);
-          text = recResult[0].text;
-        }
+        var recResult = await Paddle.recognize(cropCanvas);
+        var text = recResult[0].text;
         srcItems.push({
           text: text.trim(),
           box: [[b[0], b[1]], [b[2], b[1]], [b[2], b[3]], [b[0], b[3]]]
@@ -675,7 +636,7 @@
             if (!paddleReady) {
               throw new Error('PaddleOCR not initialized');
             }
-            const boxes = await doOCRYolo(data.imageDataURL, data.sourceLang, data.xSpacing, data.ySpacing, data.yoloModelUrl, data.tessWorkerPath, data.tessCorePath, data.tessLangPath, data.useTesseractForJapanese);
+            const boxes = await doOCRYolo(data.imageDataURL, data.sourceLang, data.xSpacing, data.ySpacing, data.yoloModelUrl);
             window.postMessage({
               source: 'imagetrans-extension',
               type: 'PADDLE_OCR_RESULT',
