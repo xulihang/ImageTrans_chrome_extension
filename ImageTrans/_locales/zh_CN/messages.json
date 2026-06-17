@@ -122,5 +122,6 @@
   "sc_arrow": { "message": "→ " },
   "options_screen_capture_overlay": { "message": "屏幕截图OCR启用贴图模式" },
   "options_screen_capture_overlay_hint": { "message": "翻译结果直接覆盖显示在原图上，不弹对话框。" },
-  "options_add_pinyin": { "message": "为中文原文添加拼音标注" }
+  "options_add_pinyin": { "message": "为中文原文添加拼音标注" },
+  "options_add_furigana": { "message": "为日文原文添加振假名标注" }
 }

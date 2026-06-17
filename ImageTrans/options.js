@@ -84,6 +84,7 @@ function save() {
   const ySpacing = parseInt(document.getElementById("ySpacing").value) || 15;
   const sendRequestsViaBackground = document.getElementById("sendRequestsViaBackground").checked;
   const addPinyinToSource = document.getElementById("addPinyinToSource").checked;
+  const addFuriganaToSource = document.getElementById("addFuriganaToSource").checked;
   const uiLanguage = document.getElementById("uiLanguage").value;
 
   // PaddleOCR requires a specific language; "auto" is not supported.
@@ -117,6 +118,7 @@ function save() {
     useYOLOForJapanese: useYOLOForJapanese,
     sendRequestsViaBackground: sendRequestsViaBackground,
     addPinyinToSource: addPinyinToSource,
+    addFuriganaToSource: addFuriganaToSource,
     xSpacing: xSpacing,
     ySpacing: ySpacing,
     uiLanguage: uiLanguage
@@ -153,6 +155,7 @@ function load() {
     ySpacing: 15,
     sendRequestsViaBackground: false,
     addPinyinToSource: false,
+    addFuriganaToSource: false,
     uiLanguage: ''
   }, function(items) {
     if (items.serverURL) {
@@ -208,6 +211,7 @@ function load() {
     }
     document.getElementById("sendRequestsViaBackground").checked = items.sendRequestsViaBackground;
     document.getElementById("addPinyinToSource").checked = items.addPinyinToSource;
+    document.getElementById("addFuriganaToSource").checked = items.addFuriganaToSource;
     document.getElementById("ocrMethodSection").style.display = items.useOpenAI ? 'block' : 'none';
   });
 }

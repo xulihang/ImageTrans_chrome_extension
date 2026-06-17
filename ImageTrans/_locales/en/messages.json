@@ -122,5 +122,6 @@
   "sc_arrow": { "message": "→ " },
   "options_screen_capture_overlay": { "message": "Screen Capture OCR overlay mode" },
   "options_screen_capture_overlay_hint": { "message": "Overlay translated text directly on the image instead of showing a dialog." },
-  "options_add_pinyin": { "message": "Add pinyin annotation to Chinese source text" }
+  "options_add_pinyin": { "message": "Add pinyin annotation to Chinese source text" },
+  "options_add_furigana": { "message": "Add furigana annotation to Japanese source text" }
 }
