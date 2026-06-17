@@ -39,6 +39,9 @@ ImageTrans is optional if you use PaddleOCR. You can also setup OpenAI APIs to u
 
 PaddleOCR's function is limited (lack of supported languages and options, low performance. It may only works great for manhua). You need to set the language pair on the options page as well.
 
+## Extra Features
+
+For language learners, Japanese furigana and Chinese pinyin annotation is supported. 
 
 ## Supported Web Sites
 
@@ -71,6 +74,7 @@ I've tested replacing images on the following sites:
     This is because I haven't updated the certificate. Please click advanced and continue to visit the site.
 
     ![image](https://github.com/xulihang/ImageTrans_chrome_extension/assets/5462205/99734b8a-c04c-46b6-8154-4cb46ec62f27)
+
 
 
 <hr/>
@@ -107,10 +111,13 @@ ImageTrans是可选的，不用ImageTrans可以使用PaddleOCR识别文字。可
 
 本地PaddleOCR的功能比较有限，支持的语言较少，设置选项也比较少，识别效果和性能也较差。只有中文漫画效果还可以。使用时记得在扩展选项里设置好语言对。
 
+## 其他功能
+
+对于语言学习者，可以使用插件的日语假名和汉语拼音标注功能。
 
 ## 受支持的网站
 
-基本上所有网站都是支持的，如果直接图片失败，也可以用屏幕截图的方式。
+基本上所有网站都是支持的，如果直接操作图片失败，也可以用屏幕截图的方式。
 
 我测试以下网站都是支持替换图片的：
 
