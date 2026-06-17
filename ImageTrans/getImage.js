@@ -2898,6 +2898,14 @@ function showResultDialog(dataURL, boxes, message) {
     header.appendChild(title);
     header.appendChild(closeBtn);
 
+    // Pinyin ruby styles
+    var pinyinStyle = document.createElement('style');
+    var rtSize = isMobile ? '14px' : '12px';
+    pinyinStyle.textContent = '.imagetrans-source-text ruby { ruby-align: center; }' +
+        '.imagetrans-source-text rt { font-size: ' + rtSize + '; color: #333; }' +
+        '.imagetrans-source-text rp { display: none; }';
+    header.appendChild(pinyinStyle);
+
     // Body
     var body = document.createElement('div');
     body.style.cssText = 'padding:' + (isMobile ? '12px' : '16px') + ';overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch;';
@@ -2933,7 +2941,7 @@ function showResultDialog(dataURL, boxes, message) {
             var row = document.createElement('div');
             row.style.cssText = 'border-left:3px solid #4A90D9;padding-left:10px;';
 
-            var resultFontSource = isMobile ? '15px' : '14px';
+            var resultFontSource = isMobile ? '18px' : '16px';
             var resultFontTarget = isMobile ? '14px' : '13px';
 
             var sourceDiv = document.createElement('div');
