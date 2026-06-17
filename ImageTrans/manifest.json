@@ -48,6 +48,8 @@
     {
       "resources": [
         "_locales/*",
+        "pinyin.js",
+        "pinyin-bridge.js",
         "paddleocr/opencv.js",
         "paddleocr/ort.min.js",
         "paddleocr/esearch-ocr/dist/esearch-ocr.umd.js",

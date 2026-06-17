@@ -64,6 +64,9 @@ var translationMode = "imagetrans";
 var defaultPresetTranslation = "glm4flash";
 var sendRequestsViaBackground = false;
 var screenCaptureOverlayMode = false;
+var addPinyinToSource = false;
+var pinyinProLoaded = false;
+var pinyinPendingRequests = {};
 var xSpacing = 15;
 var ySpacing = 15;
 chrome.storage.sync.get({
@@ -88,6 +91,7 @@ chrome.storage.sync.get({
     defaultPresetTranslation: defaultPresetTranslation,
     sendRequestsViaBackground: false,
     screenCaptureOverlay: false,
+    addPinyinToSource: false,
     xSpacing: 15,
     ySpacing: 15
 }, async function(items) {
@@ -162,6 +166,9 @@ chrome.storage.sync.get({
     }
     if (items.screenCaptureOverlay !== undefined) {
         screenCaptureOverlayMode = items.screenCaptureOverlay === true;
+    }
+    if (items.addPinyinToSource !== undefined) {
+        addPinyinToSource = items.addPinyinToSource;
     }
 });
 
@@ -1335,6 +1342,60 @@ function downscaleDataURL(dataURL, maxDimension) {
         };
         img.onerror = function() { resolve({ dataURL: dataURL, scale: 1 }); };
         img.src = dataURL;
+    });
+}
+
+var pinyinMessageListenerAdded = false;
+
+function loadPinyinPro() {
+    if (pinyinProLoaded) return Promise.resolve();
+
+    if (!pinyinMessageListenerAdded) {
+        pinyinMessageListenerAdded = true;
+        window.addEventListener('message', function(event) {
+            if (event.source !== window) return;
+            var data = event.data;
+            if (!data || data.source !== 'imagetrans-extension') return;
+            if (data.type === 'PINYIN_ANNOTATE_RESULT') {
+                var pending = pinyinPendingRequests[data.requestId];
+                if (pending) {
+                    delete pinyinPendingRequests[data.requestId];
+                    pending.resolve(data.html);
+                }
+            }
+        });
+    }
+
+    return loadLibrary(chrome.runtime.getURL('pinyin.js'), 'text/javascript').then(function() {
+        return loadLibrary(chrome.runtime.getURL('pinyin-bridge.js'), 'text/javascript');
+    }).then(function() {
+        pinyinProLoaded = true;
+    });
+}
+
+function annotatePinyinAsync(text) {
+    if (!addPinyinToSource) return Promise.resolve(text);
+    if (!/[一-鿿]/.test(text)) return Promise.resolve(text);
+    return loadPinyinPro().then(function() {
+        return new Promise(function(resolve) {
+            var requestId = 'pinyin_' + Date.now() + '_' + Math.random();
+            var timeout = setTimeout(function() {
+                delete pinyinPendingRequests[requestId];
+                resolve(text);
+            }, 5000);
+            pinyinPendingRequests[requestId] = {
+                resolve: function(html) {
+                    clearTimeout(timeout);
+                    resolve(html);
+                }
+            };
+            window.postMessage({
+                source: 'imagetrans-extension',
+                type: 'PINYIN_ANNOTATE',
+                requestId: requestId,
+                text: text
+            }, '*');
+        });
     });
 }
 
@@ -2573,6 +2634,25 @@ function displayResult(dataURL, boxes) {
         showOverlayResult(dataURL, boxes);
     } else {
         showResultDialog(dataURL, boxes);
+        if (addPinyinToSource) {
+            annotatePinyinInDialog(boxes);
+        }
+    }
+}
+
+function annotatePinyinInDialog(boxes) {
+    var dialog = document.getElementById('imagetrans-sc-dialog');
+    if (!dialog) return;
+    var sourceDivs = dialog.querySelectorAll('.imagetrans-source-text');
+    for (var i = 0; i < boxes.length && i < sourceDivs.length; i++) {
+        (function(idx, div) {
+            var src = boxes[idx].source || boxes[idx].text || boxes[idx].target || '';
+            annotatePinyinAsync(src).then(function(annotated) {
+                if (annotated !== src) {
+                    div.innerHTML = annotated;
+                }
+            });
+        })(i, sourceDivs[i]);
     }
 }
 
@@ -2858,6 +2938,7 @@ function showResultDialog(dataURL, boxes, message) {
 
             var sourceDiv = document.createElement('div');
             sourceDiv.textContent = source;
+            sourceDiv.className = 'imagetrans-source-text';
             sourceDiv.style.cssText = 'font-size:' + resultFontSource + ';color:#333;margin-bottom:4px;line-height:1.4;word-break:break-word;';
 
             var transDiv = document.createElement('div');
