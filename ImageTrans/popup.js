@@ -40,6 +40,7 @@ function applyI18n() {
   document.getElementById('alterlanguage-check').textContent = getMessage("popup_alter_language_check");
   document.getElementById('getimgsrc').textContent = getMessage("popup_get_img_src");
   document.getElementById('getimgsrc-check').textContent = getMessage("popup_get_img_src_check");
+  document.getElementById('camera-capture').textContent = getMessage("popup_camera_capture");
   document.getElementById('screen-capture').textContent = getMessage("popup_screen_capture");
   document.getElementById('auto-translate').textContent = getMessage("popup_auto_translate_start");
   document.getElementsByClassName('help')[0].textContent = getMessage("popup_help");
@@ -58,6 +59,7 @@ function applyI18n() {
   let btnAlter = document.getElementById('alterlanguage');
   let btnAlterCheck = document.getElementById('alterlanguage-check');
   let btnAutoTranslate = document.getElementById('auto-translate');
+  let btnCameraCapture = document.getElementById('camera-capture');
   let btnScreenCapture = document.getElementById('screen-capture');
   let help = document.getElementsByClassName('help')[0];
   document.getElementsByClassName('options')[0].addEventListener("click",function(){
@@ -117,6 +119,13 @@ function applyI18n() {
           btnAutoTranslate.textContent = getMessage("popup_auto_translate_start");
         }
       });
+      window.close();
+    });
+  };
+
+  btnCameraCapture.onclick = function() {
+    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+      chrome.tabs.sendMessage(tabs[0].id, {message: "startCameraCapture"});
       window.close();
     });
   };

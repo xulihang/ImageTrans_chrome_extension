@@ -11,6 +11,7 @@
   "popup_get_img_src_check": { "message": "Get Image Src (check image top)" },
   "popup_auto_translate_start": { "message": "Start Auto Translating" },
   "popup_auto_translate_stop": { "message": "Stop Auto Translating" },
+  "popup_camera_capture": { "message": "Camera Translate" },
   "popup_screen_capture": { "message": "Screen Capture OCR" },
   "popup_help": { "message": "Help" },
   "popup_options": { "message": "Options" },
@@ -128,5 +129,7 @@
   "sc_copy_done": { "message": "Copied" },
   "sc_tts_speak": { "message": "Speak" },
   "sc_tts_stop": { "message": "Stop" },
-  "sc_tts_engine": { "message": "Voice Engine" }
+  "sc_tts_engine": { "message": "Voice Engine" },
+  "camera_no_camera": { "message": "No camera found" },
+  "camera_capture_btn": { "message": "Capture" }
 }

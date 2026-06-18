@@ -11,6 +11,7 @@
   "popup_get_img_src_check": { "message": "获取图片地址（检测图片顶部）" },
   "popup_auto_translate_start": { "message": "开始自动翻译" },
   "popup_auto_translate_stop": { "message": "停止自动翻译" },
+  "popup_camera_capture": { "message": "拍照翻译" },
   "popup_screen_capture": { "message": "屏幕截图 OCR" },
   "popup_help": { "message": "帮助" },
   "popup_options": { "message": "选项" },
@@ -128,5 +129,7 @@
   "sc_copy_done": { "message": "已复制" },
   "sc_tts_speak": { "message": "朗读" },
   "sc_tts_stop": { "message": "停止" },
-  "sc_tts_engine": { "message": "语音引擎" }
+  "sc_tts_engine": { "message": "语音引擎" },
+  "camera_no_camera": { "message": "未找到摄像头" },
+  "camera_capture_btn": { "message": "拍照" }
 }

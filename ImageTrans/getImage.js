@@ -248,6 +248,8 @@ chrome.runtime.onMessage.addListener(
         sendResponse({active: autoTranslating});
     }else if (message == "startScreenCapture") {
         startScreenCapture();
+    }else if (message == "startCameraCapture") {
+        startCameraCapture();
     }
 
   }
@@ -1841,6 +1843,25 @@ var screenCaptureStartY = 0;
 var screenCaptureRect = null;
 var screenCaptureServerFailed = false;
 
+// Camera capture state
+var cameraActive = false;
+var cameraStream = null;
+var cameraVideo = null;
+var cameraOverlay = null;
+var cameraViewfinder = null;
+var cameraSelect = null;
+var cameraCaptureBtn = null;
+var cameraCloseBtn = null;
+var cameraRect = null;
+var cameraHandles = [];
+var cameraDragging = false;
+var cameraResizing = false;
+var cameraResizeCorner = null;
+var cameraDragOffsetX = 0;
+var cameraDragOffsetY = 0;
+var cameraResizeAnchorX = 0;
+var cameraResizeAnchorY = 0;
+
 function startScreenCapture() {
     if (screenCaptureActive) return;
     screenCaptureActive = true;
@@ -2335,6 +2356,529 @@ function cleanupScreenCaptureAll() {
     var existingBackdrop = document.getElementById('imagetrans-sc-backdrop');
     if (existingBackdrop) existingBackdrop.remove();
     screenCaptureRect = null;
+}
+
+// ==================== Camera Capture ====================
+
+function startCameraCapture() {
+    if (cameraActive) return;
+    cameraActive = true;
+
+    // Create full-screen black overlay
+    cameraOverlay = document.createElement('div');
+    cameraOverlay.id = 'imagetrans-camera-overlay';
+    cameraOverlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:2147483646;background:#000;';
+
+    // Close button (top-right)
+    cameraCloseBtn = document.createElement('button');
+    cameraCloseBtn.textContent = '✕';
+    cameraCloseBtn.style.cssText = 'position:fixed;top:12px;right:12px;z-index:2147483648;background:rgba(0,0,0,0.5);color:#fff;border:1px solid rgba(255,255,255,0.3);border-radius:50%;width:40px;height:40px;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;touch-action:manipulation;';
+    cameraCloseBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        cleanupCameraAll();
+    });
+    document.body.appendChild(cameraCloseBtn);
+
+    // Camera selector
+    cameraSelect = document.createElement('select');
+    cameraSelect.style.cssText = 'position:fixed;top:12px;left:12px;z-index:2147483648;background:rgba(0,0,0,0.5);color:#fff;border:1px solid rgba(255,255,255,0.3);border-radius:4px;padding:6px 8px;font-size:14px;max-width:200px;cursor:pointer;';
+    cameraSelect.addEventListener('change', function() {
+        switchCamera(cameraSelect.value);
+    });
+    document.body.appendChild(cameraSelect);
+
+    // Video element (behind everything else, fills the screen)
+    cameraVideo = document.createElement('video');
+    cameraVideo.id = 'imagetrans-camera-video';
+    cameraVideo.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:2147483646;object-fit:cover;';
+    cameraVideo.setAttribute('playsinline', '');
+    cameraVideo.setAttribute('autoplay', '');
+    cameraVideo.setAttribute('muted', '');
+    document.body.appendChild(cameraVideo);
+
+    // Create viewfinder (initially hidden, shown after camera starts)
+    cameraViewfinder = document.createElement('div');
+    cameraViewfinder.id = 'imagetrans-camera-viewfinder';
+    cameraViewfinder.style.cssText = 'position:fixed;z-index:2147483647;border:2px dashed #fff;background:transparent;box-shadow:0 0 0 9999px rgba(0,0,0,0.5);pointer-events:auto;cursor:move;display:none;box-sizing:border-box;';
+    cameraViewfinder.addEventListener('mousedown', onCameraViewfinderDragStart);
+    cameraViewfinder.addEventListener('touchstart', onCameraViewfinderDragTouchStart, { passive: false });
+    document.body.appendChild(cameraViewfinder);
+
+    // Capture button (bottom center)
+    cameraCaptureBtn = document.createElement('button');
+    cameraCaptureBtn.textContent = chrome.i18n.getMessage('camera_capture_btn');
+    cameraCaptureBtn.style.cssText = 'position:fixed;bottom:30px;left:50%;transform:translateX(-50%);z-index:2147483648;width:64px;height:64px;border-radius:50%;background:#fff;border:4px solid #ccc;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#333;box-shadow:0 2px 12px rgba(0,0,0,0.3);touch-action:manipulation;';
+    cameraCaptureBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        doCameraCapture();
+    });
+    document.body.appendChild(cameraCaptureBtn);
+
+    // Append overlay (goes behind video and viewfinder)
+    document.body.appendChild(cameraOverlay);
+
+    // ESC key handler
+    window.addEventListener('keydown', onCameraKeyDown);
+
+    // Enumerate cameras and start
+    enumerateCameras().then(function() {
+        return startCameraStream(null);
+    }).catch(function(err) {
+        console.error('Camera capture failed:', err);
+        alert(chrome.i18n.getMessage('camera_no_camera'));
+        cleanupCameraAll();
+    });
+}
+
+function enumerateCameras() {
+    return navigator.mediaDevices.enumerateDevices().then(function(devices) {
+        var videoDevices = devices.filter(function(d) { return d.kind === 'videoinput'; });
+        // Clear existing options except the first placeholder
+        while (cameraSelect.options.length > 0) {
+            cameraSelect.remove(0);
+        }
+        if (videoDevices.length === 0) {
+            var opt = document.createElement('option');
+            opt.value = '';
+            opt.textContent = chrome.i18n.getMessage('camera_no_camera');
+            cameraSelect.appendChild(opt);
+            cameraSelect.style.display = 'none';
+        } else if (videoDevices.length === 1) {
+            var opt = document.createElement('option');
+            opt.value = videoDevices[0].deviceId;
+            opt.textContent = videoDevices[0].label || 'Camera 1';
+            cameraSelect.appendChild(opt);
+            cameraSelect.style.display = ''; // visible but single option
+        } else {
+            for (var i = 0; i < videoDevices.length; i++) {
+                var opt = document.createElement('option');
+                opt.value = videoDevices[i].deviceId;
+                opt.textContent = videoDevices[i].label || ('Camera ' + (i + 1));
+                cameraSelect.appendChild(opt);
+            }
+            cameraSelect.style.display = '';
+        }
+    });
+}
+
+function startCameraStream(deviceId) {
+    if (cameraStream) {
+        cameraStream.getTracks().forEach(function(t) { t.stop(); });
+        cameraStream = null;
+    }
+    var constraints = {
+        video: {
+            width: { ideal: 1920 },
+            height: { ideal: 1080 },
+            facingMode: 'environment'
+        },
+        audio: false
+    };
+    if (deviceId) {
+        constraints.video.deviceId = { exact: deviceId };
+    }
+    return navigator.mediaDevices.getUserMedia(constraints).then(function(stream) {
+        cameraStream = stream;
+        cameraVideo.srcObject = stream;
+        return cameraVideo.play();
+    }).then(function() {
+        // Initialize viewfinder at center, ~60% of viewport
+        var vw = window.innerWidth;
+        var vh = window.innerHeight;
+        var vfWidth = Math.round(vw * 0.6);
+        var vfHeight = Math.round(vh * 0.6);
+        var vfLeft = Math.round((vw - vfWidth) / 2);
+        var vfTop = Math.round((vh - vfHeight) / 2);
+        cameraRect = { left: vfLeft, top: vfTop, width: vfWidth, height: vfHeight };
+        applyCameraRect(cameraRect);
+        cameraViewfinder.style.display = 'block';
+        addCameraResizeHandles();
+    });
+}
+
+function switchCamera(deviceId) {
+    startCameraStream(deviceId).catch(function(err) {
+        console.error('Failed to switch camera:', err);
+    });
+}
+
+// ----- Viewfinder drag & resize -----
+
+function applyCameraRect(rect) {
+    cameraRect = rect;
+    cameraViewfinder.style.left = rect.left + 'px';
+    cameraViewfinder.style.top = rect.top + 'px';
+    cameraViewfinder.style.width = rect.width + 'px';
+    cameraViewfinder.style.height = rect.height + 'px';
+    updateCameraHandlePositions();
+}
+
+function addCameraResizeHandles() {
+    removeCameraResizeHandles();
+    var handleMobile = window.innerWidth < 600;
+    var handleSize = handleMobile ? 16 : 8;
+    var handleOffset = handleSize / 2;
+    var r = cameraRect;
+    var corners = [
+        { id: 'nw', left: r.left - handleOffset, top: r.top - handleOffset, cursor: 'nwse-resize' },
+        { id: 'ne', left: r.left + r.width - handleOffset, top: r.top - handleOffset, cursor: 'nesw-resize' },
+        { id: 'sw', left: r.left - handleOffset, top: r.top + r.height - handleOffset, cursor: 'nesw-resize' },
+        { id: 'se', left: r.left + r.width - handleOffset, top: r.top + r.height - handleOffset, cursor: 'nwse-resize' }
+    ];
+    for (var i = 0; i < corners.length; i++) {
+        var h = document.createElement('div');
+        h.className = 'imagetrans-camera-handle';
+        h.setAttribute('data-corner', corners[i].id);
+        h.style.cssText = 'position:fixed;z-index:2147483648;width:' + handleSize + 'px;height:' + handleSize + 'px;background:#fff;border:1px solid #333;border-radius:2px;cursor:' + corners[i].cursor + ';left:' + corners[i].left + 'px;top:' + corners[i].top + 'px;';
+        h.addEventListener('mousedown', function(e) {
+            e.stopPropagation();
+            e.preventDefault();
+            onCameraViewfinderResizeStart(e);
+        });
+        h.addEventListener('touchstart', function(e) {
+            e.stopPropagation();
+            e.preventDefault();
+            onCameraViewfinderResizeTouchStart(e);
+        }, { passive: false });
+        document.body.appendChild(h);
+        cameraHandles.push(h);
+    }
+}
+
+function removeCameraResizeHandles() {
+    for (var i = 0; i < cameraHandles.length; i++) {
+        cameraHandles[i].remove();
+    }
+    cameraHandles = [];
+}
+
+function updateCameraHandlePositions() {
+    var handleMobile = window.innerWidth < 600;
+    var handleOffset = handleMobile ? 8 : 4;
+    var r = cameraRect;
+    if (!r) return;
+    var corners = [
+        { id: 'nw', left: r.left - handleOffset, top: r.top - handleOffset },
+        { id: 'ne', left: r.left + r.width - handleOffset, top: r.top - handleOffset },
+        { id: 'sw', left: r.left - handleOffset, top: r.top + r.height - handleOffset },
+        { id: 'se', left: r.left + r.width - handleOffset, top: r.top + r.height - handleOffset }
+    ];
+    for (var i = 0; i < cameraHandles.length; i++) {
+        var handle = cameraHandles[i];
+        for (var j = 0; j < corners.length; j++) {
+            if (handle.getAttribute('data-corner') === corners[j].id) {
+                handle.style.left = corners[j].left + 'px';
+                handle.style.top = corners[j].top + 'px';
+                break;
+            }
+        }
+    }
+}
+
+// -- Drag (mouse) --
+
+function onCameraViewfinderDragStart(e) {
+    if (cameraResizing) return;
+    cameraDragging = true;
+    cameraDragOffsetX = e.clientX - cameraRect.left;
+    cameraDragOffsetY = e.clientY - cameraRect.top;
+    window.addEventListener('mousemove', onCameraViewfinderDragMove);
+    window.addEventListener('mouseup', onCameraViewfinderDragEnd);
+    e.preventDefault();
+}
+
+function onCameraViewfinderDragMove(e) {
+    if (!cameraDragging) return;
+    var newLeft = Math.max(0, Math.min(window.innerWidth - cameraRect.width, e.clientX - cameraDragOffsetX));
+    var newTop = Math.max(0, Math.min(window.innerHeight - cameraRect.height, e.clientY - cameraDragOffsetY));
+    applyCameraRect({
+        left: newLeft,
+        top: newTop,
+        width: cameraRect.width,
+        height: cameraRect.height
+    });
+}
+
+function onCameraViewfinderDragEnd(e) {
+    cameraDragging = false;
+    window.removeEventListener('mousemove', onCameraViewfinderDragMove);
+    window.removeEventListener('mouseup', onCameraViewfinderDragEnd);
+}
+
+// -- Resize (mouse) --
+
+function onCameraViewfinderResizeStart(e) {
+    cameraResizing = true;
+    cameraResizeCorner = e.target.getAttribute('data-corner');
+    switch (cameraResizeCorner) {
+        case 'nw':
+            cameraResizeAnchorX = cameraRect.left + cameraRect.width;
+            cameraResizeAnchorY = cameraRect.top + cameraRect.height;
+            break;
+        case 'ne':
+            cameraResizeAnchorX = cameraRect.left;
+            cameraResizeAnchorY = cameraRect.top + cameraRect.height;
+            break;
+        case 'sw':
+            cameraResizeAnchorX = cameraRect.left + cameraRect.width;
+            cameraResizeAnchorY = cameraRect.top;
+            break;
+        case 'se':
+            cameraResizeAnchorX = cameraRect.left;
+            cameraResizeAnchorY = cameraRect.top;
+            break;
+    }
+    window.addEventListener('mousemove', onCameraViewfinderResizeMove);
+    window.addEventListener('mouseup', onCameraViewfinderResizeEnd);
+}
+
+function onCameraViewfinderResizeMove(e) {
+    if (!cameraResizing) return;
+    var newLeft = Math.min(cameraResizeAnchorX, e.clientX);
+    var newTop = Math.min(cameraResizeAnchorY, e.clientY);
+    var newWidth = Math.abs(e.clientX - cameraResizeAnchorX);
+    var newHeight = Math.abs(e.clientY - cameraResizeAnchorY);
+    // Clamp to viewport
+    newLeft = Math.max(0, newLeft);
+    newTop = Math.max(0, newTop);
+    if (newLeft + newWidth > window.innerWidth) newWidth = window.innerWidth - newLeft;
+    if (newTop + newHeight > window.innerHeight) newHeight = window.innerHeight - newTop;
+    if (newWidth < 20) { newWidth = 20; newLeft = cameraResizeAnchorX > e.clientX ? cameraResizeAnchorX - 20 : cameraResizeAnchorX; }
+    if (newHeight < 20) { newHeight = 20; newTop = cameraResizeAnchorY > e.clientY ? cameraResizeAnchorY - 20 : cameraResizeAnchorY; }
+    applyCameraRect({ left: newLeft, top: newTop, width: newWidth, height: newHeight });
+}
+
+function onCameraViewfinderResizeEnd(e) {
+    cameraResizing = false;
+    cameraResizeCorner = null;
+    window.removeEventListener('mousemove', onCameraViewfinderResizeMove);
+    window.removeEventListener('mouseup', onCameraViewfinderResizeEnd);
+    window.removeEventListener('touchmove', onCameraViewfinderResizeTouchMove);
+    window.removeEventListener('touchend', onCameraViewfinderResizeTouchEnd);
+    window.removeEventListener('touchcancel', onCameraViewfinderResizeTouchEnd);
+}
+
+// -- Drag (touch) --
+
+function onCameraViewfinderDragTouchStart(e) {
+    if (cameraResizing) return;
+    if (e.touches.length !== 1) return;
+    var touch = e.touches[0];
+    cameraDragging = true;
+    cameraDragOffsetX = touch.clientX - cameraRect.left;
+    cameraDragOffsetY = touch.clientY - cameraRect.top;
+    window.addEventListener('touchmove', onCameraViewfinderDragTouchMove, { passive: false });
+    window.addEventListener('touchend', onCameraViewfinderDragTouchEnd);
+    window.addEventListener('touchcancel', onCameraViewfinderDragTouchEnd);
+    e.preventDefault();
+    e.stopPropagation();
+}
+
+function onCameraViewfinderDragTouchMove(e) {
+    if (!cameraDragging) return;
+    if (e.touches.length !== 1) return;
+    var touch = e.touches[0];
+    var newLeft = Math.max(0, Math.min(window.innerWidth - cameraRect.width, touch.clientX - cameraDragOffsetX));
+    var newTop = Math.max(0, Math.min(window.innerHeight - cameraRect.height, touch.clientY - cameraDragOffsetY));
+    applyCameraRect({
+        left: newLeft,
+        top: newTop,
+        width: cameraRect.width,
+        height: cameraRect.height
+    });
+    e.preventDefault();
+}
+
+function onCameraViewfinderDragTouchEnd(e) {
+    cameraDragging = false;
+    window.removeEventListener('touchmove', onCameraViewfinderDragTouchMove);
+    window.removeEventListener('touchend', onCameraViewfinderDragTouchEnd);
+    window.removeEventListener('touchcancel', onCameraViewfinderDragTouchEnd);
+}
+
+// -- Resize (touch) --
+
+function onCameraViewfinderResizeTouchStart(e) {
+    if (e.touches.length !== 1) return;
+    cameraResizing = true;
+    cameraResizeCorner = e.currentTarget.getAttribute('data-corner');
+    switch (cameraResizeCorner) {
+        case 'nw':
+            cameraResizeAnchorX = cameraRect.left + cameraRect.width;
+            cameraResizeAnchorY = cameraRect.top + cameraRect.height;
+            break;
+        case 'ne':
+            cameraResizeAnchorX = cameraRect.left;
+            cameraResizeAnchorY = cameraRect.top + cameraRect.height;
+            break;
+        case 'sw':
+            cameraResizeAnchorX = cameraRect.left + cameraRect.width;
+            cameraResizeAnchorY = cameraRect.top;
+            break;
+        case 'se':
+            cameraResizeAnchorX = cameraRect.left;
+            cameraResizeAnchorY = cameraRect.top;
+            break;
+    }
+    window.addEventListener('touchmove', onCameraViewfinderResizeTouchMove, { passive: false });
+    window.addEventListener('touchend', onCameraViewfinderResizeTouchEnd);
+    window.addEventListener('touchcancel', onCameraViewfinderResizeTouchEnd);
+}
+
+function onCameraViewfinderResizeTouchMove(e) {
+    if (!cameraResizing) return;
+    if (e.touches.length !== 1) return;
+    var touch = e.touches[0];
+    var newLeft = Math.min(cameraResizeAnchorX, touch.clientX);
+    var newTop = Math.min(cameraResizeAnchorY, touch.clientY);
+    var newWidth = Math.abs(touch.clientX - cameraResizeAnchorX);
+    var newHeight = Math.abs(touch.clientY - cameraResizeAnchorY);
+    newLeft = Math.max(0, newLeft);
+    newTop = Math.max(0, newTop);
+    if (newLeft + newWidth > window.innerWidth) newWidth = window.innerWidth - newLeft;
+    if (newTop + newHeight > window.innerHeight) newHeight = window.innerHeight - newTop;
+    if (newWidth < 20) { newWidth = 20; newLeft = cameraResizeAnchorX > touch.clientX ? cameraResizeAnchorX - 20 : cameraResizeAnchorX; }
+    if (newHeight < 20) { newHeight = 20; newTop = cameraResizeAnchorY > touch.clientY ? cameraResizeAnchorY - 20 : cameraResizeAnchorY; }
+    applyCameraRect({ left: newLeft, top: newTop, width: newWidth, height: newHeight });
+    e.preventDefault();
+}
+
+function onCameraViewfinderResizeTouchEnd(e) {
+    cameraResizing = false;
+    cameraResizeCorner = null;
+    window.removeEventListener('touchmove', onCameraViewfinderResizeTouchMove);
+    window.removeEventListener('touchend', onCameraViewfinderResizeTouchEnd);
+    window.removeEventListener('touchcancel', onCameraViewfinderResizeTouchEnd);
+}
+
+// -- Keyboard --
+
+function onCameraKeyDown(e) {
+    if (e.key === 'Escape') {
+        cleanupCameraAll();
+    }
+}
+
+// -- Capture --
+
+function doCameraCapture() {
+    if (!cameraVideo || !cameraRect) return;
+
+    var videoWidth = cameraVideo.videoWidth;
+    var videoHeight = cameraVideo.videoHeight;
+    if (!videoWidth || !videoHeight) return;
+
+    // Calculate scale between displayed video and actual video resolution
+    var displayWidth = window.innerWidth;
+    var displayHeight = window.innerHeight;
+
+    // The video is object-fit:cover, so we need to compute the rendered area
+    var videoAspect = videoWidth / videoHeight;
+    var displayAspect = displayWidth / displayHeight;
+    var renderWidth, renderHeight, offsetX, offsetY;
+
+    if (videoAspect > displayAspect) {
+        // Video is wider → sides are cropped; height fills screen
+        renderHeight = displayHeight;
+        renderWidth = renderHeight * videoAspect;
+        offsetX = (renderWidth - displayWidth) / 2;
+        offsetY = 0;
+    } else {
+        // Video is taller → top/bottom are cropped; width fills screen
+        renderWidth = displayWidth;
+        renderHeight = renderWidth / videoAspect;
+        offsetX = 0;
+        offsetY = (renderHeight - displayHeight) / 2;
+    }
+
+    var scaleX = videoWidth / renderWidth;
+    var scaleY = videoHeight / renderHeight;
+
+    var sx = (cameraRect.left + offsetX) * scaleX;
+    var sy = (cameraRect.top + offsetY) * scaleY;
+    var sw = cameraRect.width * scaleX;
+    var sh = cameraRect.height * scaleY;
+
+    // Clamp to video bounds
+    sx = Math.max(0, Math.min(videoWidth - 1, sx));
+    sy = Math.max(0, Math.min(videoHeight - 1, sy));
+    sw = Math.max(1, Math.min(videoWidth - sx, sw));
+    sh = Math.max(1, Math.min(videoHeight - sy, sh));
+
+    var canvas = document.createElement('canvas');
+    canvas.width = sw;
+    canvas.height = sh;
+    var ctx = canvas.getContext('2d');
+    ctx.drawImage(cameraVideo, sx, sy, sw, sh, 0, 0, sw, sh);
+    var dataURL = canvas.toDataURL('image/jpeg', 0.9);
+
+    // Clean up camera UI
+    cleanupCameraAll();
+
+    // Run the existing OCR pipeline
+    processScreenOCR(dataURL);
+}
+
+// -- Cleanup --
+
+function cleanupCameraAll() {
+    cameraActive = false;
+    cameraDragging = false;
+    cameraResizing = false;
+    cameraResizeCorner = null;
+
+    if (cameraStream) {
+        cameraStream.getTracks().forEach(function(t) { t.stop(); });
+        cameraStream = null;
+    }
+
+    if (cameraVideo) {
+        cameraVideo.pause();
+        cameraVideo.srcObject = null;
+        cameraVideo.remove();
+        cameraVideo = null;
+    }
+
+    if (cameraOverlay) {
+        cameraOverlay.remove();
+        cameraOverlay = null;
+    }
+
+    if (cameraViewfinder) {
+        cameraViewfinder.remove();
+        cameraViewfinder = null;
+    }
+
+    if (cameraSelect) {
+        cameraSelect.remove();
+        cameraSelect = null;
+    }
+
+    if (cameraCaptureBtn) {
+        cameraCaptureBtn.remove();
+        cameraCaptureBtn = null;
+    }
+
+    if (cameraCloseBtn) {
+        cameraCloseBtn.remove();
+        cameraCloseBtn = null;
+    }
+
+    removeCameraResizeHandles();
+
+    window.removeEventListener('keydown', onCameraKeyDown);
+    window.removeEventListener('mousemove', onCameraViewfinderDragMove);
+    window.removeEventListener('mouseup', onCameraViewfinderDragEnd);
+    window.removeEventListener('mousemove', onCameraViewfinderResizeMove);
+    window.removeEventListener('mouseup', onCameraViewfinderResizeEnd);
+    window.removeEventListener('touchmove', onCameraViewfinderDragTouchMove);
+    window.removeEventListener('touchend', onCameraViewfinderDragTouchEnd);
+    window.removeEventListener('touchcancel', onCameraViewfinderDragTouchEnd);
+    window.removeEventListener('touchmove', onCameraViewfinderResizeTouchMove);
+    window.removeEventListener('touchend', onCameraViewfinderResizeTouchEnd);
+    window.removeEventListener('touchcancel', onCameraViewfinderResizeTouchEnd);
+
+    cameraRect = null;
 }
 
 // Fallback screen capture for Android/Kiwi Browser where chrome.tabs.captureVisibleTab
