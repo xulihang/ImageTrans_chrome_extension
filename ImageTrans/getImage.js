@@ -1861,6 +1861,7 @@ var cameraDragOffsetX = 0;
 var cameraDragOffsetY = 0;
 var cameraResizeAnchorX = 0;
 var cameraResizeAnchorY = 0;
+var cameraProcessingOverlay = null;
 
 function startScreenCapture() {
     if (screenCaptureActive) return;
@@ -2833,11 +2834,38 @@ function doCameraCapture() {
     ctx.drawImage(cameraVideo, sx, sy, sw, sh, 0, 0, sw, sh);
     var dataURL = canvas.toDataURL('image/jpeg', 0.9);
 
-    // Clean up camera UI
-    cleanupCameraAll();
+    // Show processing overlay on camera (don't close camera)
+    showCameraProcessing();
 
     // Run the existing OCR pipeline
     processScreenOCR(dataURL);
+}
+
+// -- Processing overlay --
+
+function showCameraProcessing() {
+    if (cameraProcessingOverlay) return;
+    cameraProcessingOverlay = document.createElement('div');
+    cameraProcessingOverlay.id = 'imagetrans-camera-processing';
+    cameraProcessingOverlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:2147483647;background:rgba(0,0,0,0.5);display:flex;flex-direction:column;align-items:center;justify-content:center;';
+    var spinner = document.createElement('div');
+    spinner.style.cssText = 'width:40px;height:40px;border:4px solid rgba(255,255,255,0.3);border-top:4px solid #fff;border-radius:50%;animation:imagetrans-spin 0.8s linear infinite;';
+    var style = document.createElement('style');
+    style.textContent = '@keyframes imagetrans-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }';
+    cameraProcessingOverlay.appendChild(style);
+    cameraProcessingOverlay.appendChild(spinner);
+    var text = document.createElement('div');
+    text.textContent = chrome.i18n.getMessage('sc_processing');
+    text.style.cssText = 'color:#fff;font-size:16px;margin-top:16px;font-family:sans-serif;';
+    cameraProcessingOverlay.appendChild(text);
+    document.body.appendChild(cameraProcessingOverlay);
+}
+
+function hideCameraProcessing() {
+    if (cameraProcessingOverlay) {
+        cameraProcessingOverlay.remove();
+        cameraProcessingOverlay = null;
+    }
 }
 
 // -- Cleanup --
@@ -2845,6 +2873,7 @@ function doCameraCapture() {
 function cleanupCameraAll() {
     cameraActive = false;
     cameraDragging = false;
+    hideCameraProcessing();
     cameraResizing = false;
     cameraResizeCorner = null;
 
@@ -3587,6 +3616,9 @@ function showResultDialog(dataURL, boxes, message) {
     var existingDialog = document.getElementById('imagetrans-sc-dialog');
     if (existingDialog) existingDialog.remove();
 
+    // Hide camera processing overlay if camera is active
+    hideCameraProcessing();
+
     resetToolbarButton();
 
     var backdrop = document.createElement('div');
@@ -3765,6 +3797,10 @@ function showResultDialog(dataURL, boxes, message) {
         stopTTS();
         backdrop.remove();
         dialog.remove();
+        if (cameraActive) {
+            // Camera is still active, user can capture again
+            return;
+        }
         cleanupScreenCaptureAll();
         startScreenCapture();
     });
@@ -3776,13 +3812,21 @@ function showResultDialog(dataURL, boxes, message) {
         stopTTS();
         backdrop.remove();
         dialog.remove();
-        doScreenOCR();
+        if (cameraActive) {
+            doCameraCapture();
+        } else {
+            doScreenOCR();
+        }
     });
 
     var btnClose = document.createElement('button');
     btnClose.textContent = chrome.i18n.getMessage("sc_close");
     btnClose.style.cssText = 'padding:' + btnPad + ';background:#fff;color:#333;border:1px solid #ccc;border-radius:4px;cursor:pointer;font-size:' + btnFont + ';white-space:nowrap;touch-action:manipulation;';
-    btnClose.addEventListener('click', function() { stopTTS(); backdrop.remove(); dialog.remove(); });
+    btnClose.addEventListener('click', function() {
+        stopTTS();
+        backdrop.remove();
+        dialog.remove();
+    });
 
     footerLeft.appendChild(btnContinue);
     footerRight.appendChild(btnReOCR);
