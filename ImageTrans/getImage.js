@@ -42,6 +42,7 @@ var autoTranslating = false;
 var autoObserver = null;
 var autoMutationObserver = null;
 var translatedSrcs = {};
+var translatedBoxesMap = {}; // maps src URL -> {dataURL: ..., boxes: [...]} for click-to-inspect
 var processingQueue = [];
 var isProcessing = false;
 var pickingWay = "1";
@@ -378,12 +379,14 @@ async function ajax(src,img,checkData,showOverlay){
             if (!respData["imgMap"]) {
                 alert(chrome.i18n.getMessage("alert_bad_result"));
             } else if (renderTextInFrontend && respData["imgMap"] && respData["imgMap"]["boxes"]) {
-                renderTranslatedImage(data.src, respData["imgMap"]["boxes"]).then(translatedDataURL => {
-                    console.log(replaceImgSrc(src, translatedDataURL, checkData, img));
+                var boxes = respData["imgMap"]["boxes"];
+                renderTranslatedImage(data.src, boxes).then(translatedDataURL => {
+                    console.log(replaceImgSrc(src, translatedDataURL, checkData, img, boxes, data.src));
                 });
             } else {
                 var dataURL = "data:image/jpeg;base64," + respData["img"];
-                console.log(replaceImgSrc(src, dataURL, checkData, img));
+                var boxes = respData["imgMap"]["boxes"];
+                console.log(replaceImgSrc(src, dataURL, checkData, img, boxes, data.src));
             }
         } catch (err) {
             document.body.classList.remove("imagetrans-wait");
@@ -400,12 +403,15 @@ async function ajax(src,img,checkData,showOverlay){
                         if (!respData["img"]) {
                             alert(chrome.i18n.getMessage("alert_bad_result"));
                         } else if (renderTextInFrontend && respData["imgMap"] && respData["imgMap"]["boxes"]) {
-                            renderTranslatedImage(respData["img"], respData["imgMap"]["boxes"]).then(translatedDataURL => {
-                                console.log(replaceImgSrc(src, translatedDataURL, checkData, img));
+                            var fbBoxes = respData["imgMap"]["boxes"];
+                            var fbDataURL = "data:image/jpeg;base64," + respData["img"];
+                            renderTranslatedImage(respData["img"], fbBoxes).then(translatedDataURL => {
+                                console.log(replaceImgSrc(src, translatedDataURL, checkData, img, fbBoxes, fbDataURL));
                             });
                         } else {
-                            var dataURL = "data:image/jpeg;base64," + respData["img"];
-                            console.log(replaceImgSrc(src, dataURL, checkData, img));
+                            var fbDataURL = "data:image/jpeg;base64," + respData["img"];
+                            var fbBoxes = respData["imgMap"]["boxes"];
+                            console.log(replaceImgSrc(src, fbDataURL, checkData, img, fbBoxes, fbDataURL));
                         }
                     } catch (err2) {
                         document.body.classList.remove("imagetrans-wait");
@@ -510,7 +516,7 @@ async function ajaxMyMemory(src, img, checkData, showOverlay) {
         document.body.classList.remove("imagetrans-wait");
 
         const translatedDataURL = await renderTranslatedImage(dataURL, boxes);
-        console.log(replaceImgSrc(src, translatedDataURL, checkData, img));
+        console.log(replaceImgSrc(src, translatedDataURL, checkData, img, boxes, dataURL));
 
     } catch (err) {
         document.body.classList.remove("imagetrans-wait");
@@ -715,7 +721,7 @@ async function ajaxOpenAI(src, img, checkData, showOverlay) {
 
         // Step 7: Render on canvas
         const translatedDataURL = await renderTranslatedImage(dataURL, boxes);
-        console.log(replaceImgSrc(src, translatedDataURL, checkData, img));
+        console.log(replaceImgSrc(src, translatedDataURL, checkData, img, boxes, dataURL));
 
     } catch (err) {
         document.body.classList.remove("imagetrans-wait");
@@ -1510,7 +1516,7 @@ function alterLanguage(e){
 }
 
 //src1: original src, src2: dataURL
-function replaceImgSrc(src1,src2,checkData,img){
+function replaceImgSrc(src1,src2,checkData,img,boxes,originalDataURL){
     if (!img) {
         img = getImageBySrc(src1,checkData)
     }
@@ -1519,9 +1525,62 @@ function replaceImgSrc(src1,src2,checkData,img){
         img.setAttribute("original-src",src1)
         img.setAttribute("target-src",src2);
         translatedSrcs[src1] = true;
+        // Store boxes for click-to-inspect feature
+        if (boxes && boxes.length > 0) {
+            translatedBoxesMap[src1] = {
+                dataURL: originalDataURL || src2,
+                boxes: boxes
+            };
+            attachImageClickHandler(img);
+        }
         return "success"
     }
     return "fail"
+}
+
+// Find a text box at the given natural-image coordinates
+function findBoxAtPosition(boxes, x, y) {
+    for (var i = 0; i < boxes.length; i++) {
+        var box = boxes[i];
+        var geo = box.geometry || {};
+        var bx = geo.X || geo.x || 0;
+        var by = geo.Y || geo.y || 0;
+        var bw = geo.width || geo.Width || 0;
+        var bh = geo.height || geo.Height || 0;
+        if (x >= bx && x <= bx + bw && y >= by && y <= by + bh) {
+            return box;
+        }
+    }
+    return null;
+}
+
+// Attach click handler to a translated image for text region inspection
+function attachImageClickHandler(img) {
+    if (img.hasAttribute('data-imagetrans-click')) return;
+    img.setAttribute('data-imagetrans-click', '1');
+    img.style.cursor = 'pointer';
+
+    img.addEventListener('click', function(e) {
+        var src = img.getAttribute('original-src') || img.src;
+        var stored = translatedBoxesMap[src];
+        if (!stored || !stored.boxes || !stored.boxes.length) return;
+
+        // Calculate click position relative to the image's natural dimensions
+        var rect = img.getBoundingClientRect();
+        if (img.naturalWidth === 0 || img.naturalHeight === 0) return;
+        var scaleX = img.naturalWidth / rect.width;
+        var scaleY = img.naturalHeight / rect.height;
+        var naturalX = (e.clientX - rect.left) * scaleX;
+        var naturalY = (e.clientY - rect.top) * scaleY;
+
+        // Find the text box under the click point
+        var matchedBox = findBoxAtPosition(stored.boxes, naturalX, naturalY);
+        if (matchedBox) {
+            e.stopPropagation();
+            e.preventDefault();
+            showResultDialog(stored.dataURL, [matchedBox]);
+        }
+    });
 }
 
 function getImageBySrc(src1,checkData) {
