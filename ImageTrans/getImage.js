@@ -2364,58 +2364,56 @@ function startCameraCapture() {
     if (cameraActive) return;
     cameraActive = true;
 
-    // Create full-screen black overlay
+    // Create full-screen black overlay (bottom layer)
     cameraOverlay = document.createElement('div');
     cameraOverlay.id = 'imagetrans-camera-overlay';
-    cameraOverlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:2147483646;background:#000;';
+    cameraOverlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:2147483643;background:#000;';
+    document.body.appendChild(cameraOverlay);
 
-    // Close button (top-right)
+    // Video element (above overlay, fills the screen)
+    cameraVideo = document.createElement('video');
+    cameraVideo.id = 'imagetrans-camera-video';
+    cameraVideo.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:2147483644;object-fit:cover;';
+    cameraVideo.setAttribute('playsinline', '');
+    cameraVideo.setAttribute('autoplay', '');
+    cameraVideo.setAttribute('muted', '');
+    document.body.appendChild(cameraVideo);
+
+    // Create viewfinder (above video, initially hidden)
+    cameraViewfinder = document.createElement('div');
+    cameraViewfinder.id = 'imagetrans-camera-viewfinder';
+    cameraViewfinder.style.cssText = 'position:fixed;z-index:2147483645;border:2px dashed #fff;background:transparent;box-shadow:0 0 0 9999px rgba(0,0,0,0.5);pointer-events:auto;cursor:move;display:none;box-sizing:border-box;';
+    cameraViewfinder.addEventListener('mousedown', onCameraViewfinderDragStart);
+    cameraViewfinder.addEventListener('touchstart', onCameraViewfinderDragTouchStart, { passive: false });
+    document.body.appendChild(cameraViewfinder);
+
+    // Close button (top-right, topmost layer)
     cameraCloseBtn = document.createElement('button');
     cameraCloseBtn.textContent = '✕';
-    cameraCloseBtn.style.cssText = 'position:fixed;top:12px;right:12px;z-index:2147483648;background:rgba(0,0,0,0.5);color:#fff;border:1px solid rgba(255,255,255,0.3);border-radius:50%;width:40px;height:40px;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;touch-action:manipulation;';
+    cameraCloseBtn.style.cssText = 'position:fixed;top:12px;right:12px;z-index:2147483646;background:rgba(0,0,0,0.35);color:#fff;border:1px solid rgba(255,255,255,0.35);border-radius:50%;width:40px;height:40px;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;touch-action:manipulation;';
     cameraCloseBtn.addEventListener('click', function(e) {
         e.stopPropagation();
         cleanupCameraAll();
     });
     document.body.appendChild(cameraCloseBtn);
 
-    // Camera selector
+    // Camera selector (top-left, topmost layer)
     cameraSelect = document.createElement('select');
-    cameraSelect.style.cssText = 'position:fixed;top:12px;left:12px;z-index:2147483648;background:rgba(0,0,0,0.5);color:#fff;border:1px solid rgba(255,255,255,0.3);border-radius:4px;padding:6px 8px;font-size:14px;max-width:200px;cursor:pointer;';
+    cameraSelect.style.cssText = 'position:fixed;top:12px;left:12px;z-index:2147483646;background:rgba(0,0,0,0.35);color:#fff;border:1px solid rgba(255,255,255,0.35);border-radius:4px;padding:6px 8px;font-size:14px;max-width:200px;cursor:pointer;';
     cameraSelect.addEventListener('change', function() {
         switchCamera(cameraSelect.value);
     });
     document.body.appendChild(cameraSelect);
 
-    // Video element (behind everything else, fills the screen)
-    cameraVideo = document.createElement('video');
-    cameraVideo.id = 'imagetrans-camera-video';
-    cameraVideo.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:2147483646;object-fit:cover;';
-    cameraVideo.setAttribute('playsinline', '');
-    cameraVideo.setAttribute('autoplay', '');
-    cameraVideo.setAttribute('muted', '');
-    document.body.appendChild(cameraVideo);
-
-    // Create viewfinder (initially hidden, shown after camera starts)
-    cameraViewfinder = document.createElement('div');
-    cameraViewfinder.id = 'imagetrans-camera-viewfinder';
-    cameraViewfinder.style.cssText = 'position:fixed;z-index:2147483647;border:2px dashed #fff;background:transparent;box-shadow:0 0 0 9999px rgba(0,0,0,0.5);pointer-events:auto;cursor:move;display:none;box-sizing:border-box;';
-    cameraViewfinder.addEventListener('mousedown', onCameraViewfinderDragStart);
-    cameraViewfinder.addEventListener('touchstart', onCameraViewfinderDragTouchStart, { passive: false });
-    document.body.appendChild(cameraViewfinder);
-
-    // Capture button (bottom center)
+    // Capture button (bottom center, topmost layer)
     cameraCaptureBtn = document.createElement('button');
     cameraCaptureBtn.textContent = chrome.i18n.getMessage('camera_capture_btn');
-    cameraCaptureBtn.style.cssText = 'position:fixed;bottom:30px;left:50%;transform:translateX(-50%);z-index:2147483648;width:64px;height:64px;border-radius:50%;background:#fff;border:4px solid #ccc;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#333;box-shadow:0 2px 12px rgba(0,0,0,0.3);touch-action:manipulation;';
+    cameraCaptureBtn.style.cssText = 'position:fixed;bottom:30px;left:50%;transform:translateX(-50%);z-index:2147483646;width:64px;height:64px;border-radius:50%;background:#fff;border:4px solid #ccc;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#333;box-shadow:0 2px 12px rgba(0,0,0,0.3);touch-action:manipulation;';
     cameraCaptureBtn.addEventListener('click', function(e) {
         e.stopPropagation();
         doCameraCapture();
     });
     document.body.appendChild(cameraCaptureBtn);
-
-    // Append overlay (goes behind video and viewfinder)
-    document.body.appendChild(cameraOverlay);
 
     // ESC key handler
     window.addEventListener('keydown', onCameraKeyDown);
@@ -2552,7 +2550,7 @@ function addCameraResizeHandles() {
         var h = document.createElement('div');
         h.className = 'imagetrans-camera-handle';
         h.setAttribute('data-corner', corners[i].id);
-        h.style.cssText = 'position:fixed;z-index:2147483648;width:' + handleSize + 'px;height:' + handleSize + 'px;background:#fff;border:1px solid #333;border-radius:2px;cursor:' + corners[i].cursor + ';left:' + corners[i].left + 'px;top:' + corners[i].top + 'px;';
+        h.style.cssText = 'position:fixed;z-index:2147483646;width:' + handleSize + 'px;height:' + handleSize + 'px;background:#fff;border:1px solid #333;border-radius:2px;cursor:' + corners[i].cursor + ';left:' + corners[i].left + 'px;top:' + corners[i].top + 'px;';
         h.addEventListener('mousedown', function(e) {
             e.stopPropagation();
             e.preventDefault();
