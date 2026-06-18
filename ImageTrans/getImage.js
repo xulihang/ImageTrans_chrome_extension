@@ -2420,8 +2420,10 @@ function startCameraCapture() {
     // ESC key handler
     window.addEventListener('keydown', onCameraKeyDown);
 
-    // Enumerate cameras and start
-    enumerateCameras().then(function() {
+    // Ask for camera permission first, then enumerate and start
+    askForCameraPermission().then(function() {
+        return enumerateCameras();
+    }).then(function() {
         return startCameraStream(null);
     }).catch(function(err) {
         console.error('Camera capture failed:', err);
@@ -2459,6 +2461,27 @@ function enumerateCameras() {
             cameraSelect.style.display = '';
         }
     });
+}
+
+async function askForCameraPermission() {
+    var stream;
+    try {
+        var constraints = { video: true, audio: false };
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+    } catch (error) {
+        console.log(error);
+    }
+    closeStream(stream);
+}
+
+function closeStream(stream) {
+    try {
+        if (stream) {
+            stream.getTracks().forEach(function(track) { track.stop(); });
+        }
+    } catch (e) {
+        console.error(e.message);
+    }
 }
 
 function startCameraStream(deviceId) {
