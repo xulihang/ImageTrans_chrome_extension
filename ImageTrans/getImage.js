@@ -1527,10 +1527,7 @@ function replaceImgSrc(src1,src2,checkData,img,boxes,originalDataURL){
         translatedSrcs[src1] = true;
         // Store boxes for click-to-inspect feature
         if (boxes && boxes.length > 0) {
-            translatedBoxesMap[src1] = {
-                dataURL: originalDataURL || src2,
-                boxes: boxes
-            };
+            translatedBoxesMap[src1] = boxes;
             attachImageClickHandler(img);
         }
         return "success"
@@ -1562,8 +1559,8 @@ function attachImageClickHandler(img) {
 
     img.addEventListener('click', function(e) {
         var src = img.getAttribute('original-src') || img.src;
-        var stored = translatedBoxesMap[src];
-        if (!stored || !stored.boxes || !stored.boxes.length) return;
+        var boxes = translatedBoxesMap[src];
+        if (!boxes || !boxes.length) return;
 
         // Calculate click position relative to the image's natural dimensions
         var rect = img.getBoundingClientRect();
@@ -1574,11 +1571,11 @@ function attachImageClickHandler(img) {
         var naturalY = (e.clientY - rect.top) * scaleY;
 
         // Find the text box under the click point
-        var matchedBox = findBoxAtPosition(stored.boxes, naturalX, naturalY);
+        var matchedBox = findBoxAtPosition(boxes, naturalX, naturalY);
         if (matchedBox) {
             e.stopPropagation();
             e.preventDefault();
-            showResultDialog(stored.dataURL, [matchedBox]);
+            showResultDialog('', [matchedBox], null, true);
         }
     });
 }
@@ -3669,7 +3666,7 @@ function speakText(text, btn, voiceURI) {
     utterance.onerror = function() { stopTTS(); };
 }
 
-function showResultDialog(dataURL, boxes, message) {
+function showResultDialog(dataURL, boxes, message, hideThumbnail) {
     var existingBackdrop = document.getElementById('imagetrans-sc-backdrop');
     if (existingBackdrop) existingBackdrop.remove();
     var existingDialog = document.getElementById('imagetrans-sc-dialog');
@@ -3731,14 +3728,16 @@ function showResultDialog(dataURL, boxes, message) {
         emptyDiv.style.cssText = 'color:#666;text-align:center;padding:20px 0;';
         body.appendChild(emptyDiv);
     } else {
-        // Image thumbnail
-        var thumbWrap = document.createElement('div');
-        thumbWrap.style.cssText = 'text-align:center;margin-bottom:16px;';
-        var thumb = document.createElement('img');
-        thumb.src = dataURL;
-        thumb.style.cssText = 'max-width:200px;max-height:120px;border-radius:4px;border:1px solid #eee;';
-        thumbWrap.appendChild(thumb);
-        body.appendChild(thumbWrap);
+        // Image thumbnail (skip when called from image click inspect)
+        if (!hideThumbnail) {
+            var thumbWrap = document.createElement('div');
+            thumbWrap.style.cssText = 'text-align:center;margin-bottom:16px;';
+            var thumb = document.createElement('img');
+            thumb.src = dataURL;
+            thumb.style.cssText = 'max-width:200px;max-height:120px;border-radius:4px;border:1px solid #eee;';
+            thumbWrap.appendChild(thumb);
+            body.appendChild(thumbWrap);
+        }
 
         // Voice selector for TTS
         var ttsVoiceSelect = document.createElement('select');
