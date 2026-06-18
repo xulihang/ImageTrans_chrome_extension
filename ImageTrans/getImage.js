@@ -1527,7 +1527,10 @@ function replaceImgSrc(src1,src2,checkData,img,boxes,originalDataURL){
         translatedSrcs[src1] = true;
         // Store boxes for click-to-inspect feature
         if (boxes && boxes.length > 0) {
-            translatedBoxesMap[src1] = boxes;
+            translatedBoxesMap[src1] = {
+                boxes: boxes,
+                img: img
+            };
             attachImageClickHandler(img);
         }
         return "success"
@@ -1552,32 +1555,52 @@ function findBoxAtPosition(boxes, x, y) {
 }
 
 // Attach click handler to a translated image for text region inspection
+// Only marks the image; actual click handling is done via document-level capture listener
 function attachImageClickHandler(img) {
     if (img.hasAttribute('data-imagetrans-click')) return;
     img.setAttribute('data-imagetrans-click', '1');
+}
 
-    img.addEventListener('click', function(e) {
-        var src = img.getAttribute('original-src') || img.src;
-        var boxes = translatedBoxesMap[src];
-        if (!boxes || !boxes.length) return;
+// Document-level capture-phase click listener — fires before any child/overlay elements
+// so clicks on translated images are intercepted even when covered by other elements
+document.addEventListener('click', function(e) {
+    for (var src in translatedBoxesMap) {
+        if (!Object.prototype.hasOwnProperty.call(translatedBoxesMap, src)) continue;
+        var entry = translatedBoxesMap[src];
+        var img = entry.img;
+        // Validate img is still in the DOM
+        if (!img || !img.isConnected || !document.contains(img)) {
+            // Try to re-find the image by src
+            img = getImageBySrc(src, true);
+            if (img) {
+                entry.img = img;
+            } else {
+                continue;
+            }
+        }
 
-        // Calculate click position relative to the image's natural dimensions
         var rect = img.getBoundingClientRect();
-        if (img.naturalWidth === 0 || img.naturalHeight === 0) return;
+        if (e.clientX < rect.left || e.clientX > rect.right ||
+            e.clientY < rect.top || e.clientY > rect.bottom) continue;
+        if (img.naturalWidth === 0 || img.naturalHeight === 0) continue;
+
+        var boxes = entry.boxes;
+        if (!boxes || !boxes.length) continue;
+
         var scaleX = img.naturalWidth / rect.width;
         var scaleY = img.naturalHeight / rect.height;
         var naturalX = (e.clientX - rect.left) * scaleX;
         var naturalY = (e.clientY - rect.top) * scaleY;
 
-        // Find the text box under the click point
         var matchedBox = findBoxAtPosition(boxes, naturalX, naturalY);
         if (matchedBox) {
             e.stopPropagation();
             e.preventDefault();
             showResultDialog('', [matchedBox], null, true);
+            return;
         }
-    });
-}
+    }
+}, true); // true = capture phase
 
 function getImageBySrc(src1,checkData) {
     var imgs = document.getElementsByTagName("img");
