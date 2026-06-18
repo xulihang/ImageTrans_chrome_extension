@@ -123,5 +123,10 @@
   "options_screen_capture_overlay": { "message": "屏幕截图OCR启用贴图模式" },
   "options_screen_capture_overlay_hint": { "message": "翻译结果直接覆盖显示在原图上，不弹对话框。" },
   "options_add_pinyin": { "message": "为中文原文添加拼音标注" },
-  "options_add_furigana": { "message": "为日文原文添加振假名标注" }
+  "options_add_furigana": { "message": "为日文原文添加振假名标注" },
+  "sc_copy_text": { "message": "复制" },
+  "sc_copy_done": { "message": "已复制" },
+  "sc_tts_speak": { "message": "朗读" },
+  "sc_tts_stop": { "message": "停止" },
+  "sc_tts_engine": { "message": "语音引擎" }
 }

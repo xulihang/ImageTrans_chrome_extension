@@ -7,7 +7,9 @@
       "Bash(powershell -Command \"Remove-Item 'c:\\\\Users\\\\admin\\\\Desktop\\\\git\\\\ImageTrans_chrome_extension\\\\ImageTrans\\\\paddleocr\\\\ort-wasm-simd-threaded.jsep.mjs'\")",
       "Bash(powershell -Command \"Remove-Item -Path 'c:\\\\Users\\\\admin\\\\Desktop\\\\git\\\\ImageTrans_chrome_extension\\\\ImageTrans\\\\paddleocr\\\\ort-wasm-simd-threaded.jsep.mjs' -Force\")",
       "PowerShell(Get-Content \"c:\\\\Users\\\\admin\\\\Desktop\\\\git\\\\ImageTrans_chrome_extension\\\\ImageTrans\\\\getImage.js\" -Encoding utf8 | Select-Object -Skip 85 -First 4 | ForEach-Object { [System.Text.Encoding]::UTF8.GetBytes\\($_\\) | ForEach-Object { '{0:X2}' -f $_ }; \"\" })",
-      "PowerShell(Get-Content \"c:\\\\Users\\\\admin\\\\Desktop\\\\git\\\\ImageTrans_chrome_extension\\\\ImageTrans\\\\options.js\" -Encoding utf8 | Select-Object -Skip 198 -First 4 | ForEach-Object { [System.Text.Encoding]::UTF8.GetBytes\\($_\\) | ForEach-Object { '{0:X2}' -f $_ }; \"\" })"
+      "PowerShell(Get-Content \"c:\\\\Users\\\\admin\\\\Desktop\\\\git\\\\ImageTrans_chrome_extension\\\\ImageTrans\\\\options.js\" -Encoding utf8 | Select-Object -Skip 198 -First 4 | ForEach-Object { [System.Text.Encoding]::UTF8.GetBytes\\($_\\) | ForEach-Object { '{0:X2}' -f $_ }; \"\" })",
+      "Bash(Select-String -Path \"c:\\\\Users\\\\admin\\\\Desktop\\\\git\\\\ImageTrans_chrome_extension\\\\ImageTrans\\\\pinyin.js\" -Pattern \"pinyinPro|exports|module\\\\.exports|window\\\\.\")",
+      "Bash(Select-Object -First 5)"
     ]
   }
 }

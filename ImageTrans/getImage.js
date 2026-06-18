@@ -57,6 +57,13 @@ var openaiURL = "https://api.openai.com/v1";
 var openaiKey = "";
 var openaiModel = "gpt-4o";
 var openaiPrompt = "";
+
+// TTS state
+var ttsUtterance = null;
+var ttsSpeakingBtn = null;
+var ttsSelectedVoice = null;
+var ttsVoicesLoaded = false;
+var ttsVoicesPromise = null;
 var ocrMethod = "paddleocr";
 var useYOLODetection = false;
 var useYOLOForJapanese = true;
@@ -2951,6 +2958,64 @@ function showOverlayResult(dataURL, boxes) {
     });
 }
 
+function getVoices() {
+    if (!ttsVoicesPromise) {
+        ttsVoicesPromise = new Promise(function(resolve) {
+            var voices = speechSynthesis.getVoices();
+            if (voices && voices.length) {
+                ttsVoicesLoaded = true;
+                resolve(voices);
+            } else {
+                speechSynthesis.addEventListener('voiceschanged', function() {
+                    ttsVoicesLoaded = true;
+                    resolve(speechSynthesis.getVoices());
+                }, { once: true });
+            }
+        });
+    }
+    return ttsVoicesPromise;
+}
+
+function stopTTS() {
+    speechSynthesis.cancel();
+    ttsUtterance = null;
+    if (ttsSpeakingBtn) {
+        ttsSpeakingBtn.textContent = chrome.i18n.getMessage('sc_tts_speak');
+        ttsSpeakingBtn.style.background = '#f0f0f0';
+        ttsSpeakingBtn.style.color = '#666';
+        ttsSpeakingBtn = null;
+    }
+}
+
+function speakText(text, btn, voiceURI) {
+    if (ttsSpeakingBtn === btn) {
+        stopTTS();
+        return;
+    }
+    stopTTS();
+    var utterance = new SpeechSynthesisUtterance(text);
+    if (voiceURI) {
+        getVoices().then(function(voices) {
+            for (var i = 0; i < voices.length; i++) {
+                if (voices[i].voiceURI === voiceURI) {
+                    utterance.voice = voices[i];
+                    break;
+                }
+            }
+            speechSynthesis.speak(utterance);
+        });
+    } else {
+        speechSynthesis.speak(utterance);
+    }
+    ttsUtterance = utterance;
+    ttsSpeakingBtn = btn;
+    btn.textContent = chrome.i18n.getMessage('sc_tts_stop');
+    btn.style.background = '#4A90D9';
+    btn.style.color = '#fff';
+    utterance.onend = function() { stopTTS(); };
+    utterance.onerror = function() { stopTTS(); };
+}
+
 function showResultDialog(dataURL, boxes, message) {
     var existingBackdrop = document.getElementById('imagetrans-sc-backdrop');
     if (existingBackdrop) existingBackdrop.remove();
@@ -2963,6 +3028,7 @@ function showResultDialog(dataURL, boxes, message) {
     backdrop.id = 'imagetrans-sc-backdrop';
     backdrop.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:2147483647;background:rgba(0,0,0,0.3);';
     backdrop.addEventListener('click', function() {
+        stopTTS();
         backdrop.remove();
         dialog.remove();
     });
@@ -2982,7 +3048,7 @@ function showResultDialog(dataURL, boxes, message) {
     var closeBtn = document.createElement('button');
     closeBtn.textContent = '✕';
     closeBtn.style.cssText = 'background:none;border:none;font-size:' + (isMobile ? '22px' : '18px') + ';cursor:pointer;color:#999;padding:' + (isMobile ? '4px' : '0') + ';line-height:1;min-width:32px;min-height:32px;';
-    closeBtn.addEventListener('click', function() { backdrop.remove(); dialog.remove(); });
+    closeBtn.addEventListener('click', function() { stopTTS(); backdrop.remove(); dialog.remove(); });
     header.appendChild(title);
     header.appendChild(closeBtn);
 
@@ -3018,6 +3084,36 @@ function showResultDialog(dataURL, boxes, message) {
         thumbWrap.appendChild(thumb);
         body.appendChild(thumbWrap);
 
+        // Voice selector for TTS
+        var ttsVoiceSelect = document.createElement('select');
+        ttsVoiceSelect.style.cssText = 'font-size:12px;padding:2px 4px;border:1px solid #ddd;border-radius:3px;max-width:200px;color:#666;';
+        getVoices().then(function(voices) {
+            voices.forEach(function(v) {
+                var opt = document.createElement('option');
+                opt.value = v.voiceURI;
+                opt.textContent = v.name + ' (' + v.lang + ')';
+                if (v.default) opt.selected = true;
+                ttsVoiceSelect.appendChild(opt);
+            });
+            if (ttsSelectedVoice) {
+                var found = false;
+                for (var k = 0; k < ttsVoiceSelect.options.length; k++) {
+                    if (ttsVoiceSelect.options[k].value === ttsSelectedVoice) { found = true; break; }
+                }
+                if (found) ttsVoiceSelect.value = ttsSelectedVoice;
+            }
+        });
+        ttsVoiceSelect.addEventListener('change', function() {
+            ttsSelectedVoice = ttsVoiceSelect.value;
+        });
+        var voiceRow = document.createElement('div');
+        voiceRow.style.cssText = 'display:flex;align-items:center;gap:6px;margin-bottom:10px;font-size:12px;color:#999;';
+        var voiceLabel = document.createElement('span');
+        voiceLabel.textContent = chrome.i18n.getMessage('sc_tts_engine') + ':';
+        voiceRow.appendChild(voiceLabel);
+        voiceRow.appendChild(ttsVoiceSelect);
+        body.appendChild(voiceRow);
+
         // Results list
         var list = document.createElement('div');
         list.style.cssText = 'display:flex;flex-direction:column;gap:12px;';
@@ -3032,16 +3128,55 @@ function showResultDialog(dataURL, boxes, message) {
             var resultFontSource = isMobile ? '18px' : '16px';
             var resultFontTarget = isMobile ? '14px' : '13px';
 
-            var sourceDiv = document.createElement('div');
-            sourceDiv.textContent = source;
-            sourceDiv.className = 'imagetrans-source-text';
-            sourceDiv.style.cssText = 'font-size:' + resultFontSource + ';color:#333;margin-bottom:4px;line-height:1.4;word-break:break-word;';
+            var sourceLine = document.createElement('div');
+            sourceLine.style.cssText = 'display:flex;align-items:flex-start;gap:6px;margin-bottom:4px;';
+
+            var sourceSpan = document.createElement('span');
+            sourceSpan.textContent = source;
+            sourceSpan.className = 'imagetrans-source-text';
+            sourceSpan.style.cssText = 'font-size:' + resultFontSource + ';color:#333;line-height:1.4;word-break:break-word;flex:1;';
+
+            var actionBtns = document.createElement('span');
+            actionBtns.style.cssText = 'display:flex;gap:3px;flex-shrink:0;align-items:flex-start;';
+
+            var btnStyle = 'padding:1px 5px;font-size:11px;border:1px solid #ddd;border-radius:3px;cursor:pointer;background:#f0f0f0;color:#666;white-space:nowrap;touch-action:manipulation;';
+
+            var copyBtn = document.createElement('button');
+            copyBtn.textContent = chrome.i18n.getMessage('sc_copy_text');
+            copyBtn.style.cssText = btnStyle;
+            copyBtn.setAttribute('data-text', source);
+            copyBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var btn = e.target;
+                var text = btn.getAttribute('data-text');
+                navigator.clipboard.writeText(text).then(function() {
+                    btn.textContent = chrome.i18n.getMessage('sc_copy_done');
+                    setTimeout(function() { btn.textContent = chrome.i18n.getMessage('sc_copy_text'); }, 1500);
+                });
+            });
+
+            var ttsBtn = document.createElement('button');
+            ttsBtn.textContent = chrome.i18n.getMessage('sc_tts_speak');
+            ttsBtn.style.cssText = btnStyle;
+            ttsBtn.setAttribute('data-text', source);
+            ttsBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var btn = e.target;
+                var text = btn.getAttribute('data-text');
+                var voiceURI = ttsVoiceSelect ? ttsVoiceSelect.value : null;
+                speakText(text, btn, voiceURI);
+            });
+
+            actionBtns.appendChild(copyBtn);
+            actionBtns.appendChild(ttsBtn);
+            sourceLine.appendChild(sourceSpan);
+            sourceLine.appendChild(actionBtns);
 
             var transDiv = document.createElement('div');
-            transDiv.textContent = chrome.i18n.getMessage("sc_arrow") + target;
+            transDiv.textContent = chrome.i18n.getMessage('sc_arrow') + target;
             transDiv.style.cssText = 'font-size:' + resultFontTarget + ';color:#4A90D9;line-height:1.4;word-break:break-word;';
 
-            row.appendChild(sourceDiv);
+            row.appendChild(sourceLine);
             row.appendChild(transDiv);
             list.appendChild(row);
         }
@@ -3062,6 +3197,7 @@ function showResultDialog(dataURL, boxes, message) {
     btnContinue.textContent = chrome.i18n.getMessage("sc_new_region");
     btnContinue.style.cssText = 'padding:' + btnPad + ';background:#5cb85c;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:' + btnFont + ';white-space:nowrap;touch-action:manipulation;';
     btnContinue.addEventListener('click', function() {
+        stopTTS();
         backdrop.remove();
         dialog.remove();
         cleanupScreenCaptureAll();
@@ -3072,6 +3208,7 @@ function showResultDialog(dataURL, boxes, message) {
     btnReOCR.textContent = chrome.i18n.getMessage("sc_recognize");
     btnReOCR.style.cssText = 'padding:' + btnPad + ';background:#4A90D9;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:' + btnFont + ';white-space:nowrap;touch-action:manipulation;';
     btnReOCR.addEventListener('click', function() {
+        stopTTS();
         backdrop.remove();
         dialog.remove();
         doScreenOCR();
@@ -3080,7 +3217,7 @@ function showResultDialog(dataURL, boxes, message) {
     var btnClose = document.createElement('button');
     btnClose.textContent = chrome.i18n.getMessage("sc_close");
     btnClose.style.cssText = 'padding:' + btnPad + ';background:#fff;color:#333;border:1px solid #ccc;border-radius:4px;cursor:pointer;font-size:' + btnFont + ';white-space:nowrap;touch-action:manipulation;';
-    btnClose.addEventListener('click', function() { backdrop.remove(); dialog.remove(); });
+    btnClose.addEventListener('click', function() { stopTTS(); backdrop.remove(); dialog.remove(); });
 
     footerLeft.appendChild(btnContinue);
     footerRight.appendChild(btnReOCR);
