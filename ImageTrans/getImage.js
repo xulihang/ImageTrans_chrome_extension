@@ -1555,7 +1555,6 @@ function findBoxAtPosition(boxes, x, y) {
 function attachImageClickHandler(img) {
     if (img.hasAttribute('data-imagetrans-click')) return;
     img.setAttribute('data-imagetrans-click', '1');
-    img.style.cursor = 'pointer';
 
     img.addEventListener('click', function(e) {
         var src = img.getAttribute('original-src') || img.src;
