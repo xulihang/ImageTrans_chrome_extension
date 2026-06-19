@@ -37,7 +37,7 @@ Automatic batch translation and regional OCR via screen capture are also support
 
 ImageTrans is optional if you use PaddleOCR. You can also setup OpenAI APIs to use ChatGPT, Gemini, etc, for text translation.
 
-PaddleOCR's function is limited (lack of supported languages and options, low performance. It may only works great for manhua). You need to set the language pair on the options page as well.
+PaddleOCR's function is limited (lack of supported languages and options, low performance.). You need to set the language pair on the options page as well.
 
 ## Extra Features
 
@@ -109,7 +109,7 @@ ImageTrans的Chrome扩展程序。你可以用它来翻译网页上的图像。
 
 ImageTrans是可选的，不用ImageTrans可以使用PaddleOCR识别文字。可以自定设置OpenAI兼容API来使用ChatGPT、DeepSeek等大模型进行文字翻译。
 
-本地PaddleOCR的功能比较有限，支持的语言较少，设置选项也比较少，识别效果和性能也较差。只有中文漫画效果还可以。使用时记得在扩展选项里设置好语言对。
+本地PaddleOCR的功能比较有限，支持的语言较少，设置选项也比较少，识别效果和性能也较差。使用时记得在扩展选项里设置好语言对。
 
 ## 其他功能
 
