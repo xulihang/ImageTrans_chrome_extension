@@ -1924,6 +1924,7 @@ var screenCaptureServerFailed = false;
 
 // Camera capture state
 var cameraActive = false;
+var cameraShouldRestore = false;
 var cameraStream = null;
 var cameraVideo = null;
 var cameraOverlay = null;
@@ -2913,8 +2914,10 @@ function doCameraCapture() {
     ctx.drawImage(cameraVideo, sx, sy, sw, sh, 0, 0, sw, sh);
     var dataURL = canvas.toDataURL('image/jpeg', 0.9);
 
-    // Show processing overlay on camera (don't close camera)
+    // Show processing overlay first, then close the camera
     showCameraProcessing();
+    cleanupCameraAll(true); // skip hiding processing overlay
+    cameraShouldRestore = true;
 
     // Run the existing OCR pipeline
     processScreenOCR(dataURL);
@@ -2949,10 +2952,13 @@ function hideCameraProcessing() {
 
 // -- Cleanup --
 
-function cleanupCameraAll() {
+function cleanupCameraAll(skipProcessingOverlay) {
     cameraActive = false;
+    cameraShouldRestore = false;
     cameraDragging = false;
-    hideCameraProcessing();
+    if (!skipProcessingOverlay) {
+        hideCameraProcessing();
+    }
     cameraResizing = false;
     cameraResizeCorner = null;
 
@@ -3564,6 +3570,10 @@ function showOverlayResult(dataURL, boxes) {
         closeBtn.addEventListener('click', function(e) {
             e.stopPropagation();
             wrap.remove();
+            if (cameraShouldRestore) {
+                cameraShouldRestore = false;
+                startCameraCapture();
+            }
         });
 
         wrap.appendChild(img);
@@ -3707,6 +3717,10 @@ function showResultDialog(dataURL, boxes, message, hideThumbnail) {
         stopTTS();
         backdrop.remove();
         dialog.remove();
+        if (cameraShouldRestore) {
+            cameraShouldRestore = false;
+            startCameraCapture();
+        }
     });
 
     var isMobile = window.innerWidth < 600;
@@ -3724,7 +3738,15 @@ function showResultDialog(dataURL, boxes, message, hideThumbnail) {
     var closeBtn = document.createElement('button');
     closeBtn.textContent = '✕';
     closeBtn.style.cssText = 'background:none;border:none;font-size:' + (isMobile ? '22px' : '18px') + ';cursor:pointer;color:#999;padding:' + (isMobile ? '4px' : '0') + ';line-height:1;min-width:32px;min-height:32px;';
-    closeBtn.addEventListener('click', function() { stopTTS(); backdrop.remove(); dialog.remove(); });
+    closeBtn.addEventListener('click', function() {
+        stopTTS();
+        backdrop.remove();
+        dialog.remove();
+        if (cameraShouldRestore) {
+            cameraShouldRestore = false;
+            startCameraCapture();
+        }
+    });
     header.appendChild(title);
     header.appendChild(closeBtn);
 
@@ -3878,6 +3900,11 @@ function showResultDialog(dataURL, boxes, message, hideThumbnail) {
         stopTTS();
         backdrop.remove();
         dialog.remove();
+        if (cameraShouldRestore) {
+            cameraShouldRestore = false;
+            startCameraCapture();
+            return;
+        }
         if (cameraActive) {
             // Camera is still active, user can capture again
             return;
@@ -3893,6 +3920,11 @@ function showResultDialog(dataURL, boxes, message, hideThumbnail) {
         stopTTS();
         backdrop.remove();
         dialog.remove();
+        if (cameraShouldRestore) {
+            cameraShouldRestore = false;
+            startCameraCapture();
+            return;
+        }
         if (cameraActive) {
             doCameraCapture();
         } else {
@@ -3907,6 +3939,10 @@ function showResultDialog(dataURL, boxes, message, hideThumbnail) {
         stopTTS();
         backdrop.remove();
         dialog.remove();
+        if (cameraShouldRestore) {
+            cameraShouldRestore = false;
+            startCameraCapture();
+        }
     });
 
     footerLeft.appendChild(btnContinue);
