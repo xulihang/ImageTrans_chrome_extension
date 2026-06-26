@@ -1312,34 +1312,84 @@ function ensurePaddleModel(sourceLang) {
     });
 }
 
+function doPaddleOCRRequest(dataURL, sourceLang, scale) {
+    return new Promise(function(resolve, reject) {
+        var requestId = 'ocr_' + Date.now() + '_' + Math.random();
+        paddlePendingRequests[requestId] = { resolve: resolve, reject: reject, scale: scale };
+        var useYOLO = useYOLODetection || (useYOLOForJapanese && (sourceLang || 'auto') === 'ja');
+        var msg = {
+            source: 'imagetrans-extension',
+            type: useYOLO ? 'PADDLE_OCR_YOLO' : 'PADDLE_OCR',
+            imageDataURL: dataURL,
+            sourceLang: sourceLang || 'auto',
+            requestId: requestId,
+            xSpacing: xSpacing,
+            ySpacing: ySpacing
+        };
+        if (useYOLO) {
+            msg.yoloModelUrl = chrome.runtime.getURL('paddleocr/model.onnx');
+        }
+        window.postMessage(msg, '*');
+    });
+}
+
 function paddleOCR(imageDataURL, sourceLang) {
     return injectPaddleLibraries().then(function() {
         return ensurePaddleModel(sourceLang);
     }).then(function() {
-        // Downscale large images to reduce OCR processing time.
-        // PaddleOCR detection model works at a fixed resolution internally,
-        // so oversize images just waste computation without improving accuracy.
-        return downscaleDataURL(imageDataURL, 1500);
-    }).then(function(result) {
-        var dataURL = result.dataURL;
-        var scale = result.scale;
+        // Load original image to check dimensions before downscaling
         return new Promise(function(resolve, reject) {
-            var requestId = 'ocr_' + Date.now() + '_' + Math.random();
-            paddlePendingRequests[requestId] = { resolve: resolve, reject: reject, scale: scale };
-            var useYOLO = useYOLODetection || (useYOLOForJapanese && (sourceLang || 'auto') === 'ja');
-            var msg = {
-                source: 'imagetrans-extension',
-                type: useYOLO ? 'PADDLE_OCR_YOLO' : 'PADDLE_OCR',
-                imageDataURL: dataURL,
-                sourceLang: sourceLang || 'auto',
-                requestId: requestId,
-                xSpacing: xSpacing,
-                ySpacing: ySpacing
+            var img = new Image();
+            img.onload = function() {
+                resolve({ img: img, w: img.naturalWidth, h: img.naturalHeight });
             };
-            if (useYOLO) {
-                msg.yoloModelUrl = chrome.runtime.getURL('paddleocr/model.onnx');
+            img.onerror = function() { reject(new Error('Failed to load image for OCR')); };
+            img.src = imageDataURL;
+        });
+    }).then(function(info) {
+        var img = info.img;
+        var w = info.w;
+        var h = info.h;
+
+        if (h / w <= 4) {
+            // Normal case: downscale the whole image and OCR
+            return downscaleDataURL(imageDataURL, 1500).then(function(result) {
+                return doPaddleOCRRequest(result.dataURL, sourceLang, result.scale);
+            });
+        }
+
+        // Tall image: crop into parts first, then downscale and OCR each part
+        var partHeight = w * 4;
+        var numParts = Math.ceil(h / partHeight);
+        var promises = [];
+        for (var i = 0; i < numParts; i++) {
+            (function(partIndex) {
+                var sy = partIndex * partHeight;
+                var sh = Math.min(partHeight, h - sy);
+                var c = document.createElement('canvas');
+                c.width = w;
+                c.height = sh;
+                var ctx = c.getContext('2d');
+                ctx.drawImage(img, 0, sy, w, sh, 0, 0, w, sh);
+                var partDataURL = c.toDataURL('image/jpeg', 0.9);
+                promises.push(
+                    downscaleDataURL(partDataURL, 1500).then(function(result) {
+                        return doPaddleOCRRequest(result.dataURL, sourceLang, result.scale).then(function(boxes) {
+                            for (var j = 0; j < boxes.length; j++) {
+                                boxes[j].geometry.Y += sy;
+                            }
+                            return boxes;
+                        });
+                    })
+                );
+            })(i);
+        }
+        return Promise.all(promises).then(function(results) {
+            var allBoxes = [];
+            for (var p = 0; p < results.length; p++) {
+                allBoxes = allBoxes.concat(results[p]);
             }
-            window.postMessage(msg, '*');
+            return allBoxes;
         });
     });
 }
