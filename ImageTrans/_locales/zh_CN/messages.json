@@ -1,6 +1,6 @@
 {
   "ext_name": { "message": "ImageTrans" },
-  "ext_desc": { "message": "翻译网页上的图片" },
+  "ext_desc": { "message": "翻译网页上的图片，支持漫画、条漫、同人本的翻译" },
   "ext_command_desc": { "message": "打开扩展弹窗" },
 
   "popup_translate": { "message": "翻译" },

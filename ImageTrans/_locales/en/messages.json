@@ -1,6 +1,6 @@
 {
   "ext_name": { "message": "ImageTrans" },
-  "ext_desc": { "message": "Translate images on websites" },
+  "ext_desc": { "message": "Translate images on websites - supports comic, manga, manhua, webtoon, doujin translation" },
   "ext_command_desc": { "message": "Open the extension popup" },
 
   "popup_translate": { "message": "Translate" },
