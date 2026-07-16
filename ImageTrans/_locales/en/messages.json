@@ -131,5 +131,8 @@
   "sc_tts_stop": { "message": "Stop" },
   "sc_tts_engine": { "message": "Voice Engine" },
   "camera_no_camera": { "message": "No camera found" },
-  "camera_capture_btn": { "message": "Capture" }
+  "camera_capture_btn": { "message": "Capture" },
+
+  "options_show_floating_btn": { "message": "Show floating translate button" },
+  "options_show_floating_btn_hint": { "message": "Adds a draggable button on pages to quickly translate images." }
 }

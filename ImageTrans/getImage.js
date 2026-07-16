@@ -104,6 +104,7 @@ chrome.storage.sync.get({
     screenCaptureOverlay: false,
     addPinyinToSource: false,
     addFuriganaToSource: false,
+    showFloatingButton: false,
     xSpacing: 15,
     ySpacing: 15
 }, async function(items) {
@@ -184,6 +185,12 @@ chrome.storage.sync.get({
     }
     if (items.addFuriganaToSource !== undefined) {
         addFuriganaToSource = items.addFuriganaToSource;
+    }
+    if (items.showFloatingButton !== undefined) {
+        showFloatingButton = items.showFloatingButton;
+    }
+    if (showFloatingButton) {
+        createFloatingButton();
     }
 });
 
@@ -4029,3 +4036,211 @@ function showResultDialog(dataURL, boxes, message, hideThumbnail) {
     document.body.appendChild(backdrop);
     document.body.appendChild(dialog);
 }
+
+// === Floating Translate Button ===
+
+var floatingButton = null;
+var floatingBtnDragging = false;
+var floatingBtnStartX = 0;
+var floatingBtnStartY = 0;
+var floatingBtnOrigLeft = 0;
+var floatingBtnOrigTop = 0;
+var floatingBtnMoved = false;
+var showFloatingButton = false;
+
+function createFloatingButton() {
+    if (floatingButton && floatingButton.isConnected) return;
+
+    chrome.storage.local.get({
+        floatingBtnLeft: -1,
+        floatingBtnTop: -1
+    }, function(pos) {
+        if (floatingButton && floatingButton.isConnected) return;
+
+        var btn = document.createElement('div');
+        btn.id = 'imagetrans-floating-btn';
+        btn.title = chrome.i18n.getMessage('popup_translate');
+
+        var btnSize = 44;
+        var defaultLeft = window.innerWidth - btnSize - 20;
+        var defaultTop = window.innerHeight - btnSize - 120;
+        var left = pos.floatingBtnLeft >= 0 ? pos.floatingBtnLeft : defaultLeft;
+        var top = pos.floatingBtnTop >= 0 ? pos.floatingBtnTop : defaultTop;
+
+        // Clamp to viewport
+        left = Math.max(0, Math.min(left, window.innerWidth - btnSize));
+        top = Math.max(0, Math.min(top, window.innerHeight - btnSize));
+
+        btn.style.cssText =
+            'position:fixed;' +
+            'z-index:2147483645;' +
+            'width:' + btnSize + 'px;' +
+            'height:' + btnSize + 'px;' +
+            'left:' + left + 'px;' +
+            'top:' + top + 'px;' +
+            'border-radius:50%;' +
+            'background:rgba(74,108,247,0.85);' +
+            'color:#fff;' +
+            'font-size:18px;' +
+            'font-weight:700;' +
+            'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;' +
+            'display:flex;' +
+            'align-items:center;' +
+            'justify-content:center;' +
+            'cursor:grab;' +
+            'box-shadow:0 2px 10px rgba(0,0,0,0.3);' +
+            'user-select:none;' +
+            'touch-action:none;' +
+            'transition:box-shadow 0.2s,background 0.2s;';
+
+        btn.textContent = 'T';
+
+        btn.addEventListener('mouseenter', function() {
+            btn.style.boxShadow = '0 4px 16px rgba(0,0,0,0.4)';
+            btn.style.background = 'rgba(59,93,231,0.9)';
+        });
+        btn.addEventListener('mouseleave', function() {
+            if (!floatingBtnDragging) {
+                btn.style.boxShadow = '0 2px 10px rgba(0,0,0,0.3)';
+                btn.style.background = 'rgba(74,108,247,0.85)';
+                btn.style.cursor = 'grab';
+            }
+        });
+
+        // --- Mouse drag ---
+        btn.addEventListener('mousedown', function(e) {
+            if (e.button !== 0) return;
+            floatingBtnDragging = true;
+            floatingBtnMoved = false;
+            floatingBtnStartX = e.clientX;
+            floatingBtnStartY = e.clientY;
+            floatingBtnOrigLeft = btn.offsetLeft;
+            floatingBtnOrigTop = btn.offsetTop;
+            btn.style.cursor = 'grabbing';
+            btn.style.transition = 'none';
+            e.preventDefault();
+            e.stopPropagation();
+        });
+
+        // --- Touch drag ---
+        btn.addEventListener('touchstart', function(e) {
+            if (e.touches.length !== 1) return;
+            floatingBtnDragging = true;
+            floatingBtnMoved = false;
+            floatingBtnStartX = e.touches[0].clientX;
+            floatingBtnStartY = e.touches[0].clientY;
+            floatingBtnOrigLeft = btn.offsetLeft;
+            floatingBtnOrigTop = btn.offsetTop;
+            btn.style.cursor = 'grabbing';
+            btn.style.transition = 'none';
+            e.preventDefault();
+            e.stopPropagation();
+        }, { passive: false });
+
+        floatingButton = btn;
+        document.body.appendChild(btn);
+    });
+}
+
+// Global move/up handlers on window to catch fast drags outside the button
+window.addEventListener('mousemove', function(e) {
+    if (!floatingBtnDragging || !floatingButton) return;
+    var dx = e.clientX - floatingBtnStartX;
+    var dy = e.clientY - floatingBtnStartY;
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+        floatingBtnMoved = true;
+    }
+    var btnSize = floatingButton.offsetWidth || 44;
+    var newLeft = floatingBtnOrigLeft + dx;
+    var newTop = floatingBtnOrigTop + dy;
+    newLeft = Math.max(0, Math.min(newLeft, window.innerWidth - btnSize));
+    newTop = Math.max(0, Math.min(newTop, window.innerHeight - btnSize));
+    floatingButton.style.left = newLeft + 'px';
+    floatingButton.style.top = newTop + 'px';
+});
+
+window.addEventListener('mouseup', function(e) {
+    if (!floatingBtnDragging || !floatingButton) return;
+    floatingBtnDragging = false;
+    floatingButton.style.cursor = 'grab';
+    floatingButton.style.transition = 'box-shadow 0.2s,background 0.2s';
+
+    // Save position
+    chrome.storage.local.set({
+        floatingBtnLeft: floatingButton.offsetLeft,
+        floatingBtnTop: floatingButton.offsetTop
+    });
+
+    if (!floatingBtnMoved) {
+        // It was a click — trigger translate
+        doFloatingButtonTranslate();
+    }
+});
+
+window.addEventListener('touchmove', function(e) {
+    if (!floatingBtnDragging || !floatingButton) return;
+    if (e.touches.length !== 1) return;
+    var dx = e.touches[0].clientX - floatingBtnStartX;
+    var dy = e.touches[0].clientY - floatingBtnStartY;
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+        floatingBtnMoved = true;
+    }
+    var btnSize = floatingButton.offsetWidth || 44;
+    var newLeft = floatingBtnOrigLeft + dx;
+    var newTop = floatingBtnOrigTop + dy;
+    newLeft = Math.max(0, Math.min(newLeft, window.innerWidth - btnSize));
+    newTop = Math.max(0, Math.min(newTop, window.innerHeight - btnSize));
+    floatingButton.style.left = newLeft + 'px';
+    floatingButton.style.top = newTop + 'px';
+    e.preventDefault();
+}, { passive: false });
+
+window.addEventListener('touchend', function(e) {
+    if (!floatingBtnDragging || !floatingButton) return;
+    floatingBtnDragging = false;
+    floatingButton.style.cursor = 'grab';
+    floatingButton.style.transition = 'box-shadow 0.2s,background 0.2s';
+
+    chrome.storage.local.set({
+        floatingBtnLeft: floatingButton.offsetLeft,
+        floatingBtnTop: floatingButton.offsetTop
+    });
+
+    if (!floatingBtnMoved) {
+        doFloatingButtonTranslate();
+    }
+});
+
+function doFloatingButtonTranslate() {
+    document.body.classList.add('imagetrans-wait');
+    var coordinate = {
+        x: pickingWay === '1' ? window.innerWidth / 2 : x,
+        y: pickingWay === '1' ? window.innerHeight / 2 : y
+    };
+    var e = getImage(coordinate.x, coordinate.y, false);
+    var src = getImageSrc(e);
+    ajax(src, e, true, true);
+}
+
+// Listen for storage changes to show/hide dynamically
+chrome.storage.onChanged.addListener(function(changes, areaName) {
+    if (areaName !== 'sync') return;
+    if (changes.showFloatingButton) {
+        showFloatingButton = changes.showFloatingButton.newValue;
+        if (showFloatingButton) {
+            createFloatingButton();
+        } else if (floatingButton) {
+            floatingButton.remove();
+            floatingButton = null;
+        }
+    }
+});
+
+// Re-create button if removed by SPA navigation
+var floatingBtnObserver = new MutationObserver(function() {
+    if (showFloatingButton && (!floatingButton || !floatingButton.isConnected || !document.contains(floatingButton))) {
+        floatingButton = null;
+        createFloatingButton();
+    }
+});
+floatingBtnObserver.observe(document.documentElement, { childList: true, subtree: true });
