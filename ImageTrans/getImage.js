@@ -4222,9 +4222,39 @@ function doFloatingButtonTranslate() {
     ajax(src, e, true, true);
 }
 
-// Listen for storage changes to show/hide dynamically
+// Listen for storage changes to apply settings dynamically
 chrome.storage.onChanged.addListener(function(changes, areaName) {
     if (areaName !== 'sync') return;
+
+    if (changes.serverURL) serverURL = changes.serverURL.newValue;
+    if (changes.pickingWay) pickingWay = changes.pickingWay.newValue;
+    if (changes.password) password = changes.password.newValue;
+    if (changes.displayName) displayName = changes.displayName.newValue;
+    if (changes.useCanvas !== undefined) useCanvas = changes.useCanvas.newValue;
+    if (changes.renderTextInFrontend !== undefined) renderTextInFrontend = changes.renderTextInFrontend.newValue;
+    if (changes.renderTextCSS) renderTextCSS = changes.renderTextCSS.newValue;
+    if (changes.sourceLang) sourceLang = changes.sourceLang.newValue;
+    if (changes.targetLang) targetLang = changes.targetLang.newValue;
+    if (changes.useOpenAI !== undefined) {
+        useOpenAI = changes.useOpenAI.newValue;
+        if (useOpenAI) renderTextInFrontend = true;
+    }
+    if (changes.openaiURL) openaiURL = changes.openaiURL.newValue;
+    if (changes.openaiKey) openaiKey = changes.openaiKey.newValue;
+    if (changes.openaiModel) openaiModel = changes.openaiModel.newValue;
+    if (changes.openaiPrompt) openaiPrompt = changes.openaiPrompt.newValue;
+    if (changes.ocrMethod) ocrMethod = changes.ocrMethod.newValue;
+    if (changes.useYOLODetection !== undefined) useYOLODetection = changes.useYOLODetection.newValue;
+    if (changes.useYOLOForJapanese !== undefined) useYOLOForJapanese = changes.useYOLOForJapanese.newValue;
+    if (changes.translationMode) translationMode = changes.translationMode.newValue;
+    if (changes.defaultPresetTranslation) defaultPresetTranslation = changes.defaultPresetTranslation.newValue;
+    if (changes.sendRequestsViaBackground !== undefined) sendRequestsViaBackground = changes.sendRequestsViaBackground.newValue;
+    if (changes.screenCaptureOverlay !== undefined) screenCaptureOverlayMode = changes.screenCaptureOverlay.newValue === true;
+    if (changes.addPinyinToSource !== undefined) addPinyinToSource = changes.addPinyinToSource.newValue;
+    if (changes.addFuriganaToSource !== undefined) addFuriganaToSource = changes.addFuriganaToSource.newValue;
+    if (changes.xSpacing !== undefined) xSpacing = changes.xSpacing.newValue;
+    if (changes.ySpacing !== undefined) ySpacing = changes.ySpacing.newValue;
+
     if (changes.showFloatingButton) {
         showFloatingButton = changes.showFloatingButton.newValue;
         if (showFloatingButton) {
