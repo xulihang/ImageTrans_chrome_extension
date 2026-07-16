@@ -191,6 +191,7 @@ chrome.storage.sync.get({
     }
     if (showFloatingButton) {
         createFloatingButton();
+        startFloatingBtnObserver();
     }
 });
 
@@ -4259,18 +4260,32 @@ chrome.storage.onChanged.addListener(function(changes, areaName) {
         showFloatingButton = changes.showFloatingButton.newValue;
         if (showFloatingButton) {
             createFloatingButton();
+            startFloatingBtnObserver();
         } else if (floatingButton) {
             floatingButton.remove();
             floatingButton = null;
+            stopFloatingBtnObserver();
         }
     }
 });
 
-// Re-create button if removed by SPA navigation
-var floatingBtnObserver = new MutationObserver(function() {
-    if (showFloatingButton && (!floatingButton || !floatingButton.isConnected || !document.contains(floatingButton))) {
-        floatingButton = null;
-        createFloatingButton();
+// Re-create button if removed by SPA navigation (only active when floating button is enabled)
+var floatingBtnObserver = null;
+
+function startFloatingBtnObserver() {
+    if (floatingBtnObserver) return;
+    floatingBtnObserver = new MutationObserver(function() {
+        if (!floatingButton || !floatingButton.isConnected || !document.contains(floatingButton)) {
+            floatingButton = null;
+            createFloatingButton();
+        }
+    });
+    floatingBtnObserver.observe(document.documentElement, { childList: true, subtree: true });
+}
+
+function stopFloatingBtnObserver() {
+    if (floatingBtnObserver) {
+        floatingBtnObserver.disconnect();
+        floatingBtnObserver = null;
     }
-});
-floatingBtnObserver.observe(document.documentElement, { childList: true, subtree: true });
+}
