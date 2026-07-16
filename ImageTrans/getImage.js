@@ -755,6 +755,24 @@ function compressToWebP(dataURL, quality) {
 	});
 }
 
+function captureImageViaBackgroundDownload(src) {
+    console.log("captureImageViaBackgroundDownload: trying background download", src);
+    return new Promise((resolve, reject) => {
+        chrome.runtime.sendMessage({action: "downloadImage", url: src}, (response) => {
+            if (chrome.runtime.lastError) {
+                reject(new Error("Background download failed: " + chrome.runtime.lastError.message));
+                return;
+            }
+            if (!response || response.error) {
+                reject(new Error("Background download failed: " + (response ? response.error : "no response")));
+                return;
+            }
+            console.log("captureImageViaBackgroundDownload: success, dataURL length", response.dataURL ? response.dataURL.length : 0);
+            compressToWebP(response.dataURL, 0.8).then(resolve).catch(reject);
+        });
+    });
+}
+
 function captureImageViaFetch(src, rect) {
     console.log("captureImageViaFetch: trying to fetch", src);
     return new Promise((resolve) => {
@@ -783,7 +801,11 @@ function captureImageViaFetch(src, rect) {
                     });
                 })
                 .catch(err => {
-                    console.error("captureImageViaFetch: failed, falling back to screenshot", err);
+                    console.error("captureImageViaFetch: direct fetch failed, trying background download", err);
+                    return captureImageViaBackgroundDownload(src);
+                })
+                .catch(err => {
+                    console.error("captureImageViaFetch: background download failed, falling back to screenshot", err);
                     return captureImageViaScreenshot(rect);
                 })
                 .then(resolve)

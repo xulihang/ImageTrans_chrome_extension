@@ -113,6 +113,28 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       }
     })();
     return true; // async sendResponse
+  } else if (request.action === "downloadImage") {
+    (async () => {
+      try {
+        const resp = await fetch(request.url);
+        if (!resp.ok) {
+          sendResponse({ error: "Download failed with status " + resp.status });
+          return;
+        }
+        const blob = await resp.blob();
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          sendResponse({ dataURL: reader.result });
+        };
+        reader.onerror = () => {
+          sendResponse({ error: "FileReader failed" });
+        };
+        reader.readAsDataURL(blob);
+      } catch (err) {
+        sendResponse({ error: err.message });
+      }
+    })();
+    return true; // async sendResponse
   } else if (request.action === "captureVisibleTab") {
     chrome.tabs.captureVisibleTab(null, {format: "png"}, (dataURL) => {
       if (chrome.runtime.lastError) {
