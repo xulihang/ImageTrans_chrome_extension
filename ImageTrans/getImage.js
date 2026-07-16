@@ -343,6 +343,7 @@ async function ajax(src,img,checkData,showOverlay){
     }
     data["displayName"] = displayName;
     data["password"] = password;
+    data["headless"] = "true";
     if (renderTextInFrontend) {
         data["withoutImage"] = "true";
     }
@@ -622,7 +623,8 @@ async function ajaxOpenAI(src, img, checkData, showOverlay) {
                 saveToFile: "true",
                 displayName: displayName || "default",
                 password: password,
-                withoutImage: "true"
+                withoutImage: "true",
+                headless: "true"
             };
             if (sourceLang !== "auto") ocrData["sourceLang"] = sourceLang;
             if (targetLang !== "auto") ocrData["targetLang"] = targetLang;
