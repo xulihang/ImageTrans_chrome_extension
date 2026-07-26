@@ -110,6 +110,7 @@
   "options_preset_glm4flash": { "message": "GLM-4-Flash" },
   "alert_openai_not_configured": { "message": "未配置 OpenAI API URL 或密钥。请在选项页面中设置。" },
   "overlay_translating": { "message": "翻译中…" },
+  "overlay_waiting": { "message": "等待翻译中…" },
   "sc_recognize": { "message": "识别" },
   "sc_close": { "message": "关闭" },
   "sc_processing": { "message": "处理中…" },

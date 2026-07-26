@@ -110,6 +110,7 @@
   "options_preset_glm4flash": { "message": "GLM-4-Flash" },
   "alert_openai_not_configured": { "message": "OpenAI API URL or Key is not configured. Please set them in the options page." },
   "overlay_translating": { "message": "Translating..." },
+  "overlay_waiting": { "message": "Waiting to translate..." },
   "sc_recognize": { "message": "Recognize" },
   "sc_close": { "message": "Close" },
   "sc_processing": { "message": "Processing..." },
