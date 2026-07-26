@@ -745,7 +745,7 @@ async function ajaxOpenAI(src, img, checkData, showOverlay) {
 
 function getDataURLFromImg(img) {
     // First try to get data URL directly from the already-loaded img element via canvas.
-    // This is much faster than fetching, but fails on cross-origin images without CORS.
+    // This works for same-origin images but fails on cross-origin (tainted canvas).
     try {
         var c = document.createElement("canvas");
         c.width = img.naturalWidth;
@@ -756,10 +756,44 @@ function getDataURLFromImg(img) {
         console.log("getDataURLFromImg: got data URL directly from canvas, length", dataURL.length);
         return Promise.resolve(dataURL);
     } catch (e) {
-        console.log("getDataURLFromImg: canvas approach failed (likely cross-origin), falling back to fetch", e);
-        var rect = img.getBoundingClientRect();
-        return captureImageViaFetch(img.src, rect);
+        console.log("getDataURLFromImg: canvas approach failed (likely cross-origin), trying CORS reload", e);
     }
+
+    // Second try: reload via new Image() with crossOrigin to avoid canvas tainting.
+    // The browser may serve it from cache, so this can still be fast.
+    var src = img.src;
+    if (src) {
+        return new Promise(function(resolve, reject) {
+            var reloaded = new Image();
+            reloaded.crossOrigin = "anonymous";
+            reloaded.onload = function() {
+                try {
+                    var c2 = document.createElement("canvas");
+                    c2.width = reloaded.naturalWidth;
+                    c2.height = reloaded.naturalHeight;
+                    var ctx2 = c2.getContext('2d');
+                    ctx2.drawImage(reloaded, 0, 0);
+                    var dataURL2 = c2.toDataURL("image/webp", 0.8);
+                    console.log("getDataURLFromImg: got data URL via CORS reload, length", dataURL2.length);
+                    resolve(dataURL2);
+                } catch (e2) {
+                    console.log("getDataURLFromImg: CORS reload canvas failed, falling back to fetch", e2);
+                    var rect = img.getBoundingClientRect();
+                    resolve(captureImageViaFetch(src, rect));
+                }
+            };
+            reloaded.onerror = function() {
+                console.log("getDataURLFromImg: CORS reload failed to load, falling back to fetch");
+                var rect = img.getBoundingClientRect();
+                resolve(captureImageViaFetch(src, rect));
+            };
+            reloaded.src = src;
+        });
+    }
+
+    // No src, fall back to fetch
+    var rect = img.getBoundingClientRect();
+    return captureImageViaFetch(img.src, rect);
 };
 
 function compressToWebP(dataURL, quality) {
@@ -801,7 +835,7 @@ function captureImageViaFetch(src, rect) {
     console.log("captureImageViaFetch: trying to fetch", src);
     return new Promise((resolve) => {
         chrome.runtime.sendMessage({action: "enableCORSForFetch"}, () => {
-            fetch(src)
+            fetch(src, {cache: 'force-cache'})
                 .then(response => {
                     console.log("captureImageViaFetch: response status", response.status, "type", response.type, "url", response.url);
                     if (!response.ok) {
