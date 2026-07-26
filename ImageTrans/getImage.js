@@ -752,11 +752,9 @@ function getDataURLFromImg(img) {
         c.height = img.naturalHeight;
         var ctx = c.getContext('2d');
         ctx.drawImage(img, 0, 0);
-        var dataURL = c.toDataURL("image/webp", 0.8);
-        console.log("getDataURLFromImg: got data URL directly from canvas, length", dataURL.length);
-        return Promise.resolve(dataURL);
+        return Promise.resolve(c.toDataURL("image/webp", 0.8));
     } catch (e) {
-        console.log("getDataURLFromImg: canvas approach failed (likely cross-origin), trying CORS reload", e);
+        // Cross-origin — fall through to CORS reload
     }
 
     // Second try: reload via new Image() with crossOrigin to avoid canvas tainting.
@@ -773,17 +771,13 @@ function getDataURLFromImg(img) {
                     c2.height = reloaded.naturalHeight;
                     var ctx2 = c2.getContext('2d');
                     ctx2.drawImage(reloaded, 0, 0);
-                    var dataURL2 = c2.toDataURL("image/webp", 0.8);
-                    console.log("getDataURLFromImg: got data URL via CORS reload, length", dataURL2.length);
-                    resolve(dataURL2);
+                    resolve(c2.toDataURL("image/webp", 0.8));
                 } catch (e2) {
-                    console.log("getDataURLFromImg: CORS reload canvas failed, falling back to fetch", e2);
                     var rect = img.getBoundingClientRect();
                     resolve(captureImageViaFetch(src, rect));
                 }
             };
             reloaded.onerror = function() {
-                console.log("getDataURLFromImg: CORS reload failed to load, falling back to fetch");
                 var rect = img.getBoundingClientRect();
                 resolve(captureImageViaFetch(src, rect));
             };
@@ -814,7 +808,6 @@ function compressToWebP(dataURL, quality) {
 }
 
 function captureImageViaBackgroundDownload(src) {
-    console.log("captureImageViaBackgroundDownload: trying background download", src);
     return new Promise((resolve, reject) => {
         chrome.runtime.sendMessage({action: "downloadImage", url: src}, (response) => {
             if (chrome.runtime.lastError) {
@@ -825,45 +818,37 @@ function captureImageViaBackgroundDownload(src) {
                 reject(new Error("Background download failed: " + (response ? response.error : "no response")));
                 return;
             }
-            console.log("captureImageViaBackgroundDownload: success, dataURL length", response.dataURL ? response.dataURL.length : 0);
             compressToWebP(response.dataURL, 0.8).then(resolve).catch(reject);
         });
     });
 }
 
 function captureImageViaFetch(src, rect) {
-    console.log("captureImageViaFetch: trying to fetch", src);
     return new Promise((resolve) => {
         chrome.runtime.sendMessage({action: "enableCORSForFetch"}, () => {
             fetch(src, {cache: 'force-cache'})
                 .then(response => {
-                    console.log("captureImageViaFetch: response status", response.status, "type", response.type, "url", response.url);
                     if (!response.ok) {
                         throw new Error('Fetch failed with status ' + response.status);
                     }
                     return response.blob();
                 })
                 .then(blob => {
-                    console.log("captureImageViaFetch: blob size", blob.size, "type", blob.type);
                     return new Promise((resolve, reject) => {
                         const reader = new FileReader();
                         reader.onloadend = () => {
-                            console.log("captureImageViaFetch: FileReader done, dataURL length", reader.result ? reader.result.length : 0);
                             compressToWebP(reader.result, 0.8).then(resolve).catch(reject);
                         };
                         reader.onerror = function(e) {
-                            console.error("captureImageViaFetch: FileReader error", e);
                             reject(e);
                         };
                         reader.readAsDataURL(blob);
                     });
                 })
                 .catch(err => {
-                    console.error("captureImageViaFetch: direct fetch failed, trying background download", err);
                     return captureImageViaBackgroundDownload(src);
                 })
                 .catch(err => {
-                    console.error("captureImageViaFetch: background download failed, falling back to screenshot", err);
                     return captureImageViaScreenshot(rect);
                 })
                 .then(resolve)
