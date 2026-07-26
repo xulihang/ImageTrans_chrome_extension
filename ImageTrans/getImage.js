@@ -744,8 +744,22 @@ async function ajaxOpenAI(src, img, checkData, showOverlay) {
 }
 
 function getDataURLFromImg(img) {
-    var rect = img.getBoundingClientRect();
-    return captureImageViaFetch(img.src, rect);
+    // First try to get data URL directly from the already-loaded img element via canvas.
+    // This is much faster than fetching, but fails on cross-origin images without CORS.
+    try {
+        var c = document.createElement("canvas");
+        c.width = img.naturalWidth;
+        c.height = img.naturalHeight;
+        var ctx = c.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        var dataURL = c.toDataURL("image/webp", 0.8);
+        console.log("getDataURLFromImg: got data URL directly from canvas, length", dataURL.length);
+        return Promise.resolve(dataURL);
+    } catch (e) {
+        console.log("getDataURLFromImg: canvas approach failed (likely cross-origin), falling back to fetch", e);
+        var rect = img.getBoundingClientRect();
+        return captureImageViaFetch(img.src, rect);
+    }
 };
 
 function compressToWebP(dataURL, quality) {
