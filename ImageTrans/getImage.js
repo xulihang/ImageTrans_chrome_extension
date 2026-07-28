@@ -4210,6 +4210,7 @@ function createFloatingButton() {
         }, { passive: false });
 
         floatingButton = btn;
+        if (!document.body) return;
         document.body.appendChild(btn);
     });
 }
