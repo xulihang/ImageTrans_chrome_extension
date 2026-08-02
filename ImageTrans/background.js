@@ -174,6 +174,17 @@ chrome.runtime.onInstalled.addListener(() => {
 chrome.contextMenus.onClicked.addListener(function (info, tab) {
   let message = info.menuItemId+"WithMenu";
   chrome.tabs.sendMessage(tab.id, {message:message,info:info}, function(response) {
-    
+
   });
+});
+
+// Listen for keyboard shortcut commands
+chrome.commands.onCommand.addListener(function(command) {
+  if (command === "screen-capture-ocr") {
+    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+      if (tabs.length > 0) {
+        chrome.tabs.sendMessage(tabs[0].id, {message: "startScreenCapture"});
+      }
+    });
+  }
 });
