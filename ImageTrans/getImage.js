@@ -1683,6 +1683,10 @@ function attachImageClickHandler(img) {
 // Document-level capture-phase click listener — fires before any child/overlay elements
 // so clicks on translated images are intercepted even when covered by other elements
 document.addEventListener('click', function(e) {
+    // Don't intercept clicks when a dialog or overlay is already open
+    if (document.getElementById('imagetrans-sc-dialog')) return;
+    if (document.getElementById('imagetrans-sc-overlay-wrap')) return;
+
     for (var src in translatedBoxesMap) {
         if (!Object.prototype.hasOwnProperty.call(translatedBoxesMap, src)) continue;
         var entry = translatedBoxesMap[src];
