@@ -2198,10 +2198,7 @@ function onScreenCaptureMouseUp(e) {
 
     screenCaptureRect = rect;
     if (screenCaptureInstantOCR) {
-        if (screenCaptureSelection) {
-            screenCaptureSelection.remove();
-            screenCaptureSelection = null;
-        }
+        showSelectionToolbar(rect);
         doScreenOCR();
     } else {
         showSelectionToolbar(rect);
@@ -2268,10 +2265,7 @@ function onScreenCaptureTouchEnd(e) {
 
     screenCaptureRect = rect;
     if (screenCaptureInstantOCR) {
-        if (screenCaptureSelection) {
-            screenCaptureSelection.remove();
-            screenCaptureSelection = null;
-        }
+        showSelectionToolbar(rect);
         doScreenOCR();
     } else {
         showSelectionToolbar(rect);
