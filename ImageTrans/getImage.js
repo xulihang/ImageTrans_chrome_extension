@@ -1364,6 +1364,26 @@ function injectPaddleLibraries() {
                         pending.reject(new Error(data.error));
                     }
                 }
+            } else if (data.type === 'FETCH_MODEL') {
+                // Forward model fetch request to background service worker
+                // The SW handles caching (IndexedDB) and downloading
+                chrome.runtime.sendMessage({action: 'fetchModel', url: data.url}).then(function(response) {
+                    window.postMessage({
+                        source: 'imagetrans-extension',
+                        type: 'FETCH_MODEL_RESULT',
+                        requestId: data.requestId,
+                        base64: response.ok ? response.base64 : null,
+                        error: response.error || null
+                    }, '*');
+                }).catch(function(err) {
+                    window.postMessage({
+                        source: 'imagetrans-extension',
+                        type: 'FETCH_MODEL_RESULT',
+                        requestId: data.requestId,
+                        base64: null,
+                        error: err.message
+                    }, '*');
+                });
             }
         }
         window.addEventListener('message', messageListener);

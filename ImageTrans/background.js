@@ -1,4 +1,64 @@
 
+// --- IndexedDB cache for remote OCR models ---
+const MODEL_CACHE_DB_NAME = 'ImageTransModelCache';
+const MODEL_CACHE_STORE = 'models';
+const DB_VERSION = 1;
+
+function openModelCacheDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(MODEL_CACHE_DB_NAME, DB_VERSION);
+    req.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains(MODEL_CACHE_STORE)) {
+        db.createObjectStore(MODEL_CACHE_STORE);
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function getCachedModel(url) {
+  const db = await openModelCacheDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(MODEL_CACHE_STORE, 'readonly');
+    const store = tx.objectStore(MODEL_CACHE_STORE);
+    const req = store.get(url);
+    req.onsuccess = () => resolve(req.result || null);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function cacheModel(url, arrayBuffer) {
+  const db = await openModelCacheDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(MODEL_CACHE_STORE, 'readwrite');
+    const store = tx.objectStore(MODEL_CACHE_STORE);
+    store.put(arrayBuffer, url);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function fetchAndCacheModel(url) {
+  // Check cache first
+  const cached = await getCachedModel(url);
+  if (cached) {
+    console.log('Model cache hit:', url);
+    return cached;
+  }
+  console.log('Model cache miss, downloading:', url);
+  const resp = await fetch(url);
+  if (!resp.ok) {
+    throw new Error('Failed to fetch model: ' + url + ' (status ' + resp.status + ')');
+  }
+  const arrayBuffer = await resp.arrayBuffer();
+  await cacheModel(url, arrayBuffer);
+  console.log('Model cached:', url, '(' + (arrayBuffer.byteLength / 1024 / 1024).toFixed(2) + ' MB)');
+  return arrayBuffer;
+}
+// --- End IndexedDB cache ---
+
 // --- Custom i18n: allow user to override UI language ---
 (async function() {
   const { uiLanguage } = await chrome.storage.sync.get({ uiLanguage: '' });
@@ -132,6 +192,24 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         reader.readAsDataURL(blob);
       } catch (err) {
         sendResponse({ error: err.message });
+      }
+    })();
+    return true; // async sendResponse
+  } else if (request.action === "fetchModel") {
+    (async () => {
+      try {
+        const arrayBuffer = await fetchAndCacheModel(request.url);
+        // Convert to base64 for reliable transfer through postMessage chain
+        // (ArrayBuffer can be problematic across SW -> content script -> page)
+        const bytes = new Uint8Array(arrayBuffer);
+        let binary = '';
+        for (let i = 0; i < bytes.byteLength; i++) {
+          binary += String.fromCharCode(bytes[i]);
+        }
+        const base64 = btoa(binary);
+        sendResponse({ ok: true, base64: base64 });
+      } catch (err) {
+        sendResponse({ ok: false, error: err.message });
       }
     })();
     return true; // async sendResponse

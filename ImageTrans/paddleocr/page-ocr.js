@@ -10,6 +10,45 @@
   let currentModelKey = null;
   let initPromise = null;
 
+  function isRemoteUrl(url) {
+    return /^https?:\/\//i.test(url);
+  }
+
+  function base64ToArrayBuffer(base64) {
+    var binary = atob(base64);
+    var bytes = new Uint8Array(binary.length);
+    for (var i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes.buffer;
+  }
+
+  function fetchModelViaExtension(url) {
+    return new Promise(function(resolve, reject) {
+      var requestId = 'fetch_' + Date.now() + '_' + Math.random();
+      function onMessage(event) {
+        if (event.source !== window) return;
+        var data = event.data;
+        if (!data || data.source !== 'imagetrans-extension') return;
+        if (data.type === 'FETCH_MODEL_RESULT' && data.requestId === requestId) {
+          window.removeEventListener('message', onMessage);
+          if (data.base64) {
+            resolve(base64ToArrayBuffer(data.base64));
+          } else {
+            reject(new Error(data.error || 'Failed to fetch model'));
+          }
+        }
+      }
+      window.addEventListener('message', onMessage);
+      window.postMessage({
+        source: 'imagetrans-extension',
+        type: 'FETCH_MODEL',
+        url: url,
+        requestId: requestId
+      }, '*');
+    });
+  }
+
   function waitForDeps() {
     return new Promise(function(resolve) {
       const check = function() {
@@ -41,12 +80,24 @@
         window.ort.env.wasm.wasmPaths = wasmPath;
       }
 
+      // For remote URLs (e.g. modelscope), fetch via extension's background SW
+      // which caches models in extension-owned IndexedDB so they persist across sites
+      var detInput = detPath;
+      var recInput = recPath;
+      if (isRemoteUrl(detPath)) {
+        detInput = await fetchModelViaExtension(detPath);
+      }
+      if (isRemoteUrl(recPath)) {
+        recInput = await fetchModelViaExtension(recPath);
+      }
+
+      // dicUrl is always a small text file from the extension bundle, fetch directly
       const res = await fetch(dicUrl);
       const dic = await res.text();
 
       await Paddle.init({
-        detPath: detPath,
-        recPath: recPath,
+        detPath: detInput,
+        recPath: recInput,
         dic: dic,
         ort: window.ort,
         node: false,
