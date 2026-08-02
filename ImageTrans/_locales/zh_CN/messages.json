@@ -125,6 +125,8 @@
   "sc_arrow": { "message": "→ " },
   "options_screen_capture_overlay": { "message": "屏幕截图OCR启用贴图模式" },
   "options_screen_capture_overlay_hint": { "message": "翻译结果直接覆盖显示在原图上，不弹对话框。" },
+  "options_screen_capture_instant_ocr": { "message": "框选后立即执行OCR" },
+  "options_screen_capture_instant_ocr_hint": { "message": "画框后立即执行OCR，无需再点击识别按钮。" },
   "options_add_pinyin": { "message": "为中文原文添加拼音标注" },
   "options_add_furigana": { "message": "为日文原文添加振假名标注" },
   "sc_copy_text": { "message": "复制" },

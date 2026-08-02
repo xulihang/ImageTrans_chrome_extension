@@ -105,6 +105,7 @@ chrome.storage.sync.get({
     addPinyinToSource: false,
     addFuriganaToSource: false,
     showFloatingButton: false,
+    screenCaptureInstantOCR: false,
     xSpacing: 15,
     ySpacing: 15
 }, async function(items) {
@@ -188,6 +189,9 @@ chrome.storage.sync.get({
     }
     if (items.showFloatingButton !== undefined) {
         showFloatingButton = items.showFloatingButton;
+    }
+    if (items.screenCaptureInstantOCR !== undefined) {
+        screenCaptureInstantOCR = items.screenCaptureInstantOCR;
     }
     if (showFloatingButton) {
         createFloatingButton();
@@ -2072,6 +2076,7 @@ var screenCaptureStartX = 0;
 var screenCaptureStartY = 0;
 var screenCaptureRect = null;
 var screenCaptureServerFailed = false;
+var screenCaptureInstantOCR = false;
 
 // Camera capture state
 var cameraActive = false;
@@ -2163,7 +2168,15 @@ function onScreenCaptureMouseUp(e) {
     }
 
     screenCaptureRect = rect;
-    showSelectionToolbar(rect);
+    if (screenCaptureInstantOCR) {
+        if (screenCaptureSelection) {
+            screenCaptureSelection.remove();
+            screenCaptureSelection = null;
+        }
+        doScreenOCR();
+    } else {
+        showSelectionToolbar(rect);
+    }
 }
 
 function onScreenCaptureKeyDown(e) {
@@ -2225,7 +2238,15 @@ function onScreenCaptureTouchEnd(e) {
     }
 
     screenCaptureRect = rect;
-    showSelectionToolbar(rect);
+    if (screenCaptureInstantOCR) {
+        if (screenCaptureSelection) {
+            screenCaptureSelection.remove();
+            screenCaptureSelection = null;
+        }
+        doScreenOCR();
+    } else {
+        showSelectionToolbar(rect);
+    }
 }
 
 function cleanupScreenCaptureOverlay() {
