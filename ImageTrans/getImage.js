@@ -71,6 +71,8 @@ var ttsContinuous = false; // continuous TTS across all boxes/images
 var ttsGlobalQueue = []; // {source, target, img, boxIdx} objects for continuous read
 var ttsQueueIdx = 0;
 var ttsDialogList = null; // reference to the result list in current dialog
+var ttsIsScreenCapture = false; // true when dialog is from screen/camera capture OCR
+var ttsScreenBoxes = null; // boxes array for screen capture dialog
 var ocrMethod = "paddleocr";
 var useYOLODetection = false;
 var useYOLOForJapanese = true;
@@ -1741,6 +1743,7 @@ document.addEventListener('click', function(e) {
         if (matchedBox) {
             e.stopPropagation();
             e.preventDefault();
+            ttsIsScreenCapture = false;
             showResultDialog('', [matchedBox], null, true);
             annotateInDialog([matchedBox]);
             return;
@@ -3591,6 +3594,7 @@ function displayResult(dataURL, boxes) {
     if (screenCaptureOverlayMode && boxes.length > 0) {
         showOverlayResult(dataURL, boxes);
     } else {
+        ttsIsScreenCapture = true;
         showResultDialog(dataURL, boxes);
         annotateInDialog(boxes);
     }
@@ -3835,6 +3839,7 @@ function showOverlayResult(dataURL, boxes) {
         wrap.style.cursor = 'grab';
     }).catch(function(err) {
         console.error('showOverlayResult render failed:', err);
+        ttsIsScreenCapture = true;
         showResultDialog(dataURL, boxes);
     });
 }
@@ -3879,10 +3884,11 @@ function speakText(text, btn, voiceURI) {
     }
     stopTTS();
     if (ttsContinuous) {
-        if (ttsGlobalQueue.length === 0) {
+        if (ttsIsScreenCapture) {
+            buildScreenCaptureQueue();
+        } else if (ttsGlobalQueue.length === 0) {
             buildTTSGlobalQueue();
         }
-        // Find position in queue for this text; if not found, keep current ttsQueueIdx
         var pos = findQueueIndexByText(text);
         if (pos >= 0) ttsQueueIdx = pos;
     }
@@ -3922,7 +3928,9 @@ function speakBoth(sourceText, targetText, btn, sourceVoiceURI, targetVoiceURI) 
     }
     stopTTS();
     if (ttsContinuous) {
-        if (ttsGlobalQueue.length === 0) {
+        if (ttsIsScreenCapture) {
+            buildScreenCaptureQueue();
+        } else if (ttsGlobalQueue.length === 0) {
             buildTTSGlobalQueue();
         }
         var pos = findQueueIndexByText(sourceText);
@@ -4018,9 +4026,26 @@ function buildTTSGlobalQueue() {
     }
 }
 
+// Build TTS queue from screen capture boxes (current dialog only)
+function buildScreenCaptureQueue() {
+    ttsGlobalQueue = [];
+    var boxes = ttsScreenBoxes || [];
+    for (var j = 0; j < boxes.length; j++) {
+        var source = boxes[j].source || boxes[j].text || boxes[j].target || '';
+        var target = boxes[j].target || '';
+        if (!source && !target) continue;
+        ttsGlobalQueue.push({
+            source: source,
+            target: target,
+            img: null,
+            boxIdx: j
+        });
+    }
+}
+
 // Update the result row texts in dialog to show current TTS item
 function updateTtsDialogRow(item) {
-    if (!ttsDialogList) return;
+    if (!ttsDialogList || ttsIsScreenCapture) return;
     var sourceSpans = ttsDialogList.querySelectorAll('.imagetrans-source-text');
     var targetDivs = ttsDialogList.querySelectorAll('.imagetrans-target-text');
     if (item.source) {
@@ -4128,6 +4153,11 @@ function speakQueueItem(idx) {
 }
 
 function showResultDialog(dataURL, boxes, message, hideThumbnail) {
+    // Save screen capture boxes for TTS
+    if (ttsIsScreenCapture) {
+        ttsScreenBoxes = boxes;
+    }
+
     var existingBackdrop = document.getElementById('imagetrans-sc-backdrop');
     if (existingBackdrop) existingBackdrop.remove();
     var existingDialog = document.getElementById('imagetrans-sc-dialog');
