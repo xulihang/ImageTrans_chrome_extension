@@ -3875,6 +3875,10 @@ function speakText(text, btn, voiceURI) {
         return;
     }
     stopTTS();
+    if (ttsContinuous) {
+        buildTTSGlobalQueue();
+        ttsQueueIdx = findQueueIndexByText(text);
+    }
     var utterance = new SpeechSynthesisUtterance(text);
     if (voiceURI) {
         getVoices().then(function(voices) {
@@ -3895,8 +3899,8 @@ function speakText(text, btn, voiceURI) {
     btn.style.background = '#4A90D9';
     btn.style.color = '#fff';
     utterance.onend = function() {
-        if (ttsContinuous && ttsQueueIdx < ttsGlobalQueue.length) {
-            speakQueueItem(ttsQueueIdx++);
+        if (ttsContinuous && ttsQueueIdx + 1 < ttsGlobalQueue.length) {
+            speakQueueItem(++ttsQueueIdx);
         } else {
             stopTTS();
         }
@@ -3910,6 +3914,10 @@ function speakBoth(sourceText, targetText, btn, sourceVoiceURI, targetVoiceURI) 
         return;
     }
     stopTTS();
+    if (ttsContinuous) {
+        buildTTSGlobalQueue();
+        ttsQueueIdx = findQueueIndexByText(sourceText);
+    }
 
     ttsSpeakingBtn = btn;
     btn.textContent = chrome.i18n.getMessage('sc_tts_stop');
@@ -3918,8 +3926,8 @@ function speakBoth(sourceText, targetText, btn, sourceVoiceURI, targetVoiceURI) 
 
     function speakNext(texts, index) {
         if (index >= texts.length) {
-            if (ttsContinuous && ttsQueueIdx < ttsGlobalQueue.length) {
-                speakQueueItem(ttsQueueIdx++);
+            if (ttsContinuous && ttsQueueIdx + 1 < ttsGlobalQueue.length) {
+                speakQueueItem(++ttsQueueIdx);
                 return;
             }
             stopTTS();
@@ -4013,6 +4021,16 @@ function setTtsSpeakingBtn(btn) {
         btn.style.background = '#4A90D9';
         btn.style.color = '#fff';
     }
+}
+
+// Find the queue index for a given text string (first match), -1 if not found
+function findQueueIndexByText(text) {
+    for (var i = 0; i < ttsGlobalQueue.length; i++) {
+        if (ttsGlobalQueue[i].source === text || ttsGlobalQueue[i].target === text) {
+            return i;
+        }
+    }
+    return 0; // fallback: start from beginning
 }
 
 // Speak one item from the global queue
