@@ -4434,13 +4434,29 @@ function showResultDialog(dataURL, boxes, message, hideThumbnail) {
         }
         body.appendChild(list);
 
-        // TTS options — placed after the text list
+        // TTS options — collapsible, placed after the text list
+        var ttsToggle = document.createElement('div');
+        ttsToggle.textContent = chrome.i18n.getMessage('sc_tts_settings') + ' ⚙';
+        ttsToggle.style.cssText = 'font-size:12px;color:#999;cursor:pointer;padding:4px 0;user-select:none;';
+        ttsToggle.title = 'Click to expand TTS settings';
+
+        var ttsPanel = document.createElement('div');
+        ttsPanel.style.cssText = 'display:none;';
+        ttsPanel.appendChild(ttsModeRow);
+        ttsPanel.appendChild(voiceRow);
+        ttsPanel.appendChild(ttsContRow);
+
+        ttsToggle.addEventListener('click', function() {
+            var expanded = ttsPanel.style.display !== 'none';
+            ttsPanel.style.display = expanded ? 'none' : 'block';
+            ttsToggle.textContent = chrome.i18n.getMessage('sc_tts_settings') + (expanded ? ' ⚙' : ' ▾');
+        });
+
         var ttsDivider = document.createElement('div');
         ttsDivider.style.cssText = 'border-top:1px solid #eee;margin:10px 0 8px;';
         body.appendChild(ttsDivider);
-        body.appendChild(ttsModeRow);
-        body.appendChild(voiceRow);
-        body.appendChild(ttsContRow);
+        body.appendChild(ttsToggle);
+        body.appendChild(ttsPanel);
     }
 
     // Footer

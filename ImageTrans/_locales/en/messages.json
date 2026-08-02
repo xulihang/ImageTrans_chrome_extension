@@ -132,6 +132,7 @@
   "sc_copy_text": { "message": "Copy" },
   "sc_copy_done": { "message": "Copied" },
   "sc_tts_speak": { "message": "Speak" },
+  "sc_tts_settings": { "message": "TTS Settings" },
   "sc_tts_stop": { "message": "Stop" },
   "sc_tts_engine": { "message": "Voice Engine" },
   "sc_tts_voice_source": { "message": "Source Voice" },

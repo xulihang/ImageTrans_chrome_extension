@@ -132,6 +132,7 @@
   "sc_copy_text": { "message": "复制" },
   "sc_copy_done": { "message": "已复制" },
   "sc_tts_speak": { "message": "朗读" },
+  "sc_tts_settings": { "message": "朗读设置" },
   "sc_tts_stop": { "message": "停止" },
   "sc_tts_engine": { "message": "语音引擎" },
   "sc_tts_voice_source": { "message": "原文语音" },
