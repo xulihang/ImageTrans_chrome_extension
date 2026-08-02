@@ -4008,21 +4008,6 @@ function buildTTSGlobalQueue() {
     }
 }
 
-// Set active speaking button — helper used by queue playback
-function setTtsSpeakingBtn(btn) {
-    if (ttsSpeakingBtn) {
-        ttsSpeakingBtn.textContent = chrome.i18n.getMessage('sc_tts_speak');
-        ttsSpeakingBtn.style.background = '#f0f0f0';
-        ttsSpeakingBtn.style.color = '#666';
-    }
-    ttsSpeakingBtn = btn;
-    if (btn) {
-        btn.textContent = chrome.i18n.getMessage('sc_tts_stop');
-        btn.style.background = '#4A90D9';
-        btn.style.color = '#fff';
-    }
-}
-
 // Find the queue index for a given text string (first match), -1 if not found
 function findQueueIndexByText(text) {
     for (var i = 0; i < ttsGlobalQueue.length; i++) {
@@ -4098,27 +4083,6 @@ function speakQueueItem(idx) {
         };
     }
     speakNext(texts, 0);
-}
-
-// Start continuous TTS from the beginning of the global queue
-// Start continuous TTS from the beginning of the global queue
-function startContinuousTTS(btn, sourceVoiceSelect, targetVoiceSelect) {
-    if (ttsSpeakingBtn === btn) {
-        stopTTS();
-        return;
-    }
-    stopTTS();
-
-    // Update voices from current selects
-    if (sourceVoiceSelect) ttsSourceVoice = sourceVoiceSelect.value;
-    if (targetVoiceSelect) ttsTargetVoice = targetVoiceSelect.value;
-
-    buildTTSGlobalQueue();
-    if (ttsGlobalQueue.length === 0) return;
-
-    ttsQueueIdx = 0;
-    setTtsSpeakingBtn(btn);
-    speakQueueItem(0);
 }
 
 function showResultDialog(dataURL, boxes, message, hideThumbnail) {
@@ -4296,15 +4260,8 @@ function showResultDialog(dataURL, boxes, message, hideThumbnail) {
             ttsContinuous = ttsContCb.checked;
             chrome.storage.sync.set({ ttsContinuous: ttsContinuous });
         });
-        var btnSpeakAll = document.createElement('button');
-        btnSpeakAll.textContent = chrome.i18n.getMessage('sc_tts_speak_all');
-        btnSpeakAll.style.cssText = 'padding:2px 8px;font-size:11px;border:1px solid #ddd;border-radius:3px;cursor:pointer;background:#f0f0f0;color:#666;white-space:nowrap;touch-action:manipulation;';
-        btnSpeakAll.addEventListener('click', function() {
-            startContinuousTTS(btnSpeakAll, ttsSourceVoiceSelect, ttsTargetVoiceSelect);
-        });
         ttsContRow.appendChild(ttsContCb);
         ttsContRow.appendChild(ttsContLabel);
-        ttsContRow.appendChild(btnSpeakAll);
         body.appendChild(ttsContRow);
 
         // Results list
