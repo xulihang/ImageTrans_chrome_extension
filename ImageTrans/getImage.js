@@ -62,9 +62,11 @@ var openaiPrompt = "";
 // TTS state
 var ttsUtterance = null;
 var ttsSpeakingBtn = null;
-var ttsSelectedVoice = null;
 var ttsVoicesLoaded = false;
 var ttsVoicesPromise = null;
+var ttsPlaybackMode = "source"; // "source", "target", "both"
+var ttsSourceVoice = null;
+var ttsTargetVoice = null;
 var ocrMethod = "paddleocr";
 var useYOLODetection = false;
 var useYOLOForJapanese = true;
@@ -106,6 +108,9 @@ chrome.storage.sync.get({
     addFuriganaToSource: false,
     showFloatingButton: false,
     screenCaptureInstantOCR: false,
+    ttsPlaybackMode: "source",
+    ttsSourceVoice: "",
+    ttsTargetVoice: "",
     xSpacing: 15,
     ySpacing: 15
 }, async function(items) {
@@ -192,6 +197,15 @@ chrome.storage.sync.get({
     }
     if (items.screenCaptureInstantOCR !== undefined) {
         screenCaptureInstantOCR = items.screenCaptureInstantOCR;
+    }
+    if (items.ttsPlaybackMode !== undefined) {
+        ttsPlaybackMode = items.ttsPlaybackMode;
+    }
+    if (items.ttsSourceVoice !== undefined) {
+        ttsSourceVoice = items.ttsSourceVoice;
+    }
+    if (items.ttsTargetVoice !== undefined) {
+        ttsTargetVoice = items.ttsTargetVoice;
     }
     if (showFloatingButton) {
         createFloatingButton();
@@ -3875,6 +3889,56 @@ function speakText(text, btn, voiceURI) {
     utterance.onerror = function() { stopTTS(); };
 }
 
+function speakBoth(sourceText, targetText, btn, sourceVoiceURI, targetVoiceURI) {
+    if (ttsSpeakingBtn === btn) {
+        stopTTS();
+        return;
+    }
+    stopTTS();
+
+    ttsSpeakingBtn = btn;
+    btn.textContent = chrome.i18n.getMessage('sc_tts_stop');
+    btn.style.background = '#4A90D9';
+    btn.style.color = '#fff';
+
+    function speakNext(texts, index) {
+        if (index >= texts.length) {
+            stopTTS();
+            return;
+        }
+        var item = texts[index];
+        var utterance = new SpeechSynthesisUtterance(item.text);
+        if (item.voiceURI) {
+            getVoices().then(function(voices) {
+                for (var i = 0; i < voices.length; i++) {
+                    if (voices[i].voiceURI === item.voiceURI) {
+                        utterance.voice = voices[i];
+                        break;
+                    }
+                }
+                speechSynthesis.speak(utterance);
+            });
+        } else {
+            speechSynthesis.speak(utterance);
+        }
+        ttsUtterance = utterance;
+        utterance.onend = function() {
+            if (ttsSpeakingBtn === btn) {
+                speakNext(texts, index + 1);
+            }
+        };
+        utterance.onerror = function() {
+            stopTTS();
+        };
+    }
+
+    var texts = [
+        { text: sourceText, voiceURI: sourceVoiceURI },
+        { text: targetText, voiceURI: targetVoiceURI }
+    ];
+    speakNext(texts, 0);
+}
+
 function showResultDialog(dataURL, boxes, message, hideThumbnail) {
     var existingBackdrop = document.getElementById('imagetrans-sc-backdrop');
     if (existingBackdrop) existingBackdrop.remove();
@@ -3960,34 +4024,73 @@ function showResultDialog(dataURL, boxes, message, hideThumbnail) {
             body.appendChild(thumbWrap);
         }
 
-        // Voice selector for TTS
-        var ttsVoiceSelect = document.createElement('select');
-        ttsVoiceSelect.style.cssText = 'font-size:12px;padding:2px 4px;border:1px solid #ddd;border-radius:3px;max-width:200px;color:#666;';
-        getVoices().then(function(voices) {
-            voices.forEach(function(v) {
-                var opt = document.createElement('option');
-                opt.value = v.voiceURI;
-                opt.textContent = v.name + ' (' + v.lang + ')';
-                if (v.default) opt.selected = true;
-                ttsVoiceSelect.appendChild(opt);
-            });
-            if (ttsSelectedVoice) {
-                var found = false;
-                for (var k = 0; k < ttsVoiceSelect.options.length; k++) {
-                    if (ttsVoiceSelect.options[k].value === ttsSelectedVoice) { found = true; break; }
+        // TTS playback mode selector
+        var ttsModeRow = document.createElement('div');
+        ttsModeRow.style.cssText = 'display:flex;align-items:center;gap:6px;margin-bottom:8px;font-size:12px;color:#999;';
+        var ttsModeLabel = document.createElement('span');
+        ttsModeLabel.textContent = chrome.i18n.getMessage('sc_tts_speak') + ':';
+        var ttsModeSelect = document.createElement('select');
+        ttsModeSelect.style.cssText = 'font-size:12px;padding:2px 4px;border:1px solid #ddd;border-radius:3px;color:#666;';
+        var ttsModeOptions = [
+            { value: 'source', label: chrome.i18n.getMessage('sc_tts_mode_source') },
+            { value: 'target', label: chrome.i18n.getMessage('sc_tts_mode_target') },
+            { value: 'both', label: chrome.i18n.getMessage('sc_tts_mode_both') }
+        ];
+        ttsModeOptions.forEach(function(opt) {
+            var option = document.createElement('option');
+            option.value = opt.value;
+            option.textContent = opt.label;
+            if (ttsPlaybackMode === opt.value) option.selected = true;
+            ttsModeSelect.appendChild(option);
+        });
+        ttsModeSelect.addEventListener('change', function() {
+            ttsPlaybackMode = ttsModeSelect.value;
+            chrome.storage.sync.set({ ttsPlaybackMode: ttsPlaybackMode });
+        });
+        ttsModeRow.appendChild(ttsModeLabel);
+        ttsModeRow.appendChild(ttsModeSelect);
+        body.appendChild(ttsModeRow);
+
+        // Voice selectors for source and target
+        function createVoiceSelect(defaultVoiceURI, storageKey) {
+            var select = document.createElement('select');
+            select.style.cssText = 'font-size:12px;padding:2px 4px;border:1px solid #ddd;border-radius:3px;max-width:200px;color:#666;';
+            getVoices().then(function(voices) {
+                voices.forEach(function(v) {
+                    var opt = document.createElement('option');
+                    opt.value = v.voiceURI;
+                    opt.textContent = v.name + ' (' + v.lang + ')';
+                    if (v.default && !defaultVoiceURI) opt.selected = true;
+                    select.appendChild(opt);
+                });
+                if (defaultVoiceURI) {
+                    var found = false;
+                    for (var k = 0; k < select.options.length; k++) {
+                        if (select.options[k].value === defaultVoiceURI) { found = true; break; }
+                    }
+                    if (found) select.value = defaultVoiceURI;
                 }
-                if (found) ttsVoiceSelect.value = ttsSelectedVoice;
-            }
-        });
-        ttsVoiceSelect.addEventListener('change', function() {
-            ttsSelectedVoice = ttsVoiceSelect.value;
-        });
+            });
+            select.addEventListener('change', function() {
+                var data = {};
+                data[storageKey] = select.value;
+                chrome.storage.sync.set(data);
+            });
+            return select;
+        }
+
         var voiceRow = document.createElement('div');
-        voiceRow.style.cssText = 'display:flex;align-items:center;gap:6px;margin-bottom:10px;font-size:12px;color:#999;';
-        var voiceLabel = document.createElement('span');
-        voiceLabel.textContent = chrome.i18n.getMessage('sc_tts_engine') + ':';
-        voiceRow.appendChild(voiceLabel);
-        voiceRow.appendChild(ttsVoiceSelect);
+        voiceRow.style.cssText = 'display:flex;align-items:center;gap:6px;margin-bottom:10px;font-size:12px;color:#999;flex-wrap:wrap;';
+        var voiceLabelSrc = document.createElement('span');
+        voiceLabelSrc.textContent = chrome.i18n.getMessage('sc_tts_voice_source') + ':';
+        var ttsSourceVoiceSelect = createVoiceSelect(ttsSourceVoice, 'ttsSourceVoice');
+        var voiceLabelTgt = document.createElement('span');
+        voiceLabelTgt.textContent = chrome.i18n.getMessage('sc_tts_voice_target') + ':';
+        var ttsTargetVoiceSelect = createVoiceSelect(ttsTargetVoice, 'ttsTargetVoice');
+        voiceRow.appendChild(voiceLabelSrc);
+        voiceRow.appendChild(ttsSourceVoiceSelect);
+        voiceRow.appendChild(voiceLabelTgt);
+        voiceRow.appendChild(ttsTargetVoiceSelect);
         body.appendChild(voiceRow);
 
         // Results list
@@ -4034,13 +4137,23 @@ function showResultDialog(dataURL, boxes, message, hideThumbnail) {
             var ttsBtn = document.createElement('button');
             ttsBtn.textContent = chrome.i18n.getMessage('sc_tts_speak');
             ttsBtn.style.cssText = btnStyle;
-            ttsBtn.setAttribute('data-text', source);
+            ttsBtn.setAttribute('data-source', source);
+            ttsBtn.setAttribute('data-target', target);
             ttsBtn.addEventListener('click', function(e) {
                 e.stopPropagation();
                 var btn = e.target;
-                var text = btn.getAttribute('data-text');
-                var voiceURI = ttsVoiceSelect ? ttsVoiceSelect.value : null;
-                speakText(text, btn, voiceURI);
+                var sourceText = btn.getAttribute('data-source');
+                var targetText = btn.getAttribute('data-target');
+                var srcVoice = ttsSourceVoiceSelect ? ttsSourceVoiceSelect.value : null;
+                var tgtVoice = ttsTargetVoiceSelect ? ttsTargetVoiceSelect.value : null;
+
+                if (ttsPlaybackMode === 'both') {
+                    speakBoth(sourceText, targetText, btn, srcVoice, tgtVoice);
+                } else if (ttsPlaybackMode === 'target') {
+                    speakText(targetText, btn, tgtVoice);
+                } else {
+                    speakText(sourceText, btn, srcVoice);
+                }
             });
 
             actionBtns.appendChild(copyBtn);

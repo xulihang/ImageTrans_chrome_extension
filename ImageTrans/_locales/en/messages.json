@@ -134,6 +134,11 @@
   "sc_tts_speak": { "message": "Speak" },
   "sc_tts_stop": { "message": "Stop" },
   "sc_tts_engine": { "message": "Voice Engine" },
+  "sc_tts_voice_source": { "message": "Source Voice" },
+  "sc_tts_voice_target": { "message": "Target Voice" },
+  "sc_tts_mode_source": { "message": "Source" },
+  "sc_tts_mode_target": { "message": "Target" },
+  "sc_tts_mode_both": { "message": "Source+Target" },
   "camera_no_camera": { "message": "No camera found" },
   "camera_capture_btn": { "message": "Capture" },
 

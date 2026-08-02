@@ -134,6 +134,11 @@
   "sc_tts_speak": { "message": "朗读" },
   "sc_tts_stop": { "message": "停止" },
   "sc_tts_engine": { "message": "语音引擎" },
+  "sc_tts_voice_source": { "message": "原文语音" },
+  "sc_tts_voice_target": { "message": "译文语音" },
+  "sc_tts_mode_source": { "message": "原文" },
+  "sc_tts_mode_target": { "message": "译文" },
+  "sc_tts_mode_both": { "message": "原文+译文" },
   "camera_no_camera": { "message": "未找到摄像头" },
   "camera_capture_btn": { "message": "拍照" },
 
