@@ -3857,11 +3857,13 @@ function getVoices() {
     return ttsVoicesPromise;
 }
 
-function stopTTS() {
+function stopTTS(resetQueue) {
     speechSynthesis.cancel();
     ttsUtterance = null;
-    ttsGlobalQueue = [];
-    ttsQueueIdx = 0;
+    if (resetQueue) {
+        ttsGlobalQueue = [];
+        ttsQueueIdx = 0;
+    }
     if (ttsSpeakingBtn) {
         ttsSpeakingBtn.textContent = chrome.i18n.getMessage('sc_tts_speak');
         ttsSpeakingBtn.style.background = '#f0f0f0';
@@ -3877,8 +3879,12 @@ function speakText(text, btn, voiceURI) {
     }
     stopTTS();
     if (ttsContinuous) {
-        buildTTSGlobalQueue();
-        ttsQueueIdx = findQueueIndexByText(text);
+        if (ttsGlobalQueue.length === 0) {
+            buildTTSGlobalQueue();
+        }
+        // Find position in queue for this text; if not found, keep current ttsQueueIdx
+        var pos = findQueueIndexByText(text);
+        if (pos >= 0) ttsQueueIdx = pos;
     }
     var utterance = new SpeechSynthesisUtterance(text);
     if (voiceURI) {
@@ -3903,10 +3909,10 @@ function speakText(text, btn, voiceURI) {
         if (ttsContinuous && ttsQueueIdx + 1 < ttsGlobalQueue.length) {
             speakQueueItem(++ttsQueueIdx);
         } else {
-            stopTTS();
+            stopTTS(true);
         }
     };
-    utterance.onerror = function() { stopTTS(); };
+    utterance.onerror = function() { stopTTS(true); };
 }
 
 function speakBoth(sourceText, targetText, btn, sourceVoiceURI, targetVoiceURI) {
@@ -3916,8 +3922,11 @@ function speakBoth(sourceText, targetText, btn, sourceVoiceURI, targetVoiceURI) 
     }
     stopTTS();
     if (ttsContinuous) {
-        buildTTSGlobalQueue();
-        ttsQueueIdx = findQueueIndexByText(sourceText);
+        if (ttsGlobalQueue.length === 0) {
+            buildTTSGlobalQueue();
+        }
+        var pos = findQueueIndexByText(sourceText);
+        if (pos >= 0) ttsQueueIdx = pos;
     }
 
     ttsSpeakingBtn = btn;
@@ -3931,7 +3940,7 @@ function speakBoth(sourceText, targetText, btn, sourceVoiceURI, targetVoiceURI) 
                 speakQueueItem(++ttsQueueIdx);
                 return;
             }
-            stopTTS();
+            stopTTS(true);
             return;
         }
         var item = texts[index];
@@ -3956,7 +3965,7 @@ function speakBoth(sourceText, targetText, btn, sourceVoiceURI, targetVoiceURI) 
             }
         };
         utterance.onerror = function() {
-            stopTTS();
+            stopTTS(true);
         };
     }
 
@@ -4024,6 +4033,18 @@ function updateTtsDialogRow(item) {
             targetDivs[i].textContent = chrome.i18n.getMessage('sc_arrow') + item.target;
         }
     }
+    // Also update ttsBtn data attributes and copyBtn data-text
+    var ttsBtns = ttsDialogList.querySelectorAll('button');
+    for (var j = 0; j < ttsBtns.length; j++) {
+        var btn = ttsBtns[j];
+        if (btn.hasAttribute('data-source')) {
+            btn.setAttribute('data-source', item.source);
+            btn.setAttribute('data-target', item.target);
+        }
+        if (btn.hasAttribute('data-text')) {
+            btn.setAttribute('data-text', item.source);
+        }
+    }
 }
 
 // Find the queue index for a given text string (first match), -1 if not found
@@ -4033,13 +4054,13 @@ function findQueueIndexByText(text) {
             return i;
         }
     }
-    return 0; // fallback: start from beginning
+    return -1; // not found
 }
 
 // Speak one item from the global queue
 function speakQueueItem(idx) {
     if (idx >= ttsGlobalQueue.length) {
-        stopTTS();
+        stopTTS(true);
         return;
     }
     var item = ttsGlobalQueue[idx];
@@ -4074,7 +4095,7 @@ function speakQueueItem(idx) {
             if (ttsQueueIdx + 1 < ttsGlobalQueue.length) {
                 speakQueueItem(ttsQueueIdx + 1);
             } else {
-                stopTTS();
+                stopTTS(true);
             }
             return;
         }
@@ -4100,7 +4121,7 @@ function speakQueueItem(idx) {
             }
         };
         utterance.onerror = function() {
-            stopTTS();
+            stopTTS(true);
         };
     }
     speakNext(texts, 0);
@@ -4121,7 +4142,7 @@ function showResultDialog(dataURL, boxes, message, hideThumbnail) {
     backdrop.id = 'imagetrans-sc-backdrop';
     backdrop.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:2147483647;background:rgba(0,0,0,0.3);';
     backdrop.addEventListener('click', function() {
-        stopTTS();
+        stopTTS(true);
         backdrop.remove();
         dialog.remove();
         if (cameraShouldRestore) {
@@ -4146,7 +4167,7 @@ function showResultDialog(dataURL, boxes, message, hideThumbnail) {
     closeBtn.textContent = '✕';
     closeBtn.style.cssText = 'background:none;border:none;font-size:' + (isMobile ? '22px' : '18px') + ';cursor:pointer;color:#999;padding:' + (isMobile ? '4px' : '0') + ';line-height:1;min-width:32px;min-height:32px;';
     closeBtn.addEventListener('click', function() {
-        stopTTS();
+        stopTTS(true);
         backdrop.remove();
         dialog.remove();
         if (cameraShouldRestore) {
@@ -4380,7 +4401,7 @@ function showResultDialog(dataURL, boxes, message, hideThumbnail) {
     btnContinue.textContent = chrome.i18n.getMessage("sc_new_region");
     btnContinue.style.cssText = 'padding:' + btnPad + ';background:#5cb85c;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:' + btnFont + ';white-space:nowrap;touch-action:manipulation;';
     btnContinue.addEventListener('click', function() {
-        stopTTS();
+        stopTTS(true);
         backdrop.remove();
         dialog.remove();
         if (cameraShouldRestore) {
@@ -4400,7 +4421,7 @@ function showResultDialog(dataURL, boxes, message, hideThumbnail) {
     btnReOCR.textContent = chrome.i18n.getMessage("sc_recognize");
     btnReOCR.style.cssText = 'padding:' + btnPad + ';background:#4A90D9;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:' + btnFont + ';white-space:nowrap;touch-action:manipulation;';
     btnReOCR.addEventListener('click', function() {
-        stopTTS();
+        stopTTS(true);
         backdrop.remove();
         dialog.remove();
         if (cameraShouldRestore) {
@@ -4419,7 +4440,7 @@ function showResultDialog(dataURL, boxes, message, hideThumbnail) {
     btnClose.textContent = chrome.i18n.getMessage("sc_close");
     btnClose.style.cssText = 'padding:' + btnPad + ';background:#fff;color:#333;border:1px solid #ccc;border-radius:4px;cursor:pointer;font-size:' + btnFont + ';white-space:nowrap;touch-action:manipulation;';
     btnClose.addEventListener('click', function() {
-        stopTTS();
+        stopTTS(true);
         backdrop.remove();
         dialog.remove();
         if (cameraShouldRestore) {
