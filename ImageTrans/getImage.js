@@ -4083,6 +4083,7 @@ function speakQueueItem(idx) {
 }
 
 // Start continuous TTS from the beginning of the global queue
+// Start continuous TTS from the beginning of the global queue
 function startContinuousTTS(btn, sourceVoiceSelect, targetVoiceSelect) {
     if (ttsSpeakingBtn === btn) {
         stopTTS();
@@ -4236,6 +4237,11 @@ function showResultDialog(dataURL, boxes, message, hideThumbnail) {
             });
             select.addEventListener('change', function() {
                 var data = {};
+                if (storageKey === 'ttsSourceVoice') {
+                    ttsSourceVoice = select.value;
+                } else if (storageKey === 'ttsTargetVoice') {
+                    ttsTargetVoice = select.value;
+                }
                 data[storageKey] = select.value;
                 chrome.storage.sync.set(data);
             });
