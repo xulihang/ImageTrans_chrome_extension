@@ -70,6 +70,7 @@ var ttsTargetVoice = null;
 var ttsContinuous = false; // continuous TTS across all boxes/images
 var ttsGlobalQueue = []; // {source, target, img, boxIdx} objects for continuous read
 var ttsQueueIdx = 0;
+var ttsDialogList = null; // reference to the result list in current dialog
 var ocrMethod = "paddleocr";
 var useYOLODetection = false;
 var useYOLOForJapanese = true;
@@ -4008,6 +4009,23 @@ function buildTTSGlobalQueue() {
     }
 }
 
+// Update the result row texts in dialog to show current TTS item
+function updateTtsDialogRow(item) {
+    if (!ttsDialogList) return;
+    var sourceSpans = ttsDialogList.querySelectorAll('.imagetrans-source-text');
+    var targetDivs = ttsDialogList.querySelectorAll('.imagetrans-target-text');
+    if (item.source) {
+        for (var i = 0; i < sourceSpans.length; i++) {
+            sourceSpans[i].textContent = item.source;
+        }
+    }
+    if (item.target) {
+        for (var i = 0; i < targetDivs.length; i++) {
+            targetDivs[i].textContent = chrome.i18n.getMessage('sc_arrow') + item.target;
+        }
+    }
+}
+
 // Find the queue index for a given text string (first match), -1 if not found
 function findQueueIndexByText(text) {
     for (var i = 0; i < ttsGlobalQueue.length; i++) {
@@ -4026,6 +4044,9 @@ function speakQueueItem(idx) {
     }
     var item = ttsGlobalQueue[idx];
     ttsQueueIdx = idx;
+
+    // Update the dialog row to show current item's text
+    updateTtsDialogRow(item);
 
     // Scroll the image into view if needed
     if (item.img && item.img.isConnected) {
@@ -4266,6 +4287,7 @@ function showResultDialog(dataURL, boxes, message, hideThumbnail) {
 
         // Results list
         var list = document.createElement('div');
+        ttsDialogList = list;
         list.style.cssText = 'display:flex;flex-direction:column;gap:12px;';
         for (var i = 0; i < boxes.length; i++) {
             var source = boxes[i].source || boxes[i].text || boxes[i].target || '';
@@ -4333,6 +4355,7 @@ function showResultDialog(dataURL, boxes, message, hideThumbnail) {
             sourceLine.appendChild(actionBtns);
 
             var transDiv = document.createElement('div');
+            transDiv.className = 'imagetrans-target-text';
             transDiv.textContent = chrome.i18n.getMessage('sc_arrow') + target;
             transDiv.style.cssText = 'font-size:' + resultFontTarget + ';color:#4A90D9;line-height:1.4;word-break:break-word;';
 
