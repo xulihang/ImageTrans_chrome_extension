@@ -3450,6 +3450,13 @@ function doScreenOCR() {
         }
     }
 
+    // Delay to let overlay/highlight DOM removal render before capturing
+    setTimeout(function() {
+        doScreenCapture(rect);
+    }, 200);
+}
+
+function doScreenCapture(rect) {
     chrome.runtime.sendMessage({action: "captureVisibleTab"}, function(response) {
         if (chrome.runtime.lastError || !response || !response.dataURL) {
             // Use the error from background's captureVisibleTab if available
