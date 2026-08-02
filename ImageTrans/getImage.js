@@ -4288,7 +4288,6 @@ function showResultDialog(dataURL, boxes, message, hideThumbnail) {
         });
         ttsModeRow.appendChild(ttsModeLabel);
         ttsModeRow.appendChild(ttsModeSelect);
-        body.appendChild(ttsModeRow);
 
         // Voice selectors for source and target
         function createVoiceSelect(defaultVoiceURI, storageKey) {
@@ -4335,9 +4334,8 @@ function showResultDialog(dataURL, boxes, message, hideThumbnail) {
         voiceRow.appendChild(ttsSourceVoiceSelect);
         voiceRow.appendChild(voiceLabelTgt);
         voiceRow.appendChild(ttsTargetVoiceSelect);
-        body.appendChild(voiceRow);
 
-        // Continuous TTS option + speak-all button
+        // Continuous TTS checkbox
         var ttsContRow = document.createElement('div');
         ttsContRow.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:12px;color:#999;';
         var ttsContCb = document.createElement('input');
@@ -4355,7 +4353,6 @@ function showResultDialog(dataURL, boxes, message, hideThumbnail) {
         });
         ttsContRow.appendChild(ttsContCb);
         ttsContRow.appendChild(ttsContLabel);
-        body.appendChild(ttsContRow);
 
         // Results list
         var list = document.createElement('div');
@@ -4436,6 +4433,14 @@ function showResultDialog(dataURL, boxes, message, hideThumbnail) {
             list.appendChild(row);
         }
         body.appendChild(list);
+
+        // TTS options — placed after the text list
+        var ttsDivider = document.createElement('div');
+        ttsDivider.style.cssText = 'border-top:1px solid #eee;margin:10px 0 8px;';
+        body.appendChild(ttsDivider);
+        body.appendChild(ttsModeRow);
+        body.appendChild(voiceRow);
+        body.appendChild(ttsContRow);
     }
 
     // Footer
