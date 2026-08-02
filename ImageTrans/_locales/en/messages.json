@@ -140,7 +140,7 @@
   "sc_tts_mode_source": { "message": "Source" },
   "sc_tts_mode_target": { "message": "Target" },
   "sc_tts_mode_both": { "message": "Source+Target" },
-  "sc_tts_continuous": { "message": "Continuous" },
+  "sc_tts_continuous": { "message": "Auto-play next" },
   "sc_tts_speak_all": { "message": "Speak All" },
   "camera_no_camera": { "message": "No camera found" },
   "camera_capture_btn": { "message": "Capture" },
