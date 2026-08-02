@@ -139,6 +139,8 @@
   "sc_tts_mode_source": { "message": "原文" },
   "sc_tts_mode_target": { "message": "译文" },
   "sc_tts_mode_both": { "message": "原文+译文" },
+  "sc_tts_continuous": { "message": "连续朗读" },
+  "sc_tts_speak_all": { "message": "朗读全部" },
   "camera_no_camera": { "message": "未找到摄像头" },
   "camera_capture_btn": { "message": "拍照" },
 

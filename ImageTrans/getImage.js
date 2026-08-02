@@ -67,6 +67,9 @@ var ttsVoicesPromise = null;
 var ttsPlaybackMode = "source"; // "source", "target", "both"
 var ttsSourceVoice = null;
 var ttsTargetVoice = null;
+var ttsContinuous = false; // continuous TTS across all boxes/images
+var ttsGlobalQueue = []; // {source, target, img, boxIdx} objects for continuous read
+var ttsQueueIdx = 0;
 var ocrMethod = "paddleocr";
 var useYOLODetection = false;
 var useYOLOForJapanese = true;
@@ -111,6 +114,7 @@ chrome.storage.sync.get({
     ttsPlaybackMode: "source",
     ttsSourceVoice: "",
     ttsTargetVoice: "",
+    ttsContinuous: false,
     xSpacing: 15,
     ySpacing: 15
 }, async function(items) {
@@ -206,6 +210,9 @@ chrome.storage.sync.get({
     }
     if (items.ttsTargetVoice !== undefined) {
         ttsTargetVoice = items.ttsTargetVoice;
+    }
+    if (items.ttsContinuous !== undefined) {
+        ttsContinuous = items.ttsContinuous;
     }
     if (showFloatingButton) {
         createFloatingButton();
@@ -3852,6 +3859,8 @@ function getVoices() {
 function stopTTS() {
     speechSynthesis.cancel();
     ttsUtterance = null;
+    ttsGlobalQueue = [];
+    ttsQueueIdx = 0;
     if (ttsSpeakingBtn) {
         ttsSpeakingBtn.textContent = chrome.i18n.getMessage('sc_tts_speak');
         ttsSpeakingBtn.style.background = '#f0f0f0';
@@ -3885,7 +3894,13 @@ function speakText(text, btn, voiceURI) {
     btn.textContent = chrome.i18n.getMessage('sc_tts_stop');
     btn.style.background = '#4A90D9';
     btn.style.color = '#fff';
-    utterance.onend = function() { stopTTS(); };
+    utterance.onend = function() {
+        if (ttsContinuous && ttsQueueIdx < ttsGlobalQueue.length) {
+            speakQueueItem(ttsQueueIdx++);
+        } else {
+            stopTTS();
+        }
+    };
     utterance.onerror = function() { stopTTS(); };
 }
 
@@ -3903,6 +3918,10 @@ function speakBoth(sourceText, targetText, btn, sourceVoiceURI, targetVoiceURI) 
 
     function speakNext(texts, index) {
         if (index >= texts.length) {
+            if (ttsContinuous && ttsQueueIdx < ttsGlobalQueue.length) {
+                speakQueueItem(ttsQueueIdx++);
+                return;
+            }
             stopTTS();
             return;
         }
@@ -3937,6 +3956,150 @@ function speakBoth(sourceText, targetText, btn, sourceVoiceURI, targetVoiceURI) 
         { text: targetText, voiceURI: targetVoiceURI }
     ];
     speakNext(texts, 0);
+}
+
+// Build a global queue of all translatable text items on the page,
+// ordered by image position (top-to-bottom, left-to-right) then box index.
+// Returns an array of {source, target, img, boxIdx} objects.
+function buildTTSGlobalQueue() {
+    ttsGlobalQueue = [];
+    var imgEntries = [];
+    for (var src in translatedBoxesMap) {
+        if (!Object.prototype.hasOwnProperty.call(translatedBoxesMap, src)) continue;
+        var entry = translatedBoxesMap[src];
+        var img = entry.img;
+        if (!img || !img.isConnected || !document.contains(img)) {
+            img = getImageBySrc(src, true);
+        }
+        if (!img) continue;
+        var rect = img.getBoundingClientRect();
+        imgEntries.push({ src: src, img: img, rect: rect, entry: entry });
+    }
+    // Sort by vertical position, then horizontal
+    imgEntries.sort(function(a, b) {
+        if (Math.abs(a.rect.top - b.rect.top) < 20) {
+            return a.rect.left - b.rect.left;
+        }
+        return a.rect.top - b.rect.top;
+    });
+    for (var i = 0; i < imgEntries.length; i++) {
+        var boxes = imgEntries[i].entry.boxes;
+        if (!boxes || !boxes.length) continue;
+        var img = imgEntries[i].img;
+        for (var j = 0; j < boxes.length; j++) {
+            var source = boxes[j].source || boxes[j].text || boxes[j].target || '';
+            var target = boxes[j].target || '';
+            if (!source && !target) continue;
+            ttsGlobalQueue.push({
+                source: source,
+                target: target,
+                img: img,
+                boxIdx: j
+            });
+        }
+    }
+}
+
+// Set active speaking button — helper used by queue playback
+function setTtsSpeakingBtn(btn) {
+    if (ttsSpeakingBtn) {
+        ttsSpeakingBtn.textContent = chrome.i18n.getMessage('sc_tts_speak');
+        ttsSpeakingBtn.style.background = '#f0f0f0';
+        ttsSpeakingBtn.style.color = '#666';
+    }
+    ttsSpeakingBtn = btn;
+    if (btn) {
+        btn.textContent = chrome.i18n.getMessage('sc_tts_stop');
+        btn.style.background = '#4A90D9';
+        btn.style.color = '#fff';
+    }
+}
+
+// Speak one item from the global queue
+function speakQueueItem(idx) {
+    if (idx >= ttsGlobalQueue.length) {
+        stopTTS();
+        return;
+    }
+    var item = ttsGlobalQueue[idx];
+    ttsQueueIdx = idx;
+
+    // Scroll the image into view if needed
+    if (item.img && item.img.isConnected) {
+        var rect = item.img.getBoundingClientRect();
+        if (rect.bottom < 0 || rect.top > window.innerHeight) {
+            item.img.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }
+
+    var texts = [];
+    if (ttsPlaybackMode === 'both') {
+        texts = [
+            { text: item.source, voiceURI: ttsSourceVoice },
+            { text: item.target, voiceURI: ttsTargetVoice }
+        ];
+    } else if (ttsPlaybackMode === 'target') {
+        texts = [{ text: item.target, voiceURI: ttsTargetVoice }];
+    } else {
+        texts = [{ text: item.source, voiceURI: ttsSourceVoice }];
+    }
+
+    function speakNext(texts, index) {
+        if (index >= texts.length) {
+            // Move to next queue item
+            if (ttsQueueIdx + 1 < ttsGlobalQueue.length) {
+                speakQueueItem(ttsQueueIdx + 1);
+            } else {
+                stopTTS();
+            }
+            return;
+        }
+        var txt = texts[index];
+        var utterance = new SpeechSynthesisUtterance(txt.text);
+        if (txt.voiceURI) {
+            getVoices().then(function(voices) {
+                for (var i = 0; i < voices.length; i++) {
+                    if (voices[i].voiceURI === txt.voiceURI) {
+                        utterance.voice = voices[i];
+                        break;
+                    }
+                }
+                speechSynthesis.speak(utterance);
+            });
+        } else {
+            speechSynthesis.speak(utterance);
+        }
+        ttsUtterance = utterance;
+        utterance.onend = function() {
+            if (ttsSpeakingBtn) { // still speaking (not stopped)
+                speakNext(texts, index + 1);
+            }
+        };
+        utterance.onerror = function() {
+            stopTTS();
+        };
+    }
+    speakNext(texts, 0);
+}
+
+// Start continuous TTS from the beginning of the global queue
+function startContinuousTTS(btn, sourceVoiceSelect, targetVoiceSelect) {
+    if (ttsSpeakingBtn === btn) {
+        stopTTS();
+        return;
+    }
+    stopTTS();
+
+    // Update voices from current selects
+    if (sourceVoiceSelect) ttsSourceVoice = sourceVoiceSelect.value;
+    if (targetVoiceSelect) ttsTargetVoice = targetVoiceSelect.value;
+
+    buildTTSGlobalQueue();
+    if (ttsGlobalQueue.length === 0) return;
+
+    ttsQueueIdx = 0;
+    setTtsSpeakingBtn(btn);
+    speakQueueItem(0);
 }
 
 function showResultDialog(dataURL, boxes, message, hideThumbnail) {
@@ -4026,7 +4189,7 @@ function showResultDialog(dataURL, boxes, message, hideThumbnail) {
 
         // TTS playback mode selector
         var ttsModeRow = document.createElement('div');
-        ttsModeRow.style.cssText = 'display:flex;align-items:center;gap:6px;margin-bottom:8px;font-size:12px;color:#999;';
+        ttsModeRow.style.cssText = 'display:flex;align-items:center;gap:6px;margin-bottom:8px;font-size:12px;color:#999;flex-wrap:wrap;';
         var ttsModeLabel = document.createElement('span');
         ttsModeLabel.textContent = chrome.i18n.getMessage('sc_tts_speak') + ':';
         var ttsModeSelect = document.createElement('select');
@@ -4092,6 +4255,33 @@ function showResultDialog(dataURL, boxes, message, hideThumbnail) {
         voiceRow.appendChild(voiceLabelTgt);
         voiceRow.appendChild(ttsTargetVoiceSelect);
         body.appendChild(voiceRow);
+
+        // Continuous TTS option + speak-all button
+        var ttsContRow = document.createElement('div');
+        ttsContRow.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:12px;color:#999;';
+        var ttsContCb = document.createElement('input');
+        ttsContCb.type = 'checkbox';
+        ttsContCb.id = 'imagetrans-tts-continuous';
+        ttsContCb.style.cssText = 'width:14px;height:14px;margin:0;';
+        ttsContCb.checked = ttsContinuous;
+        var ttsContLabel = document.createElement('label');
+        ttsContLabel.htmlFor = 'imagetrans-tts-continuous';
+        ttsContLabel.textContent = chrome.i18n.getMessage('sc_tts_continuous');
+        ttsContLabel.style.cssText = 'cursor:pointer;';
+        ttsContCb.addEventListener('change', function() {
+            ttsContinuous = ttsContCb.checked;
+            chrome.storage.sync.set({ ttsContinuous: ttsContinuous });
+        });
+        var btnSpeakAll = document.createElement('button');
+        btnSpeakAll.textContent = chrome.i18n.getMessage('sc_tts_speak_all');
+        btnSpeakAll.style.cssText = 'padding:2px 8px;font-size:11px;border:1px solid #ddd;border-radius:3px;cursor:pointer;background:#f0f0f0;color:#666;white-space:nowrap;touch-action:manipulation;';
+        btnSpeakAll.addEventListener('click', function() {
+            startContinuousTTS(btnSpeakAll, ttsSourceVoiceSelect, ttsTargetVoiceSelect);
+        });
+        ttsContRow.appendChild(ttsContCb);
+        ttsContRow.appendChild(ttsContLabel);
+        ttsContRow.appendChild(btnSpeakAll);
+        body.appendChild(ttsContRow);
 
         // Results list
         var list = document.createElement('div');

@@ -87,7 +87,6 @@ function save() {
   const addFuriganaToSource = document.getElementById("addFuriganaToSource").checked;
   const showFloatingButton = document.getElementById("showFloatingButton").checked;
   const screenCaptureInstantOCR = document.getElementById("screenCaptureInstantOCR").checked;
-  const ttsPlaybackMode = document.getElementById("ttsPlaybackMode").value;
   const uiLanguage = document.getElementById("uiLanguage").value;
 
   // PaddleOCR requires a specific language; "auto" is not supported.
@@ -124,7 +123,6 @@ function save() {
     addFuriganaToSource: addFuriganaToSource,
     showFloatingButton: showFloatingButton,
     screenCaptureInstantOCR: screenCaptureInstantOCR,
-    ttsPlaybackMode: ttsPlaybackMode,
     xSpacing: xSpacing,
     ySpacing: ySpacing,
     uiLanguage: uiLanguage
@@ -164,7 +162,6 @@ function load() {
     addFuriganaToSource: false,
     showFloatingButton: false,
     screenCaptureInstantOCR: false,
-    ttsPlaybackMode: 'source',
     uiLanguage: ''
   }, function(items) {
     if (items.serverURL) {
@@ -223,9 +220,6 @@ function load() {
     document.getElementById("addFuriganaToSource").checked = items.addFuriganaToSource;
     document.getElementById("showFloatingButton").checked = items.showFloatingButton;
     document.getElementById("screenCaptureInstantOCR").checked = items.screenCaptureInstantOCR;
-    if (items.ttsPlaybackMode) {
-      document.getElementById("ttsPlaybackMode").value = items.ttsPlaybackMode;
-    }
     document.getElementById("ocrMethodSection").style.display = items.useOpenAI ? 'block' : 'none';
   });
 }
