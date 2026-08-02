@@ -39,8 +39,8 @@
     },
     "screen-capture-ocr": {
       "suggested_key": {
-        "default": "Ctrl+Shift+O",
-        "mac": "MacCtrl+Shift+O"
+        "default": "Ctrl+Shift+L",
+        "mac": "MacCtrl+Shift+L"
       },
       "description": "__MSG_screen_capture_ocr_cmd_desc__"
     }
