@@ -358,6 +358,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       sendResponse({ cached: cached });
     })();
     return true; // async sendResponse
+  } else if (request.action === "getTranslationCacheAlways") {
+    // Same as getTranslationCache but ignores the "use cache" option switch;
+    // used by the cache "read" feature which always wants to reuse cached results.
+    (async () => {
+      const cached = await getTranslationCache(request.originalDataURL);
+      sendResponse({ cached: cached });
+    })();
+    return true; // async sendResponse
   } else if (request.action === "listTranslationCache") {
     (async () => {
       try {

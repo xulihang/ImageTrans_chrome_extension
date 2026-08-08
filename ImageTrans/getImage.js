@@ -144,6 +144,23 @@ function applyCachedTranslation(src, cached, checkData, img) {
 }
 // --- End IndexedDB for translation results ---
 
+// Look up the cached translation for a dataURL WITHOUT consulting the
+// "use cached results" option (the reader always reuses cached results).
+function getCacheAlways(dataURL) {
+  return new Promise(function(resolve) {
+    try {
+      chrome.runtime.sendMessage({
+        action: "getTranslationCacheAlways",
+        originalDataURL: dataURL
+      }, function(response) {
+        resolve(response && response.cached ? response.cached : null);
+      });
+    } catch (e) {
+      resolve(null);
+    }
+  });
+}
+
 // Insert the cached original images (stored by the cache page under
 // imagetrans_reader_images) as <img> elements, then run the normal translation
 // flow on each so that clicking an image opens the result dialog with TTS.
@@ -175,10 +192,11 @@ async function injectReaderImages(count) {
     // Tag it so the auto-translate observer doesn't also try to process it.
     img.setAttribute('data-imagetrans-reader', '1');
     container.appendChild(img);
-    // Reuse a cached translation when available, else run the normal flow.
+    // Reuse a cached translation when available (always, ignoring the option),
+    // else run the normal flow.
     setTimeout(async function(im) {
       try {
-        const cached = await checkTranslationCache(im.src);
+        const cached = await getCacheAlways(im.src);
         if (cached && cached.translatedImage) {
           applyCachedTranslation(im.src, cached, true, im);
           return;

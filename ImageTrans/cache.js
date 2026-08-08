@@ -169,18 +169,23 @@ window.onload = async function() {
   document.getElementById('refreshButton').addEventListener('click', reload);
 
   document.getElementById('readButton').addEventListener('click', async function() {
-    // Collect the original images that match the current filter.
+    // Collect the original images (with their records) that match the current filter,
+    // ordered by translation time (oldest first).
     const filter = (filterValue || '').trim().toLowerCase();
-    let images = [];
+    const matched = [];
     for (const entry of allEntries) {
       if (filter) {
         const pageUrl = (entry.record && entry.record.pageUrl) || '';
         if (pageUrl.toLowerCase().indexOf(filter) === -1) continue;
       }
       if (entry.record && entry.record.originalImage) {
-        images.push(entry.record.originalImage);
+        matched.push(entry.record);
       }
     }
+    matched.sort(function(a, b) {
+      return (a.timestamp || 0) - (b.timestamp || 0);
+    });
+    const images = matched.map(function(rec) { return rec.originalImage; });
     if (images.length === 0) {
       alert(getMessage('cache_read_empty'));
       return;
