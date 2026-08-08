@@ -2134,10 +2134,9 @@ function isInViewport(img) {
 
 function autoTranslateImage(img, src) {
     return new Promise(function(resolve) {
-        // Only show overlay if the image is still visible in the viewport.
-        // Images that scrolled out of the viewport while queued are processed silently.
-        var inView = img.isConnected && isInViewport(img);
-
+        // Only report whether the image is currently visible; this is passed to
+        // ajax() as showOverlay. Images that scrolled out of the viewport while
+        // queued are processed silently.
         var origAlert = window.alert;
         var origConfirm = window.confirm;
         var langpairAlertMsg = chrome.i18n.getMessage("alert_set_langpair");
@@ -2163,7 +2162,7 @@ function autoTranslateImage(img, src) {
         // isInViewport would skip the overlay even for visible images. The overlay's
         // position follows the image via getBoundingClientRect, so off-screen images
         // simply don't show it visibly (harmless).
-        inView = img.isConnected && isInViewport(img);
+        var inView = img.isConnected && isInViewport(img);
         if (img.isConnected && !img.hasAttribute("target-src")) {
             showTranslatingOverlay(img, "overlay_translating");
         }
