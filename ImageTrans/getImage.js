@@ -2157,12 +2157,15 @@ function autoTranslateImage(img, src) {
 
         var savedBodyClass = document.body.className;
 
-        // Show progress on the image actually being translated (only if visible and none already shown).
-        if (inView && !img._imagetransOverlay) {
+        // Always show a "translating" overlay for the image being auto-translated,
+        // regardless of its current on-screen rect. On sites like lezhin the image's
+        // bounding rect can be unreliable (large/tall images), so deciding based on
+        // isInViewport would skip the overlay even for visible images. The overlay's
+        // position follows the image via getBoundingClientRect, so off-screen images
+        // simply don't show it visibly (harmless).
+        inView = img.isConnected && isInViewport(img);
+        if (img.isConnected && !img.hasAttribute("target-src")) {
             showTranslatingOverlay(img, "overlay_translating");
-        } else {
-            // Update any existing overlay text from "Waiting..." to "Translating...".
-            updateTranslatingOverlayText(img, "overlay_translating");
         }
 
         var done = function() {
