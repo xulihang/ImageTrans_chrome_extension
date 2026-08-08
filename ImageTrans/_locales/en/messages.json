@@ -169,6 +169,8 @@
   "cache_time": { "message": "Time" },
   "cache_boxes": { "message": "Text boxes" },
   "cache_key": { "message": "Key" },
+  "cache_page": { "message": "Page" },
+  "cache_filter_placeholder": { "message": "Filter by page URL..." },
   "cache_confirm_delete": { "message": "Delete this cached result?" },
   "cache_confirm_clear": { "message": "Clear all cached results? This cannot be undone." },
   "cache_footer": { "message": "Cached translation results stored in this extension's IndexedDB." }

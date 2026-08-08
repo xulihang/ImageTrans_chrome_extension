@@ -111,6 +111,21 @@
         font-size: 15px;
       }
 
+      .filter-row {
+        margin-bottom: 12px;
+      }
+      .filter-row input {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        font-size: 13px;
+        background: #fff;
+        color: var(--text);
+        outline: none;
+      }
+      .filter-row input:focus { border-color: var(--primary); }
+
       .footer {
         text-align: center;
         margin-top: 24px;
@@ -126,6 +141,10 @@
         <button id="refreshButton" class="btn-secondary" data-i18n="cache_refresh">Refresh</button>
         <button id="clearButton" class="btn-danger" data-i18n="cache_clear_all">Clear all</button>
       </div>
+    </div>
+
+    <div class="filter-row">
+      <input id="urlFilter" type="text" placeholder="" data-i18n-placeholder="cache_filter_placeholder" />
     </div>
 
     <div id="count" class="count"></div>

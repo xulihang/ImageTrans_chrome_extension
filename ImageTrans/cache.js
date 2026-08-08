@@ -44,6 +44,15 @@ function applyI18n() {
       el.textContent = getMessage(key);
     }
   }
+  // handle data-i18n-placeholder attributes (e.g. input placeholders)
+  var placeholders = document.querySelectorAll('[data-i18n-placeholder]');
+  for (var j = 0; j < placeholders.length; j++) {
+    var ph = placeholders[j];
+    var phKey = ph.getAttribute('data-i18n-placeholder');
+    if (phKey) {
+      ph.setAttribute('placeholder', getMessage(phKey));
+    }
+  }
 }
 
 // Helper to send message with timeout (avoid hanging if background SW is cold).
@@ -70,7 +79,17 @@ function render(entries) {
   const listEl = document.getElementById('list');
   const emptyEl = document.getElementById('empty');
 
-  if (!entries || entries.length === 0) {
+  // Apply page-URL filter (case-insensitive substring match).
+  const filter = (filterValue || '').trim().toLowerCase();
+  let filtered = entries;
+  if (filter) {
+    filtered = entries.filter(function(e) {
+      const pageUrl = (e.record && e.record.pageUrl) || '';
+      return pageUrl.toLowerCase().indexOf(filter) !== -1;
+    });
+  }
+
+  if (!filtered || filtered.length === 0) {
     countEl.textContent = getMessage('cache_count', [0]);
     emptyEl.style.display = 'block';
     listEl.innerHTML = '';
@@ -78,10 +97,10 @@ function render(entries) {
   }
 
   emptyEl.style.display = 'none';
-  countEl.textContent = getMessage('cache_count', [entries.length]);
+  countEl.textContent = getMessage('cache_count', [filtered.length]);
   listEl.innerHTML = '';
 
-  for (const entry of entries) {
+  for (const entry of filtered) {
     const rec = entry.record;
     const card = document.createElement('div');
     card.className = 'card';
@@ -105,6 +124,7 @@ function render(entries) {
     meta.innerHTML =
       getMessage('cache_time') + ': ' + formatTime(rec.timestamp) + '<br>' +
       getMessage('cache_boxes') + ': ' + boxCount + '<br>' +
+      getMessage('cache_page') + ': ' + ((rec.pageUrl) ? rec.pageUrl : '-') + '<br>' +
       getMessage('cache_key') + ': ' + (entry.key ? entry.key.substring(0, 16) + '…' : '-');
 
     const translatedImg = document.createElement('img');
@@ -132,9 +152,13 @@ function render(entries) {
   }
 }
 
+let allEntries = [];
+let filterValue = '';
+
 async function reload() {
   const resp = await sendMessageTimeout({ action: 'listTranslationCache' });
-  render(resp && resp.ok ? resp.entries : []);
+  allEntries = (resp && resp.ok) ? resp.entries : [];
+  render(allEntries);
 }
 
 window.onload = async function() {
@@ -143,6 +167,14 @@ window.onload = async function() {
   reload();
 
   document.getElementById('refreshButton').addEventListener('click', reload);
+
+  const filterInput = document.getElementById('urlFilter');
+  if (filterInput) {
+    filterInput.addEventListener('input', function() {
+      filterValue = filterInput.value;
+      render(allEntries);
+    });
+  }
 
   document.getElementById('clearButton').addEventListener('click', async () => {
     const sure = confirm(getMessage('cache_confirm_clear'));

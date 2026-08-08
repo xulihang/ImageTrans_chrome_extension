@@ -97,13 +97,16 @@ async function saveTranslationResultToDB(originalDataURL, translatedDataURL, img
   if (!saveTranslationResult) return;
   if (!originalDataURL || !translatedDataURL || !imgMap) return;
   try {
+    let pageUrl = '';
+    try { pageUrl = window.location.href; } catch (e) { pageUrl = ''; }
     chrome.runtime.sendMessage({
       action: "saveTranslationResult",
       originalDataURL: originalDataURL,
       translatedDataURL: translatedDataURL,
       imgMap: imgMap,
       sourceLang: sourceLang,
-      targetLang: targetLang
+      targetLang: targetLang,
+      pageUrl: pageUrl
     });
   } catch (e) {
     console.error('Failed to send translation result to background:', e);

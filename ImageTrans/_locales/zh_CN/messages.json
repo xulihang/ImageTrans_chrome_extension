@@ -169,6 +169,8 @@
   "cache_time": { "message": "时间" },
   "cache_boxes": { "message": "文字框数" },
   "cache_key": { "message": "键" },
+  "cache_page": { "message": "页面" },
+  "cache_filter_placeholder": { "message": "按页面 URL 过滤..." },
   "cache_confirm_delete": { "message": "确定删除这条缓存结果？" },
   "cache_confirm_clear": { "message": "确定清空所有缓存结果？此操作不可撤销。" },
   "cache_footer": { "message": "缓存的翻译结果存储在本扩展的 IndexedDB 中。" }

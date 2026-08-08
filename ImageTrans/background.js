@@ -89,7 +89,7 @@ async function computeImageHash(dataURL) {
   return hashHex;
 }
 
-async function saveTranslationResult(originalDataURL, translatedDataURL, imgMap, sourceLang, targetLang) {
+async function saveTranslationResult(originalDataURL, translatedDataURL, imgMap, sourceLang, targetLang, pageUrl) {
   if (!originalDataURL || !translatedDataURL || !imgMap) return;
   try {
     const db = await openTranslationDB();
@@ -100,7 +100,8 @@ async function saveTranslationResult(originalDataURL, translatedDataURL, imgMap,
       imgMap: imgMap,
       timestamp: Date.now(),
       sourceLang: sourceLang,
-      targetLang: targetLang
+      targetLang: targetLang,
+      pageUrl: pageUrl || ''
     };
     return new Promise((resolve, reject) => {
       const tx = db.transaction(TRANSLATION_STORE, 'readwrite');
@@ -347,7 +348,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       request.translatedDataURL,
       request.imgMap,
       request.sourceLang,
-      request.targetLang
+      request.targetLang,
+      request.pageUrl
     );
     sendResponse({ ok: true });
   } else if (request.action === "getTranslationCache") {
