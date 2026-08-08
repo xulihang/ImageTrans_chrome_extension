@@ -89,6 +89,7 @@ var furiganaPendingRequests = {};
 var xSpacing = 15;
 var ySpacing = 15;
 var saveTranslationResult = false;
+var useTranslationCache = false;
 
 async function saveTranslationResultToDB(originalDataURL, translatedDataURL, imgMap) {
   if (!saveTranslationResult) return;
@@ -105,6 +106,31 @@ async function saveTranslationResultToDB(originalDataURL, translatedDataURL, img
   } catch (e) {
     console.error('Failed to send translation result to background:', e);
   }
+}
+
+async function checkTranslationCache(originalDataURL) {
+  if (!useTranslationCache) return null;
+  if (!originalDataURL) return null;
+  try {
+    const response = await new Promise((resolve) => {
+      chrome.runtime.sendMessage({
+        action: "getTranslationCache",
+        originalDataURL: originalDataURL
+      }, (response) => {
+        resolve(response);
+      });
+    });
+    return response && response.cached ? response.cached : null;
+  } catch (e) {
+    console.error('Failed to check translation cache:', e);
+    return null;
+  }
+}
+
+function applyCachedTranslation(src, cached, checkData, img) {
+  const boxes = cached.imgMap ? (cached.imgMap.boxes || []) : [];
+  const translatedDataURL = cached.translatedImage;
+  console.log(replaceImgSrc(src, translatedDataURL, checkData, img, boxes, cached.originalImage || translatedDataURL));
 }
 // --- End IndexedDB for translation results ---
 
@@ -140,7 +166,8 @@ chrome.storage.sync.get({
     ttsContinuous: false,
     xSpacing: 15,
     ySpacing: 15,
-    saveTranslationResult: false
+    saveTranslationResult: false,
+    useTranslationCache: false
 }, async function(items) {
     if (items.serverURL) {
         serverURL = items.serverURL;
@@ -240,6 +267,9 @@ chrome.storage.sync.get({
     }
     if (items.saveTranslationResult !== undefined) {
         saveTranslationResult = items.saveTranslationResult;
+    }
+    if (items.useTranslationCache !== undefined) {
+        useTranslationCache = items.useTranslationCache;
     }
     if (showFloatingButton) {
         createFloatingButton();
@@ -377,6 +407,14 @@ async function ajax(src,img,checkData,showOverlay){
                 dataURLMap[src] = dataURL;
             }
             data = {src:dataURL,saveToFile:"true"};
+            // Check cache before sending to server
+            const cached = await checkTranslationCache(dataURL);
+            if (cached && cached.translatedImage) {
+                document.body.classList.remove("imagetrans-wait");
+                if (showOverlay && img) hideTranslatingOverlay(img);
+                applyCachedTranslation(src, cached, checkData, img);
+                return;
+            }
         } catch (error) {
             console.log(error);
         }
@@ -520,6 +558,14 @@ async function ajaxMyMemory(src, img, checkData, showOverlay) {
         } else {
             throw new Error("Cannot get image data for OCR");
         }
+        // Check cache before running OCR
+        const cached = await checkTranslationCache(dataURL);
+        if (cached && cached.translatedImage) {
+            document.body.classList.remove("imagetrans-wait");
+            if (showOverlay && img) hideTranslatingOverlay(img);
+            applyCachedTranslation(src, cached, checkData, img);
+            return;
+        }
         if (showOverlay && img) {
             showTranslatingOverlay(img);
         }
@@ -658,6 +704,15 @@ async function ajaxOpenAI(src, img, checkData, showOverlay) {
             dataURLMap[src] = dataURL;
         } else {
             throw new Error("Cannot get image data for OCR");
+        }
+
+        // Check cache before running OCR/translation
+        const cached = await checkTranslationCache(dataURL);
+        if (cached && cached.translatedImage) {
+            document.body.classList.remove("imagetrans-wait");
+            if (showOverlay && img) hideTranslatingOverlay(img);
+            applyCachedTranslation(src, cached, checkData, img);
+            return;
         }
 
         if (showOverlay && img) {

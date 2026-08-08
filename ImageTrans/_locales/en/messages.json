@@ -150,5 +150,7 @@
 
   "options_storage": { "message": "Storage" },
   "options_save_translation_result": { "message": "Save translation results" },
-  "options_save_translation_result_hint": { "message": "Save the original image, translated image and text box data to IndexedDB for each translation." }
+  "options_save_translation_result_hint": { "message": "Save the original image, translated image and text box data to IndexedDB for each translation." },
+  "options_use_translation_cache": { "message": "Use cached translation results" },
+  "options_use_translation_cache_hint": { "message": "If a cached result exists in IndexedDB for an image, use it directly instead of re-translating." }
 }

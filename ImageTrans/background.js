@@ -116,6 +116,24 @@ async function saveTranslationResult(originalDataURL, translatedDataURL, imgMap,
     console.error('Failed to save translation result to IndexedDB:', e);
   }
 }
+
+async function getTranslationCache(originalDataURL) {
+  if (!originalDataURL) return null;
+  try {
+    const db = await openTranslationDB();
+    const hash = await computeImageHash(originalDataURL);
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(TRANSLATION_STORE, 'readonly');
+      const store = tx.objectStore(TRANSLATION_STORE);
+      const req = store.get(hash);
+      req.onsuccess = () => resolve(req.result || null);
+      req.onerror = () => reject(req.error);
+    });
+  } catch (e) {
+    console.error('Failed to get translation cache:', e);
+    return null;
+  }
+}
 // --- End IndexedDB for translation results ---
 
 // --- Custom i18n: allow user to override UI language ---
@@ -290,6 +308,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       request.targetLang
     );
     sendResponse({ ok: true });
+  } else if (request.action === "getTranslationCache") {
+    (async () => {
+      const cached = await getTranslationCache(request.originalDataURL);
+      sendResponse({ cached: cached });
+    })();
+    return true; // async sendResponse
   } else if (request === "showOptions") {
     chrome.runtime.openOptionsPage();
   }

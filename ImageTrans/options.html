@@ -391,6 +391,13 @@
         </label>
         <span style="font-size:12px;color:var(--text-secondary);" data-i18n="options_save_translation_result_hint">Save the original image, translated image and text box data to IndexedDB for each translation.</span>
       </div>
+      <div class="form-row">
+        <label class="checkbox-label">
+          <input id="useTranslationCache" type="checkbox" />
+          <span data-i18n="options_use_translation_cache">Use cached translation results</span>
+        </label>
+        <span style="font-size:12px;color:var(--text-secondary);" data-i18n="options_use_translation_cache_hint">If a cached result exists in IndexedDB for an image, use it directly instead of re-translating.</span>
+      </div>
     </div>
 
     <button id="saveButton" class="btn-primary btn-save" data-i18n="options_save">Save Settings</button>
