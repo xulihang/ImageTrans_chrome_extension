@@ -149,6 +149,7 @@
   "options_show_floating_btn_hint": { "message": "Adds a draggable button on pages to quickly translate images." },
 
   "options_storage": { "message": "Storage" },
+  "options_automation": { "message": "Automation" },
   "options_save_translation_result": { "message": "Save translation results" },
   "options_save_translation_result_hint": { "message": "Save the original image, translated image and text box data to IndexedDB for each translation." },
   "options_use_translation_cache": { "message": "Use cached translation results" },
