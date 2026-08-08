@@ -390,6 +390,35 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   } else if (request === "showOptions") {
     chrome.runtime.openOptionsPage();
+  } else if (request.action === "openReader") {
+    (async () => {
+      try {
+        // Find an existing reader (basiccat.org) tab, else open one.
+        let tabs = await chrome.tabs.query({ url: "https://www.basiccat.org/*" });
+        let tab;
+        if (tabs && tabs.length > 0) {
+          tab = tabs[0];
+        } else {
+          tab = await chrome.tabs.create({ url: "https://www.basiccat.org/" });
+        }
+        // The page may still be loading; wait for it to be complete before we
+        // tell its content script to inject the images.
+        let attempts = 0;
+        while (tab.status !== 'complete' && attempts < 50) {
+          await new Promise(r => setTimeout(r, 200));
+          attempts++;
+          tab = await chrome.tabs.get(tab.id);
+        }
+        chrome.tabs.sendMessage(tab.id, { action: "injectReaderImages", count: request.count }, () => {
+          // Ignore lastError (content script may not be ready on the target page);
+          // it will pick up the storage on its own init if so.
+        });
+        sendResponse({ ok: true });
+      } catch (err) {
+        sendResponse({ ok: false, error: err.message });
+      }
+    })();
+    return true;
   }
 });
 

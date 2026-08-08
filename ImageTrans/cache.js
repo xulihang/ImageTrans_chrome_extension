@@ -168,6 +168,32 @@ window.onload = async function() {
 
   document.getElementById('refreshButton').addEventListener('click', reload);
 
+  document.getElementById('readButton').addEventListener('click', async function() {
+    // Collect the original images that match the current filter.
+    const filter = (filterValue || '').trim().toLowerCase();
+    let images = [];
+    for (const entry of allEntries) {
+      if (filter) {
+        const pageUrl = (entry.record && entry.record.pageUrl) || '';
+        if (pageUrl.toLowerCase().indexOf(filter) === -1) continue;
+      }
+      if (entry.record && entry.record.originalImage) {
+        images.push(entry.record.originalImage);
+      }
+    }
+    if (images.length === 0) {
+      alert(getMessage('cache_read_empty'));
+      return;
+    }
+    // Cache the images briefly so the reader page's content script can pick them up.
+    chrome.storage.local.set({ imagetrans_reader_images: images }, async function() {
+      const resp = await sendMessageTimeout({ action: 'openReader', count: images.length });
+      if (!resp || !resp.ok) {
+        alert(getMessage('cache_read_failed'));
+      }
+    });
+  });
+
   const filterInput = document.getElementById('urlFilter');
   if (filterInput) {
     filterInput.addEventListener('input', function() {

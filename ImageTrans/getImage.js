@@ -144,6 +144,52 @@ function applyCachedTranslation(src, cached, checkData, img) {
 }
 // --- End IndexedDB for translation results ---
 
+// Insert the cached original images (stored by the cache page under
+// imagetrans_reader_images) as <img> elements, then run the normal translation
+// flow on each so that clicking an image opens the result dialog with TTS.
+async function injectReaderImages(count) {
+  let images = [];
+  try {
+    const data = await new Promise(function(resolve) {
+      chrome.storage.local.get('imagetrans_reader_images', resolve);
+    });
+    images = data && data.imagetrans_reader_images ? data.imagetrans_reader_images : [];
+  } catch (e) {
+    console.error('injectReaderImages: storage read failed', e);
+  }
+  // Clean up the temporary storage regardless.
+  chrome.storage.local.remove('imagetrans_reader_images', function(){});
+
+  if (!images || images.length === 0) return 0;
+
+  // Prefer a dedicated container if the hosted page exposes one, else insert at
+  // the top of the body so it doesn't disturb the page layout.
+  var container = document.getElementById('imagetrans-reader') || document.body;
+
+  for (var i = 0; i < images.length; i++) {
+    var dataURL = images[i];
+    if (!dataURL) continue;
+    var img = document.createElement('img');
+    img.src = dataURL;
+    img.style.cssText = 'display:block;max-width:100%;height:auto;margin:0 auto 8px;';
+    // Tag it so the auto-translate observer doesn't also try to process it.
+    img.setAttribute('data-imagetrans-reader', '1');
+    container.appendChild(img);
+    // Reuse a cached translation when available, else run the normal flow.
+    setTimeout(async function(im) {
+      try {
+        const cached = await checkTranslationCache(im.src);
+        if (cached && cached.translatedImage) {
+          applyCachedTranslation(im.src, cached, true, im);
+          return;
+        }
+      } catch (e) { /* fall through to normal translate */ }
+      ajax(im.src, im, true, true);
+    }, 50 * i, img);
+  }
+  return images.length;
+}
+
 chrome.storage.sync.get({
     serverURL: serverURL,
     pickingWay: pickingWay,
@@ -300,6 +346,15 @@ chrome.runtime.onMessage.addListener(
     console.log(sender.tab ?
                 "from a content script:" + sender.tab.url :
                 "from the extension");
+
+    // Messages from the extension background/pages use request.action.
+    if (request && request.action === "injectReaderImages") {
+      injectReaderImages(request.count).then(function(n) {
+        sendResponse({ ok: true, injected: n });
+      });
+      return true;
+    }
+
     var message =request.message;
     console.log(message);
 
@@ -2088,6 +2143,8 @@ function startAutoTranslate() {
 function observeImage(img) {
     // Skip already translated images
     if (img.hasAttribute("target-src")) return;
+    // Skip images injected by the cache "read" feature — it drives its own flow.
+    if (img.hasAttribute("data-imagetrans-reader")) return;
     // Only skip images that are loaded AND confirmed small (likely icons).
     // Unloaded images (naturalWidth/Height === 0) must be observed to catch lazy loads.
     if (img.naturalWidth > 0 && img.naturalHeight > 0 && img.naturalWidth < 100 && img.naturalHeight < 100) return;
