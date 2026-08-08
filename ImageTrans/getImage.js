@@ -1997,9 +1997,7 @@ function startAutoTranslate() {
                 if (src && !translatedSrcs[src] && !isInQueue(img)) {
                     // If an image is already queued/being processed elsewhere, don't re-add it.
                     processingQueue.push(img);
-                    // Only show a "waiting" overlay for images actually visible now;
-                    // otherwise many off-screen images pile up with stale overlays.
-                    if (img.isConnected && isInViewport(img) && !autoScroll) {
+                    if (img.isConnected && isInViewport(img)) {
                         showTranslatingOverlay(img, "overlay_waiting");
                     }
                     processQueue();
@@ -2204,28 +2202,22 @@ function scrollToNextUntranslatedImage() {
     }
     if (candidates.length === 0) return Promise.resolve(null);
 
-    // Prefer images below the current viewport (reading order); fall back to
-    // ones already in view, then to ones above (e.g. missed near the top).
+    // Collect images below the current viewport (reading order). NEVER pick
+    // images above (above viewport): auto-scroll should march forward only, and
+    // images already in view are handled by the observer.
     var below = [];
-    var inView = [];
-    var above = [];
     var vh = window.innerHeight;
     for (var j = 0; j < candidates.length; j++) {
         var box = candidates[j].getBoundingClientRect();
         if (box.top >= vh - 100) {
             below.push(candidates[j]);
-        } else if (box.bottom > 0 && box.top < vh) {
-            inView.push(candidates[j]);
-        } else {
-            above.push(candidates[j]);
         }
     }
 
-    var pick = (below[0] || inView[0] || above[0]);
-    // Scroll smoothly so images pass through the viewport one at a time; the
-    // observer then picks each one up and translates it in order (no skipping).
-    // If the target is already visible, the observer has already queued it.
-    if (below.length > 0 || above.length > 0) {
+    var pick = below[0] || null;
+    if (pick) {
+        // Scroll to the next image below the viewport; the observer translates it
+        // when it enters view.
         try { pick.scrollIntoView({behavior: 'smooth', block: 'start'}); }
         catch (e) { pick.scrollIntoView(true); }
     }
