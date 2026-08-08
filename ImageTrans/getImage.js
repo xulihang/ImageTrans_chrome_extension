@@ -45,6 +45,7 @@ var translatedSrcs = {};
 var translatedBoxesMap = {}; // maps src URL -> {dataURL: ..., boxes: [...]} for click-to-inspect
 var processingQueue = [];
 var isProcessing = false;
+var currentAutoImage = null;
 var pickingWay = "1";
 var useCanvas = true;
 var renderTextInFrontend = false;
@@ -90,6 +91,7 @@ var xSpacing = 15;
 var ySpacing = 15;
 var saveTranslationResult = false;
 var useTranslationCache = false;
+var autoScroll = false;
 
 async function saveTranslationResultToDB(originalDataURL, translatedDataURL, imgMap) {
   if (!saveTranslationResult) return;
@@ -167,7 +169,8 @@ chrome.storage.sync.get({
     xSpacing: 15,
     ySpacing: 15,
     saveTranslationResult: false,
-    useTranslationCache: false
+    useTranslationCache: false,
+    autoScroll: false
 }, async function(items) {
     if (items.serverURL) {
         serverURL = items.serverURL;
@@ -270,6 +273,9 @@ chrome.storage.sync.get({
     }
     if (items.useTranslationCache !== undefined) {
         useTranslationCache = items.useTranslationCache;
+    }
+    if (items.autoScroll !== undefined) {
+        autoScroll = items.autoScroll;
     }
     if (showFloatingButton) {
         createFloatingButton();
@@ -1983,15 +1989,21 @@ function startAutoTranslate() {
             if (entry.isIntersecting) {
                 var img = entry.target;
                 // Skip images that have already been translated
-                if (img.hasAttribute("target-src")) continue;
+                if (img.hasAttribute("target-src")) {
+                    hideTranslatingOverlay(img);
+                    continue;
+                }
                 var src = getImageSrc(img);
                 if (src && !translatedSrcs[src] && !isInQueue(img)) {
+                    // If an image is already queued/being processed elsewhere, don't re-add it.
                     processingQueue.push(img);
-                    // Show waiting overlay if image is in viewport
                     if (img.isConnected && isInViewport(img)) {
                         showTranslatingOverlay(img, "overlay_waiting");
                     }
                     processQueue();
+                } else if (translatedSrcs[src]) {
+                    // Already translated → ensure no stale overlay remains.
+                    hideTranslatingOverlay(img);
                 }
             }
         }
@@ -2000,6 +2012,11 @@ function startAutoTranslate() {
     var imgs = document.getElementsByTagName('img');
     for (var i = 0; i < imgs.length; i++) {
         observeImage(imgs[i]);
+    }
+
+    // If auto-scroll is enabled, scroll to the next image; the observer translates it.
+    if (autoScroll) {
+        scrollToNextUntranslatedImage();
     }
 
     autoMutationObserver = new MutationObserver(function(mutations) {
@@ -2062,6 +2079,7 @@ function stopAutoTranslate() {
     }
     processingQueue = [];
     isProcessing = false;
+    currentAutoImage = null;
 }
 
 function processQueue() {
@@ -2072,15 +2090,24 @@ function processQueue() {
     var src = getImageSrc(img);
 
     if (!src || translatedSrcs[src]) {
+        // Skip this image but make sure no "waiting" overlay is left hanging.
+        hideTranslatingOverlay(img);
         isProcessing = false;
         processQueue();
         return;
     }
 
     translatedSrcs[src] = true;
+    currentAutoImage = img;
     autoTranslateImage(img, src).finally(function() {
         isProcessing = false;
-        processQueue();
+        currentAutoImage = null;
+        if (autoScroll) {
+            // Scroll to the next untranslated image; the observer picks it up.
+            scrollToNextUntranslatedImage();
+        } else {
+            processQueue();
+        }
     });
 }
 
@@ -2147,6 +2174,55 @@ function autoTranslateImage(img, src) {
             done();
         }
     });
+}
+
+// AutoScroll: after the current image finishes translating, scroll to the
+// next untranslated image (preferring images below the current viewport),
+// render it into view, then queue it for translation. This drives the loop
+// deterministically in document order and does not rely on the observer.
+function scrollToNextUntranslatedImage() {
+    if (!autoScroll) return Promise.resolve(null);
+    var imgs = document.getElementsByTagName('img');
+
+    // Candidate images not yet translated / not already queued / not in progress.
+    var candidates = [];
+    for (var i = 0; i < imgs.length; i++) {
+        var img = imgs[i];
+        if (img.hasAttribute("target-src")) continue;
+        if (isInQueue(img) || img === currentAutoImage) continue;
+        if (img.naturalWidth > 0 && img.naturalHeight > 0 && img.naturalWidth < 100 && img.naturalHeight < 100) continue;
+        if (!img.src) continue;
+        candidates.push(img);
+    }
+    if (candidates.length === 0) return Promise.resolve(null);
+
+    // Prefer images below the current viewport (reading order); fall back to
+    // ones already in view, then to ones above (e.g. missed near the top).
+    var below = [];
+    var inView = [];
+    var above = [];
+    var vh = window.innerHeight;
+    for (var j = 0; j < candidates.length; j++) {
+        var box = candidates[j].getBoundingClientRect();
+        if (box.top >= vh - 100) {
+            below.push(candidates[j]);
+        } else if (box.bottom > 0 && box.top < vh) {
+            inView.push(candidates[j]);
+        } else {
+            above.push(candidates[j]);
+        }
+    }
+
+    var pick = (below[0] || inView[0] || above[0]);
+    // Scroll so the target renders (instant jump is reliable; avoids racing the
+    // smooth-scroll animation). Queued translate is handled by the observer, which
+    // fires as soon as the image enters the viewport. If it is already in view, the
+    // observer has already queued it.
+    if (below.length > 0 || above.length > 0) {
+        try { pick.scrollIntoView({behavior: 'auto', block: 'center'}); }
+        catch (e) { pick.scrollIntoView(true); }
+    }
+    return Promise.resolve(pick);
 }
 
 function showTranslatingOverlay(img, i18nKey) {

@@ -152,5 +152,7 @@
   "options_save_translation_result": { "message": "保存翻译结果" },
   "options_save_translation_result_hint": { "message": "每次翻译时将原图、译图和文字框数据保存到 IndexedDB 中。" },
   "options_use_translation_cache": { "message": "使用已缓存的翻译结果" },
-  "options_use_translation_cache_hint": { "message": "如果 IndexedDB 中存在该图片的翻译缓存，直接使用，不再重新翻译。" }
+  "options_use_translation_cache_hint": { "message": "如果 IndexedDB 中存在该图片的翻译缓存，直接使用，不再重新翻译。" },
+  "options_auto_scroll": { "message": "自动翻译时滚动页面" },
+  "options_auto_scroll_hint": { "message": "启用自动翻译时，每翻译完一张图片自动滚动到下一张未翻译的图片。" }
 }

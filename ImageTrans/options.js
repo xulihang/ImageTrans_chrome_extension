@@ -90,6 +90,7 @@ function save() {
   const uiLanguage = document.getElementById("uiLanguage").value;
   const saveTranslationResult = document.getElementById("saveTranslationResult").checked;
   const useTranslationCache = document.getElementById("useTranslationCache").checked;
+  const autoScroll = document.getElementById("autoScroll").checked;
 
   // PaddleOCR requires a specific language; "auto" is not supported.
   var usingPaddleOCR = translationMode === "local" || (useOpenAI && ocrMethod === "paddleocr");
@@ -129,7 +130,8 @@ function save() {
     ySpacing: ySpacing,
     uiLanguage: uiLanguage,
     saveTranslationResult: saveTranslationResult,
-    useTranslationCache: useTranslationCache
+    useTranslationCache: useTranslationCache,
+    autoScroll: autoScroll
   }, function() {
     alert(getMessage("alert_saved"));
     chrome.runtime.sendMessage({action: "updateCORSStatus", enabled: useCORS});
@@ -168,7 +170,8 @@ function load() {
     screenCaptureInstantOCR: false,
     uiLanguage: '',
     saveTranslationResult: false,
-    useTranslationCache: false
+    useTranslationCache: false,
+    autoScroll: false
   }, function(items) {
     if (items.serverURL) {
         document.getElementById("serverURL").value = items.serverURL;
@@ -228,6 +231,7 @@ function load() {
     document.getElementById("screenCaptureInstantOCR").checked = items.screenCaptureInstantOCR;
     document.getElementById("saveTranslationResult").checked = items.saveTranslationResult;
     document.getElementById("useTranslationCache").checked = items.useTranslationCache;
+    document.getElementById("autoScroll").checked = items.autoScroll;
     document.getElementById("ocrMethodSection").style.display = items.useOpenAI ? 'block' : 'none';
   });
 }

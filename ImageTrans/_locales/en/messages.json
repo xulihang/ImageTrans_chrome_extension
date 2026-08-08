@@ -152,5 +152,7 @@
   "options_save_translation_result": { "message": "Save translation results" },
   "options_save_translation_result_hint": { "message": "Save the original image, translated image and text box data to IndexedDB for each translation." },
   "options_use_translation_cache": { "message": "Use cached translation results" },
-  "options_use_translation_cache_hint": { "message": "If a cached result exists in IndexedDB for an image, use it directly instead of re-translating." }
+  "options_use_translation_cache_hint": { "message": "If a cached result exists in IndexedDB for an image, use it directly instead of re-translating." },
+  "options_auto_scroll": { "message": "Auto-scroll during auto-translate" },
+  "options_auto_scroll_hint": { "message": "When auto-translating, scroll to the next untranslated image after each translation completes." }
 }
