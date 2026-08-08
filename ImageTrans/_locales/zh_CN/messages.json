@@ -154,5 +154,21 @@
   "options_use_translation_cache": { "message": "使用已缓存的翻译结果" },
   "options_use_translation_cache_hint": { "message": "如果 IndexedDB 中存在该图片的翻译缓存，直接使用，不再重新翻译。" },
   "options_auto_scroll": { "message": "自动翻译时滚动页面" },
-  "options_auto_scroll_hint": { "message": "启用自动翻译时，每翻译完一张图片自动滚动到下一张未翻译的图片。" }
+  "options_auto_scroll_hint": { "message": "启用自动翻译时，每翻译完一张图片自动滚动到下一张未翻译的图片。" },
+  "options_view_cache": { "message": "查看缓存结果" },
+
+  "cache_title": { "message": "ImageTrans 缓存" },
+  "cache_refresh": { "message": "刷新" },
+  "cache_clear_all": { "message": "清空全部" },
+  "cache_delete": { "message": "删除" },
+  "cache_empty": { "message": "暂无缓存的翻译结果。" },
+  "cache_count": { "message": "共 $N$ 条缓存结果", "placeholders": { "n": { "content": "$1" } } },
+  "cache_original": { "message": "原图" },
+  "cache_translated": { "message": "译图" },
+  "cache_time": { "message": "时间" },
+  "cache_boxes": { "message": "文字框数" },
+  "cache_key": { "message": "键" },
+  "cache_confirm_delete": { "message": "确定删除这条缓存结果？" },
+  "cache_confirm_clear": { "message": "确定清空所有缓存结果？此操作不可撤销。" },
+  "cache_footer": { "message": "缓存的翻译结果存储在本扩展的 IndexedDB 中。" }
 }

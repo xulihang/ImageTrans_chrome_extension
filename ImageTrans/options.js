@@ -282,6 +282,9 @@ window.onload = async function (){
   document.getElementById("saveButton").addEventListener("click",function(){
     save();
   })
+  document.getElementById("viewCacheButton").addEventListener("click",function(){
+    chrome.tabs.create({url: chrome.runtime.getURL("cache.html")});
+  })
   document.getElementById("publicServerButton").addEventListener("click",function(){
     document.getElementById("serverURL").value = "https://service.basiccat.org:51043";
   })

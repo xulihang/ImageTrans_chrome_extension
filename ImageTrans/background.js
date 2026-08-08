@@ -134,6 +134,48 @@ async function getTranslationCache(originalDataURL) {
     return null;
   }
 }
+
+async function listTranslationCache() {
+  const db = await openTranslationDB();
+  return new Promise((resolve, reject) => {
+    const results = [];
+    const tx = db.transaction(TRANSLATION_STORE, 'readonly');
+    const store = tx.objectStore(TRANSLATION_STORE);
+    const req = store.openCursor();
+    req.onsuccess = (event) => {
+      const cursor = event.target.result;
+      if (cursor) {
+        results.push({ key: cursor.primaryKey, record: cursor.value });
+        cursor.continue();
+      } else {
+        resolve(results);
+      }
+    };
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function deleteTranslationCache(key) {
+  const db = await openTranslationDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(TRANSLATION_STORE, 'readwrite');
+    const store = tx.objectStore(TRANSLATION_STORE);
+    store.delete(key);
+    tx.oncomplete = () => resolve(true);
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function clearTranslationCache() {
+  const db = await openTranslationDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(TRANSLATION_STORE, 'readwrite');
+    const store = tx.objectStore(TRANSLATION_STORE);
+    store.clear();
+    tx.oncomplete = () => resolve(true);
+    tx.onerror = () => reject(tx.error);
+  });
+}
 // --- End IndexedDB for translation results ---
 
 // --- Custom i18n: allow user to override UI language ---
@@ -314,6 +356,36 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       sendResponse({ cached: cached });
     })();
     return true; // async sendResponse
+  } else if (request.action === "listTranslationCache") {
+    (async () => {
+      try {
+        const entries = await listTranslationCache();
+        sendResponse({ ok: true, entries: entries });
+      } catch (err) {
+        sendResponse({ ok: false, error: err.message });
+      }
+    })();
+    return true;
+  } else if (request.action === "deleteTranslationCache") {
+    (async () => {
+      try {
+        await deleteTranslationCache(request.key);
+        sendResponse({ ok: true });
+      } catch (err) {
+        sendResponse({ ok: false, error: err.message });
+      }
+    })();
+    return true;
+  } else if (request.action === "clearTranslationCache") {
+    (async () => {
+      try {
+        await clearTranslationCache();
+        sendResponse({ ok: true });
+      } catch (err) {
+        sendResponse({ ok: false, error: err.message });
+      }
+    })();
+    return true;
   } else if (request === "showOptions") {
     chrome.runtime.openOptionsPage();
   }

@@ -154,5 +154,21 @@
   "options_use_translation_cache": { "message": "Use cached translation results" },
   "options_use_translation_cache_hint": { "message": "If a cached result exists in IndexedDB for an image, use it directly instead of re-translating." },
   "options_auto_scroll": { "message": "Auto-scroll during auto-translate" },
-  "options_auto_scroll_hint": { "message": "When auto-translating, scroll to the next untranslated image after each translation completes." }
+  "options_auto_scroll_hint": { "message": "When auto-translating, scroll to the next untranslated image after each translation completes." },
+  "options_view_cache": { "message": "View cached results" },
+
+  "cache_title": { "message": "ImageTrans Cache" },
+  "cache_refresh": { "message": "Refresh" },
+  "cache_clear_all": { "message": "Clear all" },
+  "cache_delete": { "message": "Delete" },
+  "cache_empty": { "message": "No cached translation results." },
+  "cache_count": { "message": "$N$ cached result(s)", "placeholders": { "n": { "content": "$1" } } },
+  "cache_original": { "message": "Original image" },
+  "cache_translated": { "message": "Translated image" },
+  "cache_time": { "message": "Time" },
+  "cache_boxes": { "message": "Text boxes" },
+  "cache_key": { "message": "Key" },
+  "cache_confirm_delete": { "message": "Delete this cached result?" },
+  "cache_confirm_clear": { "message": "Clear all cached results? This cannot be undone." },
+  "cache_footer": { "message": "Cached translation results stored in this extension's IndexedDB." }
 }
