@@ -2230,8 +2230,22 @@ function scrollToNextUntranslatedImage() {
         // when it enters view.
         try { pick.scrollIntoView({behavior: 'smooth', block: 'start'}); }
         catch (e) { pick.scrollIntoView(true); }
+        return Promise.resolve(pick);
     }
-    return Promise.resolve(pick);
+
+    // No untranslated <img> below the viewport. This can happen on pages that
+    // lazy-load <img> elements (they are only created in the DOM when scrolled
+    // close). Keep scrolling down by one viewport to trigger lazy-loading; the
+    // MutationObserver picks up the newly added <img> elements. Stop once at the
+    // very bottom of the page.
+    var atBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 50;
+    if (!atBottom) {
+        try { window.scrollBy({top: window.innerHeight, behavior: 'smooth'}); }
+        catch (e) { window.scrollBy(0, window.innerHeight); }
+        // Wait for lazy-loaded <img> elements to be created, then continue.
+        setTimeout(function() { if (autoTranslating && autoScroll) processQueue(); }, 800);
+    }
+    return Promise.resolve(null);
 }
 
 function showTranslatingOverlay(img, i18nKey) {
