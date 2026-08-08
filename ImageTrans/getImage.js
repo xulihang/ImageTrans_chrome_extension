@@ -1099,7 +1099,7 @@ async function renderTranslatedImage(base64Image, boxes) {
                 drawTextBox(ctx, displayText, c2.x, c2.y, c2.w, c2.h, fontSize, textStyle);
             }
 
-            resolve(c.toDataURL('image/png'));
+            resolve(c.toDataURL('image/webp', 0.8));
         };
         img.onerror = function() {
             reject(new Error('Failed to load translated image'));
