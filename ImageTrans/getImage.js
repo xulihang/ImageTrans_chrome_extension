@@ -115,11 +115,16 @@ async function checkTranslationCache(originalDataURL) {
   if (!originalDataURL) return null;
   try {
     const response = await new Promise((resolve) => {
+      let settled = false;
+      // Chrome's sendMessage callback may never fire if the background service
+      // worker is cold-starting or the message channel fails. Time out so we
+      // never hang the translation queue.
+      const timer = setTimeout(() => { if (!settled) { settled = true; resolve(null); } }, 2000);
       chrome.runtime.sendMessage({
         action: "getTranslationCache",
         originalDataURL: originalDataURL
       }, (response) => {
-        resolve(response);
+        if (!settled) { settled = true; clearTimeout(timer); resolve(response); }
       });
     });
     return response && response.cached ? response.cached : null;
@@ -2083,7 +2088,15 @@ function stopAutoTranslate() {
 }
 
 function processQueue() {
-    if (isProcessing || processingQueue.length === 0 || !autoTranslating) return;
+    if (isProcessing || !autoTranslating) return;
+    if (processingQueue.length === 0) {
+        // Queue empty: when auto-scroll is on, scroll to find more images; the
+        // observer translates them. Otherwise there's nothing left to do.
+        if (autoScroll) {
+            scrollToNextUntranslatedImage();
+        }
+        return;
+    }
     isProcessing = true;
 
     var img = processingQueue.shift();
@@ -2102,13 +2115,10 @@ function processQueue() {
     autoTranslateImage(img, src).finally(function() {
         isProcessing = false;
         currentAutoImage = null;
-        if (autoScroll) {
-            // Always advance the scroll to the next untranslated image after each
-            // translation. The observer picks it up when it scrolls into view.
-            scrollToNextUntranslatedImage();
-        } else {
-            processQueue();
-        }
+        // Always continue processing the queue, regardless of autoScroll, so
+        // images already queued are never left hanging. When autoScroll is on
+        // and the queue is empty, processQueue() advances the scroll instead.
+        processQueue();
     });
 }
 
