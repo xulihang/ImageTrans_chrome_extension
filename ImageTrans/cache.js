@@ -74,6 +74,11 @@ function formatTime(ts) {
   }
 }
 
+const PAGE_SIZE = 50;
+let allEntries = [];
+let filterValue = '';
+let currentPage = 1;
+
 function render(entries) {
   const countEl = document.getElementById('count');
   const listEl = document.getElementById('list');
@@ -89,18 +94,26 @@ function render(entries) {
     });
   }
 
+  countEl.textContent = getMessage('cache_count', [filtered.length]);
+
   if (!filtered || filtered.length === 0) {
-    countEl.textContent = getMessage('cache_count', [0]);
     emptyEl.style.display = 'block';
     listEl.innerHTML = '';
+    paginationEl.style.display = 'none';
     return;
   }
 
   emptyEl.style.display = 'none';
-  countEl.textContent = getMessage('cache_count', [filtered.length]);
+
+  // Paginate.
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  if (currentPage > totalPages) currentPage = totalPages;
+  if (currentPage < 1) currentPage = 1;
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const pageEntries = filtered.slice(start, start + PAGE_SIZE);
   listEl.innerHTML = '';
 
-  for (const entry of filtered) {
+  for (const entry of pageEntries) {
     const rec = entry.record;
     const card = document.createElement('div');
     card.className = 'card';
@@ -150,10 +163,19 @@ function render(entries) {
     card.appendChild(delBtn);
     listEl.appendChild(card);
   }
-}
 
-let allEntries = [];
-let filterValue = '';
+  // Update the pagination bar.
+  const paginationEl = document.getElementById('pagination');
+  const pageInfoEl = document.getElementById('pageInfo');
+  if (totalPages > 1) {
+    paginationEl.style.display = 'flex';
+    pageInfoEl.textContent = getMessage('cache_page_of', [currentPage, totalPages]);
+    document.getElementById('prevPage').disabled = currentPage <= 1;
+    document.getElementById('nextPage').disabled = currentPage >= totalPages;
+  } else {
+    paginationEl.style.display = 'none';
+  }
+}
 
 async function reload() {
   const resp = await sendMessageTimeout({ action: 'listTranslationCache' });
@@ -203,14 +225,23 @@ window.onload = async function() {
   if (filterInput) {
     filterInput.addEventListener('input', function() {
       filterValue = filterInput.value;
+      currentPage = 1;
       render(allEntries);
     });
   }
+
+  document.getElementById('prevPage').addEventListener('click', function() {
+    if (currentPage > 1) { currentPage--; render(allEntries); }
+  });
+  document.getElementById('nextPage').addEventListener('click', function() {
+    currentPage++; render(allEntries);
+  });
 
   document.getElementById('clearButton').addEventListener('click', async () => {
     const sure = confirm(getMessage('cache_confirm_clear'));
     if (!sure) return;
     await sendMessageTimeout({ action: 'clearTranslationCache' });
+    currentPage = 1;
     reload();
   });
 };

@@ -112,6 +112,21 @@
         font-size: 15px;
       }
 
+      .pagination {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 18px;
+        font-size: 13px;
+        color: var(--text-secondary);
+      }
+      .pagination button {
+        padding: 5px 12px;
+        font-size: 13px;
+      }
+      .pagination .page-info span { margin: 0 2px; }
+
       .filter-row {
         margin-bottom: 12px;
       }
@@ -152,6 +167,12 @@
     <div id="count" class="count"></div>
     <div id="list"></div>
     <div id="empty" class="empty" style="display:none;" data-i18n="cache_empty">No cached translation results.</div>
+
+    <div id="pagination" class="pagination" style="display:none;">
+      <button id="prevPage" class="btn-secondary" data-i18n="cache_prev">Prev</button>
+      <span class="page-info" id="pageInfo"></span>
+      <button id="nextPage" class="btn-secondary" data-i18n="cache_next">Next</button>
+    </div>
 
     <div class="footer" data-i18n="cache_footer">Cached translation results stored in this extension's IndexedDB.</div>
 
