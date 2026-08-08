@@ -74,7 +74,7 @@ function formatTime(ts) {
   }
 }
 
-const PAGE_SIZE = 50;
+const PAGE_SIZE = 10;
 let allEntries = [];
 let filterValue = '';
 let currentPage = 1;
