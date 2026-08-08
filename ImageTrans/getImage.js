@@ -1997,7 +1997,9 @@ function startAutoTranslate() {
                 if (src && !translatedSrcs[src] && !isInQueue(img)) {
                     // If an image is already queued/being processed elsewhere, don't re-add it.
                     processingQueue.push(img);
-                    if (img.isConnected && isInViewport(img)) {
+                    // Only show a "waiting" overlay for images actually visible now;
+                    // otherwise many off-screen images pile up with stale overlays.
+                    if (img.isConnected && isInViewport(img) && !autoScroll) {
                         showTranslatingOverlay(img, "overlay_waiting");
                     }
                     processQueue();
@@ -2103,7 +2105,8 @@ function processQueue() {
         isProcessing = false;
         currentAutoImage = null;
         if (autoScroll) {
-            // Scroll to the next untranslated image; the observer picks it up.
+            // Always advance the scroll to the next untranslated image after each
+            // translation. The observer picks it up when it scrolls into view.
             scrollToNextUntranslatedImage();
         } else {
             processQueue();
@@ -2146,8 +2149,13 @@ function autoTranslateImage(img, src) {
 
         var savedBodyClass = document.body.className;
 
-        // Update overlay text from "Waiting..." to "Translating..." (safe if no overlay exists)
-        updateTranslatingOverlayText(img, "overlay_translating");
+        // Show progress on the image actually being translated (only if visible and none already shown).
+        if (inView && !img._imagetransOverlay) {
+            showTranslatingOverlay(img, "overlay_translating");
+        } else {
+            // Update any existing overlay text from "Waiting..." to "Translating...".
+            updateTranslatingOverlayText(img, "overlay_translating");
+        }
 
         var done = function() {
             window.alert = origAlert;
@@ -2214,12 +2222,11 @@ function scrollToNextUntranslatedImage() {
     }
 
     var pick = (below[0] || inView[0] || above[0]);
-    // Scroll so the target renders (instant jump is reliable; avoids racing the
-    // smooth-scroll animation). Queued translate is handled by the observer, which
-    // fires as soon as the image enters the viewport. If it is already in view, the
-    // observer has already queued it.
+    // Scroll smoothly so images pass through the viewport one at a time; the
+    // observer then picks each one up and translates it in order (no skipping).
+    // If the target is already visible, the observer has already queued it.
     if (below.length > 0 || above.length > 0) {
-        try { pick.scrollIntoView({behavior: 'auto', block: 'center'}); }
+        try { pick.scrollIntoView({behavior: 'smooth', block: 'start'}); }
         catch (e) { pick.scrollIntoView(true); }
     }
     return Promise.resolve(pick);
