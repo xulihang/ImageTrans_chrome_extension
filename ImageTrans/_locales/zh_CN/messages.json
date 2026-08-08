@@ -146,5 +146,9 @@
   "camera_capture_btn": { "message": "拍照" },
 
   "options_show_floating_btn": { "message": "显示悬浮翻译按钮" },
-  "options_show_floating_btn_hint": { "message": "在网页上添加可拖拽按钮，快速翻译图片。" }
+  "options_show_floating_btn_hint": { "message": "在网页上添加可拖拽按钮，快速翻译图片。" },
+
+  "options_storage": { "message": "存储" },
+  "options_save_translation_result": { "message": "保存翻译结果" },
+  "options_save_translation_result_hint": { "message": "每次翻译时将原图、译图和文字框数据保存到 IndexedDB 中。" }
 }

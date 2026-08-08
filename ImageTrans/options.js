@@ -88,6 +88,7 @@ function save() {
   const showFloatingButton = document.getElementById("showFloatingButton").checked;
   const screenCaptureInstantOCR = document.getElementById("screenCaptureInstantOCR").checked;
   const uiLanguage = document.getElementById("uiLanguage").value;
+  const saveTranslationResult = document.getElementById("saveTranslationResult").checked;
 
   // PaddleOCR requires a specific language; "auto" is not supported.
   var usingPaddleOCR = translationMode === "local" || (useOpenAI && ocrMethod === "paddleocr");
@@ -125,7 +126,8 @@ function save() {
     screenCaptureInstantOCR: screenCaptureInstantOCR,
     xSpacing: xSpacing,
     ySpacing: ySpacing,
-    uiLanguage: uiLanguage
+    uiLanguage: uiLanguage,
+    saveTranslationResult: saveTranslationResult
   }, function() {
     alert(getMessage("alert_saved"));
     chrome.runtime.sendMessage({action: "updateCORSStatus", enabled: useCORS});
@@ -162,7 +164,8 @@ function load() {
     addFuriganaToSource: false,
     showFloatingButton: false,
     screenCaptureInstantOCR: false,
-    uiLanguage: ''
+    uiLanguage: '',
+    saveTranslationResult: false
   }, function(items) {
     if (items.serverURL) {
         document.getElementById("serverURL").value = items.serverURL;
@@ -220,6 +223,7 @@ function load() {
     document.getElementById("addFuriganaToSource").checked = items.addFuriganaToSource;
     document.getElementById("showFloatingButton").checked = items.showFloatingButton;
     document.getElementById("screenCaptureInstantOCR").checked = items.screenCaptureInstantOCR;
+    document.getElementById("saveTranslationResult").checked = items.saveTranslationResult;
     document.getElementById("ocrMethodSection").style.display = items.useOpenAI ? 'block' : 'none';
   });
 }

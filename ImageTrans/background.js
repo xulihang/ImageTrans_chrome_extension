@@ -59,6 +59,65 @@ async function fetchAndCacheModel(url) {
 }
 // --- End IndexedDB cache ---
 
+// --- IndexedDB for storing translation results ---
+const TRANSLATION_DB_NAME = 'ImageTransResults';
+const TRANSLATION_STORE = 'translations';
+const TRANSLATION_DB_VERSION = 1;
+
+function openTranslationDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(TRANSLATION_DB_NAME, TRANSLATION_DB_VERSION);
+    req.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains(TRANSLATION_STORE)) {
+        db.createObjectStore(TRANSLATION_STORE);
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function computeImageHash(dataURL) {
+  const commaIdx = dataURL.indexOf(',');
+  const base64Data = commaIdx >= 0 ? dataURL.substring(commaIdx + 1) : dataURL;
+  const encoder = new TextEncoder();
+  const data = encoder.encode(base64Data);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return hashHex;
+}
+
+async function saveTranslationResult(originalDataURL, translatedDataURL, imgMap, sourceLang, targetLang) {
+  if (!originalDataURL || !translatedDataURL || !imgMap) return;
+  try {
+    const db = await openTranslationDB();
+    const hash = await computeImageHash(originalDataURL);
+    const record = {
+      originalImage: originalDataURL,
+      translatedImage: translatedDataURL,
+      imgMap: imgMap,
+      timestamp: Date.now(),
+      sourceLang: sourceLang,
+      targetLang: targetLang
+    };
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(TRANSLATION_STORE, 'readwrite');
+      const store = tx.objectStore(TRANSLATION_STORE);
+      store.put(record, hash);
+      tx.oncomplete = () => {
+        console.log('Translation result saved to IndexedDB, key:', hash);
+        resolve();
+      };
+      tx.onerror = () => reject(tx.error);
+    });
+  } catch (e) {
+    console.error('Failed to save translation result to IndexedDB:', e);
+  }
+}
+// --- End IndexedDB for translation results ---
+
 // --- Custom i18n: allow user to override UI language ---
 (async function() {
   const { uiLanguage } = await chrome.storage.sync.get({ uiLanguage: '' });
@@ -222,6 +281,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       }
     });
     return true; // keep sendResponse valid for async callback
+  } else if (request.action === "saveTranslationResult") {
+    saveTranslationResult(
+      request.originalDataURL,
+      request.translatedDataURL,
+      request.imgMap,
+      request.sourceLang,
+      request.targetLang
+    );
+    sendResponse({ ok: true });
   } else if (request === "showOptions") {
     chrome.runtime.openOptionsPage();
   }

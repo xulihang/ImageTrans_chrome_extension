@@ -88,6 +88,26 @@ var furiganaLoaded = false;
 var furiganaPendingRequests = {};
 var xSpacing = 15;
 var ySpacing = 15;
+var saveTranslationResult = false;
+
+async function saveTranslationResultToDB(originalDataURL, translatedDataURL, imgMap) {
+  if (!saveTranslationResult) return;
+  if (!originalDataURL || !translatedDataURL || !imgMap) return;
+  try {
+    chrome.runtime.sendMessage({
+      action: "saveTranslationResult",
+      originalDataURL: originalDataURL,
+      translatedDataURL: translatedDataURL,
+      imgMap: imgMap,
+      sourceLang: sourceLang,
+      targetLang: targetLang
+    });
+  } catch (e) {
+    console.error('Failed to send translation result to background:', e);
+  }
+}
+// --- End IndexedDB for translation results ---
+
 chrome.storage.sync.get({
     serverURL: serverURL,
     pickingWay: pickingWay,
@@ -119,7 +139,8 @@ chrome.storage.sync.get({
     ttsTargetVoice: "",
     ttsContinuous: false,
     xSpacing: 15,
-    ySpacing: 15
+    ySpacing: 15,
+    saveTranslationResult: false
 }, async function(items) {
     if (items.serverURL) {
         serverURL = items.serverURL;
@@ -216,6 +237,9 @@ chrome.storage.sync.get({
     }
     if (items.ttsContinuous !== undefined) {
         ttsContinuous = items.ttsContinuous;
+    }
+    if (items.saveTranslationResult !== undefined) {
+        saveTranslationResult = items.saveTranslationResult;
     }
     if (showFloatingButton) {
         createFloatingButton();
@@ -419,11 +443,13 @@ async function ajax(src,img,checkData,showOverlay){
                 var boxes = respData["imgMap"]["boxes"];
                 renderTranslatedImage(data.src, boxes).then(translatedDataURL => {
                     console.log(replaceImgSrc(src, translatedDataURL, checkData, img, boxes, data.src));
+                    saveTranslationResultToDB(data.src, translatedDataURL, respData["imgMap"]);
                 });
             } else {
                 var dataURL = "data:image/jpeg;base64," + respData["img"];
                 var boxes = respData["imgMap"]["boxes"];
                 console.log(replaceImgSrc(src, dataURL, checkData, img, boxes, data.src));
+                saveTranslationResultToDB(data.src, dataURL, respData["imgMap"]);
             }
         } catch (err) {
             document.body.classList.remove("imagetrans-wait");
@@ -444,11 +470,13 @@ async function ajax(src,img,checkData,showOverlay){
                             var fbDataURL = "data:image/jpeg;base64," + respData["img"];
                             renderTranslatedImage(respData["img"], fbBoxes).then(translatedDataURL => {
                                 console.log(replaceImgSrc(src, translatedDataURL, checkData, img, fbBoxes, fbDataURL));
+                                saveTranslationResultToDB(respData["img"], translatedDataURL, respData["imgMap"]);
                             });
                         } else {
                             var fbDataURL = "data:image/jpeg;base64," + respData["img"];
                             var fbBoxes = respData["imgMap"]["boxes"];
                             console.log(replaceImgSrc(src, fbDataURL, checkData, img, fbBoxes, fbDataURL));
+                            saveTranslationResultToDB(respData["img"], fbDataURL, respData["imgMap"]);
                         }
                     } catch (err2) {
                         document.body.classList.remove("imagetrans-wait");
@@ -554,6 +582,7 @@ async function ajaxMyMemory(src, img, checkData, showOverlay) {
 
         const translatedDataURL = await renderTranslatedImage(dataURL, boxes);
         console.log(replaceImgSrc(src, translatedDataURL, checkData, img, boxes, dataURL));
+        saveTranslationResultToDB(dataURL, translatedDataURL, {boxes: boxes});
 
     } catch (err) {
         document.body.classList.remove("imagetrans-wait");
@@ -760,6 +789,7 @@ async function ajaxOpenAI(src, img, checkData, showOverlay) {
         // Step 7: Render on canvas
         const translatedDataURL = await renderTranslatedImage(dataURL, boxes);
         console.log(replaceImgSrc(src, translatedDataURL, checkData, img, boxes, dataURL));
+        saveTranslationResultToDB(dataURL, translatedDataURL, {boxes: boxes});
 
     } catch (err) {
         document.body.classList.remove("imagetrans-wait");
