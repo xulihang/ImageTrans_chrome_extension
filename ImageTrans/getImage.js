@@ -914,6 +914,20 @@ function getDataURLFromImg(img) {
     return captureImageViaFetch(img.src, rect);
 };
 
+// Hide/restore all translation overlays so a viewport screenshot doesn't include them.
+function hideAllOverlays() {
+    var overlays = document.querySelectorAll('.imagetrans-overlay');
+    for (var i = 0; i < overlays.length; i++) {
+        overlays[i].style.visibility = 'hidden';
+    }
+}
+function restoreAllOverlays() {
+    var overlays = document.querySelectorAll('.imagetrans-overlay');
+    for (var i = 0; i < overlays.length; i++) {
+        overlays[i].style.visibility = '';
+    }
+}
+
 function compressToWebP(dataURL, quality) {
 	quality = quality || 0.8;
 	return new Promise((resolve, reject) => {
@@ -984,37 +998,49 @@ function captureImageViaFetch(src, rect) {
 }
 
 function captureImageViaScreenshot(rect) {
+    // Hide translation overlays before capturing, so a fixed-position overlay
+    // doesn't get baked into the crop. Restore them after the screenshot returns.
+    hideAllOverlays();
     return new Promise((resolve, reject) => {
-        chrome.runtime.sendMessage({action: "captureVisibleTab"}, (response) => {
-            if (chrome.runtime.lastError) {
-                reject(new Error("Screenshot failed: " + chrome.runtime.lastError.message));
-                return;
+        // Wait one frame so the browser repaints without the overlays.
+        setTimeout(function() {
+            try {
+                chrome.runtime.sendMessage({action: "captureVisibleTab"}, (response) => {
+                    restoreAllOverlays();
+                    if (chrome.runtime.lastError) {
+                        reject(new Error("Screenshot failed: " + chrome.runtime.lastError.message));
+                        return;
+                    }
+                    if (!response || !response.dataURL) {
+                        reject(new Error("Screenshot returned no dataURL"));
+                        return;
+                    }
+                    var img = new Image();
+                    img.onload = function() {
+                        if (!canvas) {
+                            canvas = document.createElement("canvas");
+                        }
+                        var scale = img.naturalWidth / window.innerWidth;
+                        var sx = rect.left * scale;
+                        var sy = rect.top * scale;
+                        var sw = rect.width * scale;
+                        var sh = rect.height * scale;
+                        canvas.width = sw;
+                        canvas.height = sh;
+                        var ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+                        resolve(canvas.toDataURL("image/webp", 0.8));
+                    };
+                    img.onerror = function() {
+                        reject(new Error("Failed to load screenshot image"));
+                    };
+                    img.src = response.dataURL;
+                });
+            } catch (e) {
+                restoreAllOverlays();
+                reject(e);
             }
-            if (!response || !response.dataURL) {
-                reject(new Error("Screenshot returned no dataURL"));
-                return;
-            }
-            var img = new Image();
-            img.onload = function() {
-                if (!canvas) {
-                    canvas = document.createElement("canvas");
-                }
-                var scale = img.naturalWidth / window.innerWidth;
-                var sx = rect.left * scale;
-                var sy = rect.top * scale;
-                var sw = rect.width * scale;
-                var sh = rect.height * scale;
-                canvas.width = sw;
-                canvas.height = sh;
-                var ctx = canvas.getContext('2d');
-                ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
-                resolve(canvas.toDataURL("image/webp", 0.8));
-            };
-            img.onerror = function() {
-                reject(new Error("Failed to load screenshot image"));
-            };
-            img.src = response.dataURL;
-        });
+        }, 50);
     });
 }
 
