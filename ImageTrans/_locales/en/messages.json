@@ -173,7 +173,7 @@
   "cache_boxes": { "message": "Text boxes" },
   "cache_key": { "message": "Key" },
   "cache_page": { "message": "Page" },
-  "cache_filter_placeholder": { "message": "Filter by page URL..." },
+  "cache_filter_placeholder": { "message": "Filter by page URL or title..." },
   "cache_prev": { "message": "Prev" },
   "cache_next": { "message": "Next" },
   "cache_page_of": { "message": "Page $CUR$ of $TOTAL$", "placeholders": { "cur": { "content": "$1" }, "total": { "content": "$2" } } },

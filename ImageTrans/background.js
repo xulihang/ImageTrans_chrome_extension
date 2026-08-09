@@ -62,16 +62,50 @@ async function fetchAndCacheModel(url) {
 // --- IndexedDB for storing translation results ---
 const TRANSLATION_DB_NAME = 'ImageTransResults';
 const TRANSLATION_STORE = 'translations';
-const TRANSLATION_DB_VERSION = 1;
+const TRANSLATION_DB_VERSION = 2;
+
+// Normalize a page URL or title for case-insensitive substring matching. For a
+// URL, strip the protocol and trailing slash so e.g. "lezhin.com" matches
+// "https://lezhin.com/...".
+function normalizeField(str) {
+  if (!str) return '';
+  let s = String(str).toLowerCase().trim();
+  s = s.replace(/^(https?:\/\/)+/, '');
+  s = s.replace(/\/+$/, '');
+  return s;
+}
 
 function openTranslationDB() {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(TRANSLATION_DB_NAME, TRANSLATION_DB_VERSION);
     req.onupgradeneeded = (event) => {
       const db = event.target.result;
+      const tx = event.target.transaction;
       if (!db.objectStoreNames.contains(TRANSLATION_STORE)) {
         db.createObjectStore(TRANSLATION_STORE);
       }
+      const store = tx.objectStore(TRANSLATION_STORE);
+      // Add indexes for page URL / title filtering (v2).
+      if (!store.indexNames.contains('pageUrl')) {
+        store.createIndex('pageUrl', 'pageUrlNorm');
+      }
+      if (!store.indexNames.contains('pageTitle')) {
+        store.createIndex('pageTitle', 'pageTitleNorm');
+      }
+      // Backfill normalized fields for pre-existing records (v1 -> v2 upgrade).
+      const cursorReq = store.openCursor();
+      cursorReq.onsuccess = function(ev) {
+        const cursor = ev.target.result;
+        if (cursor) {
+          const rec = cursor.value;
+          if (rec && (rec.pageUrlNorm === undefined || rec.pageTitleNorm === undefined)) {
+            rec.pageUrlNorm = normalizeField(rec.pageUrl);
+            rec.pageTitleNorm = normalizeField(rec.pageTitle);
+            cursor.update(rec);
+          }
+          cursor.continue();
+        }
+      };
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
@@ -102,7 +136,9 @@ async function saveTranslationResult(originalDataURL, translatedDataURL, imgMap,
       sourceLang: sourceLang,
       targetLang: targetLang,
       pageUrl: pageUrl || '',
-      pageTitle: pageTitle || ''
+      pageTitle: pageTitle || '',
+      pageUrlNorm: normalizeField(pageUrl),
+      pageTitleNorm: normalizeField(pageTitle)
     };
     return new Promise((resolve, reject) => {
       const tx = db.transaction(TRANSLATION_STORE, 'readwrite');
@@ -137,8 +173,13 @@ async function getTranslationCache(originalDataURL) {
   }
 }
 
-async function listTranslationCache() {
+async function listTranslationCache(filter) {
   const db = await openTranslationDB();
+  const normFilter = filter ? normalizeField(filter) : '';
+  const matches = function(rec) {
+    if (!normFilter) return true;
+    return ((rec.pageUrlNorm || '') + ' ' + (rec.pageTitleNorm || '')).indexOf(normFilter) !== -1;
+  };
   return new Promise((resolve, reject) => {
     const results = [];
     const tx = db.transaction(TRANSLATION_STORE, 'readonly');
@@ -147,7 +188,9 @@ async function listTranslationCache() {
     req.onsuccess = (event) => {
       const cursor = event.target.result;
       if (cursor) {
-        results.push({ key: cursor.primaryKey, record: cursor.value });
+        if (matches(cursor.value)) {
+          results.push({ key: cursor.primaryKey, record: cursor.value });
+        }
         cursor.continue();
       } else {
         resolve(results);
@@ -371,7 +414,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   } else if (request.action === "listTranslationCache") {
     (async () => {
       try {
-        const entries = await listTranslationCache();
+        const entries = await listTranslationCache(request.filter);
         sendResponse({ ok: true, entries: entries });
       } catch (err) {
         sendResponse({ ok: false, error: err.message });

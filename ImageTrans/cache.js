@@ -84,15 +84,9 @@ function render(entries) {
   const listEl = document.getElementById('list');
   const emptyEl = document.getElementById('empty');
 
-  // Apply page-URL filter (case-insensitive substring match).
-  const filter = (filterValue || '').trim().toLowerCase();
-  let filtered = entries;
-  if (filter) {
-    filtered = entries.filter(function(e) {
-      const pageUrl = (e.record && e.record.pageUrl) || '';
-      return pageUrl.toLowerCase().indexOf(filter) !== -1;
-    });
-  }
+  // Entries are already the background-filtered result (pageUrl/pageTitle match
+  // happens server-side); render whatever subset we were given.
+  const filtered = entries || [];
 
   countEl.textContent = getMessage('cache_count', [filtered.length]);
 
@@ -154,7 +148,7 @@ function render(entries) {
       const sure = confirm(getMessage('cache_confirm_delete'));
       if (!sure) return;
       await sendMessageTimeout({ action: 'deleteTranslationCache', key: entry.key });
-      reload();
+      reload(filterValue);
     });
 
     info.appendChild(title);
@@ -179,8 +173,12 @@ function render(entries) {
   }
 }
 
-async function reload() {
-  const resp = await sendMessageTimeout({ action: 'listTranslationCache' });
+async function reload(filter) {
+  filter = (filter || '').trim();
+  const resp = await sendMessageTimeout({
+    action: 'listTranslationCache',
+    filter: filter
+  });
   allEntries = (resp && resp.ok) ? resp.entries : [];
   render(allEntries);
 }
@@ -190,18 +188,15 @@ window.onload = async function() {
   applyI18n();
   reload();
 
-  document.getElementById('refreshButton').addEventListener('click', reload);
+  document.getElementById('refreshButton').addEventListener('click', function() {
+    reload(filterValue);
+  });
 
   document.getElementById('readButton').addEventListener('click', async function() {
-    // Collect the original images (with their records) that match the current filter,
-    // ordered by translation time (oldest first).
-    const filter = (filterValue || '').trim().toLowerCase();
+    // allEntries already reflects the background filter (pageUrl/pageTitle match);
+    // just collect the original images, ordered by translation time (oldest first).
     const matched = [];
     for (const entry of allEntries) {
-      if (filter) {
-        const pageUrl = (entry.record && entry.record.pageUrl) || '';
-        if (pageUrl.toLowerCase().indexOf(filter) === -1) continue;
-      }
       if (entry.record && entry.record.originalImage) {
         matched.push(entry.record);
       }
@@ -225,10 +220,14 @@ window.onload = async function() {
 
   const filterInput = document.getElementById('urlFilter');
   if (filterInput) {
+    let debounceTimer = null;
     filterInput.addEventListener('input', function() {
       filterValue = filterInput.value;
       currentPage = 1;
-      render(allEntries);
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(function() {
+        reload(filterValue);
+      }, 300);
     });
   }
 
@@ -244,6 +243,6 @@ window.onload = async function() {
     if (!sure) return;
     await sendMessageTimeout({ action: 'clearTranslationCache' });
     currentPage = 1;
-    reload();
+    reload(filterValue);
   });
 };

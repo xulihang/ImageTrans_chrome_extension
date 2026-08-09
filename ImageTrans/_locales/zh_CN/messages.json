@@ -173,7 +173,7 @@
   "cache_boxes": { "message": "文字框数" },
   "cache_key": { "message": "键" },
   "cache_page": { "message": "页面" },
-  "cache_filter_placeholder": { "message": "按页面 URL 过滤..." },
+  "cache_filter_placeholder": { "message": "按页面 URL 或标题过滤..." },
   "cache_prev": { "message": "上一页" },
   "cache_next": { "message": "下一页" },
   "cache_page_of": { "message": "第 $CUR$ / $TOTAL$ 页", "placeholders": { "cur": { "content": "$1" }, "total": { "content": "$2" } } },
