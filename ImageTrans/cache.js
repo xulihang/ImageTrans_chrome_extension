@@ -292,7 +292,7 @@ function buildItp(records) {
 
 async function downloadZip() {
   // allEntries is the background-filtered set (may span multiple pages).
-  const records = [];
+  let records = [];
   for (const entry of allEntries) {
     if (entry.record) records.push(entry.record);
   }
@@ -300,6 +300,9 @@ async function downloadZip() {
     alert(getMessage('cache_read_empty'));
     return;
   }
+  // Order by translation time (oldest first) so exported file names match the
+  // reading order.
+  records.sort(function(a, b) { return (a.timestamp || 0) - (b.timestamp || 0); });
 
   const zip = new JSZip();
   const out = zip.folder('out');
