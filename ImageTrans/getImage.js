@@ -164,21 +164,24 @@ function getCacheAlways(dataURL) {
   });
 }
 
-// Insert the cached original images (stored by the cache page under
-// imagetrans_reader_images) as <img> elements, then run the normal translation
-// flow on each so that clicking an image opens the result dialog with TTS.
-async function injectReaderImages(count) {
-  let images = [];
-  try {
-    const data = await new Promise(function(resolve) {
-      chrome.storage.local.get('imagetrans_reader_images', resolve);
-    });
-    images = data && data.imagetrans_reader_images ? data.imagetrans_reader_images : [];
-  } catch (e) {
-    console.error('injectReaderImages: storage read failed', e);
+// Insert the reader's original images as <img> elements, then run the normal
+// translation flow on each so that clicking an image opens the result dialog
+// with TTS. Images are passed directly via the message payload (images); a
+// storage.local fallback is kept for older callers.
+async function injectReaderImages(count, payloadImages) {
+  let images = payloadImages || null;
+  if (!images) {
+    try {
+      const data = await new Promise(function(resolve) {
+        chrome.storage.local.get('imagetrans_reader_images', resolve);
+      });
+      images = data && data.imagetrans_reader_images ? data.imagetrans_reader_images : [];
+    } catch (e) {
+      console.error('injectReaderImages: storage read failed', e);
+    }
+    // Clean up the temporary storage (message-payload path writes no storage).
+    chrome.storage.local.remove('imagetrans_reader_images', function(){});
   }
-  // Clean up the temporary storage regardless.
-  chrome.storage.local.remove('imagetrans_reader_images', function(){});
 
   if (!images || images.length === 0) return 0;
 
@@ -370,7 +373,7 @@ chrome.runtime.onMessage.addListener(
 
     // Messages from the extension background/pages use request.action.
     if (request && request.action === "injectReaderImages") {
-      injectReaderImages(request.count).then(function(n) {
+      injectReaderImages(request.count, request.images).then(function(n) {
         sendResponse({ ok: true, injected: n });
       });
       return true;

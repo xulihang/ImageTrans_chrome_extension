@@ -200,6 +200,17 @@ async function listTranslationCache(filter) {
   });
 }
 
+// Return the original-image dataURLs of records matching the given filter,
+// ordered by translation time (oldest first). Used by the reader feature.
+async function getReaderImages(filter) {
+  const entries = await listTranslationCache(filter);
+  const withOrig = entries
+    .map(function(e) { return e.record; })
+    .filter(function(rec) { return rec && rec.originalImage; });
+  withOrig.sort(function(a, b) { return (a.timestamp || 0) - (b.timestamp || 0); });
+  return withOrig.map(function(rec) { return rec.originalImage; });
+}
+
 async function deleteTranslationCache(key) {
   const db = await openTranslationDB();
   return new Promise((resolve, reject) => {
@@ -446,14 +457,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   } else if (request.action === "openReader") {
     (async () => {
       try {
-        // Find an existing reader (basiccat.org) tab, else open one.
-        let tabs = await chrome.tabs.query({ url: "https://www.basiccat.org/*" });
-        let tab;
-        if (tabs && tabs.length > 0) {
-          tab = tabs[0];
-        } else {
-          tab = await chrome.tabs.create({ url: "https://www.basiccat.org/" });
-        }
+        // Always open a fresh reader tab (don't reuse an existing one).
+        let tab = await chrome.tabs.create({ url: "https://www.basiccat.org/reader.html" });
         // The page may still be loading; wait for it to be complete before we
         // tell its content script to inject the images.
         let attempts = 0;
@@ -462,11 +467,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           attempts++;
           tab = await chrome.tabs.get(tab.id);
         }
-        chrome.tabs.sendMessage(tab.id, { action: "injectReaderImages", count: request.count }, () => {
+        // Read the matching images directly in the background (no storage.local,
+        // which has a tight quota) and pass them straight through the message.
+        const images = await getReaderImages(request.filter || '');
+        if (images.length === 0) {
+          sendResponse({ ok: true, count: 0 });
+          return;
+        }
+        chrome.tabs.sendMessage(tab.id, { action: "injectReaderImages", images: images }, () => {
           // Ignore lastError (content script may not be ready on the target page);
           // it will pick up the storage on its own init if so.
         });
-        sendResponse({ ok: true });
+        sendResponse({ ok: true, count: images.length });
       } catch (err) {
         sendResponse({ ok: false, error: err.message });
       }

@@ -193,29 +193,14 @@ window.onload = async function() {
   });
 
   document.getElementById('readButton').addEventListener('click', async function() {
-    // allEntries already reflects the background filter (pageUrl/pageTitle match);
-    // just collect the original images, ordered by translation time (oldest first).
-    const matched = [];
-    for (const entry of allEntries) {
-      if (entry.record && entry.record.originalImage) {
-        matched.push(entry.record);
-      }
-    }
-    matched.sort(function(a, b) {
-      return (a.timestamp || 0) - (b.timestamp || 0);
-    });
-    const images = matched.map(function(rec) { return rec.originalImage; });
-    if (images.length === 0) {
+    // The background reads the matching original images from IndexedDB and sends
+    // them directly to the reader page; here we just hand it the current filter.
+    const resp = await sendMessageTimeout({ action: 'openReader', filter: filterValue });
+    if (!resp || !resp.ok) {
+      alert(getMessage('cache_read_failed'));
+    } else if (!resp.count || resp.count === 0) {
       alert(getMessage('cache_read_empty'));
-      return;
     }
-    // Cache the images briefly so the reader page's content script can pick them up.
-    chrome.storage.local.set({ imagetrans_reader_images: images }, async function() {
-      const resp = await sendMessageTimeout({ action: 'openReader', count: images.length });
-      if (!resp || !resp.ok) {
-        alert(getMessage('cache_read_failed'));
-      }
-    });
   });
 
   const filterInput = document.getElementById('urlFilter');
