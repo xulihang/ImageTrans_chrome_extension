@@ -98,7 +98,9 @@ async function saveTranslationResultToDB(originalDataURL, translatedDataURL, img
   if (!originalDataURL || !translatedDataURL || !imgMap) return;
   try {
     let pageUrl = '';
+    let pageTitle = '';
     try { pageUrl = window.location.href; } catch (e) { pageUrl = ''; }
+    try { pageTitle = document.title; } catch (e) { pageTitle = ''; }
     chrome.runtime.sendMessage({
       action: "saveTranslationResult",
       originalDataURL: originalDataURL,
@@ -106,7 +108,8 @@ async function saveTranslationResultToDB(originalDataURL, translatedDataURL, img
       imgMap: imgMap,
       sourceLang: sourceLang,
       targetLang: targetLang,
-      pageUrl: pageUrl
+      pageUrl: pageUrl,
+      pageTitle: pageTitle
     });
   } catch (e) {
     console.error('Failed to send translation result to background:', e);

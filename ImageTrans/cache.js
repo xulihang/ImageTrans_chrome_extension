@@ -128,8 +128,10 @@ function render(entries) {
 
     const title = document.createElement('div');
     title.className = 'title';
+    // Prefer the page title; fall back to the language pair when unavailable.
+    const pageTitle = (rec.pageTitle || '').trim();
     const lang = (rec.sourceLang ? rec.sourceLang : '-') + ' → ' + (rec.targetLang ? rec.targetLang : '-');
-    title.textContent = lang;
+    title.textContent = pageTitle ? pageTitle : lang;
 
     const meta = document.createElement('div');
     meta.className = 'meta';
