@@ -162,6 +162,7 @@
   "cache_refresh": { "message": "Refresh" },
   "cache_clear_all": { "message": "Clear all" },
   "cache_read": { "message": "Read" },
+  "cache_download_zip": { "message": "Download ZIP" },
   "cache_read_empty": { "message": "No images to read for the current filter." },
   "cache_read_failed": { "message": "Failed to open the reader page." },
   "cache_delete": { "message": "Delete" },

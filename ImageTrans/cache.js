@@ -230,4 +230,99 @@ window.onload = async function() {
     currentPage = 1;
     reload(filterValue);
   });
+
+  const zipBtn = document.getElementById('downloadZipButton');
+  if (zipBtn) {
+    zipBtn.addEventListener('click', downloadZip);
+  }
 };
+
+// --- Download ZIP (ImageTrans project) ---
+
+// Convert a data URL to a Blob.
+function dataURLToBlob(dataURL) {
+  const comma = dataURL.indexOf(',');
+  const mime = dataURL.slice(5, comma).split(';')[0] || 'image/webp';
+  const b64 = dataURL.slice(comma + 1);
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new Blob([bytes], { type: mime });
+}
+
+// Build a minimal ImageTrans project file from the cached records.
+function buildItp(records) {
+  const first = records[0] || {};
+  const images = {};
+  records.forEach(function(rec, idx) {
+    const name = (idx + 1) + '.webp';
+    images[name] = rec.imgMap ? rec.imgMap : { boxes: [] };
+  });
+  return {
+    settings: {
+      targetLang: first.targetLang || 'en',
+      sourceLang: first.sourceLang || 'zh',
+      inferSeparation: true,
+      intermediateResultFolder: 'intermediateResults',
+      minimumHSpan: 10,
+      minimumVSpan: 10
+    },
+    images: images,
+    UISettings: {
+      autosave: true,
+      chinesePunc: false,
+      dividerPosition: [0.034572733202870194, 0.6872146118721462],
+      translateAfterOCR: false,
+      vertical: false,
+      percent: 30,
+      autoClean: true,
+      removeSpaces: false,
+      precisionMode: true,
+      OCRAfterSelection: false,
+      autoCapital: false,
+      pannable: true,
+      textMergingOperationForPanelDetection: 0,
+      opacity: 100
+    },
+    terms: {},
+    dirPath: './',
+    previousOCR: { engineName: 'rapid', lang: '0' }
+  };
+}
+
+async function downloadZip() {
+  // allEntries is the background-filtered set (may span multiple pages).
+  const records = [];
+  for (const entry of allEntries) {
+    if (entry.record) records.push(entry.record);
+  }
+  if (records.length === 0) {
+    alert(getMessage('cache_read_empty'));
+    return;
+  }
+
+  const zip = new JSZip();
+  const out = zip.folder('out');
+
+  records.forEach(function(rec, idx) {
+    const name = (idx + 1) + '.webp';
+    if (rec.originalImage) {
+      zip.file(name, dataURLToBlob(rec.originalImage));
+    }
+    if (rec.translatedImage) {
+      out.file(name, dataURLToBlob(rec.translatedImage));
+    }
+  });
+
+  zip.file('untitled.itp', JSON.stringify(buildItp(records), null, 4));
+
+  const blob = await zip.generateAsync({ type: 'blob' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'imagetrans-cache.zip';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(function() { URL.revokeObjectURL(url); }, 2000);
+}
