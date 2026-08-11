@@ -1,6 +1,6 @@
 {
   "name": "__MSG_ext_name__",
-  "version": "5.40",
+  "version": "5.41",
   "description": "__MSG_ext_desc__",
   "default_locale": "en",
   "permissions": ["storage","activeTab","contextMenus","clipboardWrite","declarativeNetRequest"],
@@ -13,6 +13,9 @@
     }]
   },
   "options_page": "options.html",
+  "externally_connectable": {
+    "matches": ["https://*.basiccat.org/*"]
+  },
   "background": {
     "service_worker": "background.js"
   },

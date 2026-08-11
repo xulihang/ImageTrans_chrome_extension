@@ -291,6 +291,40 @@ function updateCORSStatus(enabled) {
   }
 }
 
+// --- Web settings page (https://*.basiccat.org/imagetrans-options) ---
+// Edge on Android cannot reliably render extension pages (options.html crashes
+// there), so the settings are also exposed to a hosted web page via
+// externally_connectable. The web page sends getSettings / saveSettings
+// messages; this worker reads/writes storage on its behalf.
+chrome.runtime.onMessageExternal.addListener((message, sender, sendResponse) => {
+  // Only accept messages from our own settings page (defense in depth; the
+  // manifest externally_connectable already restricts the allowed origins).
+  const allowed = sender.url && /^https:\/\/([a-z0-9-]+\.)*basiccat\.org\//i.test(sender.url);
+  if (!allowed) {
+    console.warn('Ignoring external message from', sender && sender.url);
+    return;
+  }
+  if (message && message.action === "getSettings") {
+    chrome.storage.sync.get(null, function(items) {
+      sendResponse({ ok: true, settings: items });
+    });
+    return true; // async response
+  }
+  if (message && message.action === "saveSettings" && message.settings && typeof message.settings === 'object') {
+    chrome.storage.sync.set(message.settings, function() {
+      // Mirror what the in-extension options page does after saving.
+      if (typeof message.settings.useCORS === 'boolean') {
+        useCORS = message.settings.useCORS;
+        if (!useCORS) {
+          updateCORSStatus(false);
+        }
+      }
+      sendResponse({ ok: true });
+    });
+    return true; // async response
+  }
+});
+
 // 监听来自options页面和content script的消息
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "updateCORSStatus") {

@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ImageTrans 网页设置</title>
+<style>
+  :root {
+    --bg: #f5f7fa; --card-bg: #ffffff; --primary: #4a6cf7; --primary-hover: #3b5de7;
+    --text: #2d3748; --text-secondary: #718096; --border: #e2e8f0; --danger: #e53e3e;
+    --ok: #38a169; --radius: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+         background: var(--bg); color: var(--text); padding: 16px; max-width: 680px; margin: 0 auto; line-height: 1.6; }
+  h1 { font-size: 20px; text-align: center; margin: 8px 0 16px; color: var(--primary); }
+  .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius);
+          padding: 16px 20px; margin-bottom: 14px; }
+  .card-title { font-size: 15px; font-weight: 600; margin-bottom: 12px; color: var(--text);
+                padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+  .form-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+  .form-row:last-child { margin-bottom: 0; }
+  label { font-size: 13px; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  select, input[type="text"], input[type="password"], input[type="number"] {
+    padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px;
+    background: #fff; color: var(--text); outline: none; }
+  textarea { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px;
+             font-size: 12px; font-family: monospace; resize: vertical; }
+  input[type="text"], input[type="password"] { width: 240px; }
+  input.wide, textarea { width: 100%; }
+  input[type="checkbox"] { accent-color: var(--primary); width: 16px; height: 16px; }
+  button { padding: 7px 14px; border: none; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:hover { background: var(--primary-hover); }
+  .btn-secondary { background: #edf2f7; color: var(--text); border: 1px solid var(--border); }
+  .btn-save { position: sticky; bottom: 0; width: 100%; padding: 12px; font-size: 15px; font-weight: 600;
+              margin-top: 8px; box-shadow: 0 -2px 8px rgba(0,0,0,0.08); }
+  .hint { font-size: 12px; color: var(--text-secondary); }
+  #status { margin-bottom: 14px; padding: 10px 14px; border-radius: var(--radius); font-size: 13px; display: none; }
+  #status.ok { background: #e6fffa; color: var(--ok); border: 1px solid #b2f5ea; display: block; }
+  #status.err { background: #fff5f5; color: var(--danger); border: 1px solid #fed7d7; display: block; }
+  #status.info { background: #ebf8ff; color: #2b6cb0; border: 1px solid #bee3f8; display: block; }
+  .ext-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .ext-row input { flex: 1; min-width: 220px; }
+</style>
+</head>
+<body>
+  <h1>ImageTrans 设置</h1>
+  <div class="card">
+    <div class="card-title">连接扩展</div>
+    <div class="form-row ext-row">
+      <label style="white-space:nowrap;">扩展 ID</label>
+      <input id="extId" type="text" placeholder="粘贴扩展 ID（或 URL 后加 ?ext=）" />
+      <button id="connectBtn" class="btn-secondary">读取设置</button>
+    </div>
+    <div class="hint">
+      此页面通过扩展的 <code>externally_connectable</code> 与扩展通信，必须在
+      <code>*.basiccat.org</code> 域名下访问才会生效。Edge 安卓打不开内置 options 页面时，
+      用本页替代配置。<a href="#" id="extIdFromUrl">从地址栏填 ID</a>
+    </div>
+  </div>
+
+  <div id="status"></div>
+
+  <div class="card">
+    <div class="card-title">翻译</div>
+    <div class="form-row"><label>翻译模式</label>
+      <select id="translationMode">
+        <option value="local">Local PaddleOCR + Free Translation or OpenAI</option>
+        <option value="imagetrans">ImageTrans (local or remote server)</option>
+      </select></div>
+    <div class="form-row"><label>默认预设翻译</label>
+      <select id="defaultPresetTranslation">
+        <option value="mymemory">MyMemory</option>
+        <option value="glm4flash">GLM-4-Flash</option>
+      </select></div>
+    <div class="form-row">
+      <label>源语言 <select id="sourceLang"></select></label>
+      <label>目标语言 <select id="targetLang"></select></label>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">服务器连接</div>
+    <div class="form-row"><label>服务器 URL</label><input id="serverURL" type="text" class="wide" /></div>
+    <div class="form-row">
+      <button id="publicServer" class="btn-secondary">使用公共服务器</button>
+      <button id="localServer" class="btn-secondary">使用本地服务器</button>
+    </div>
+    <div class="form-row"><label>实例显示名</label><input id="displayName" type="text" placeholder="default" /></div>
+    <div class="form-row"><label>密码（可选）</label><input id="password" type="password" /></div>
+    <div class="form-row">
+      <label><input id="sendRequestsViaBackground" type="checkbox" /> 在 background.js 中发送网络请求</label>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">图片捕获与渲染</div>
+    <div class="form-row"><label>取图方式
+      <select id="pickingWay">
+        <option value="0">鼠标光标后</option>
+        <option value="1">屏幕中央</option>
+      </select></label></div>
+    <div class="form-row"><label><input id="useCanvas" type="checkbox" /> 默认用 Canvas 获取图像数据</label></div>
+    <div class="form-row"><label><input id="useCORS" type="checkbox" /> 为跨域图片启用 CORS 头</label></div>
+    <div class="form-row"><label><input id="renderTextInFrontend" type="checkbox" /> 在前端渲染文字</label></div>
+    <div class="form-row"><label><input id="screenCaptureOverlay" type="checkbox" /> 屏幕捕获 OCR 叠加模式</label></div>
+    <div class="form-row"><label><input id="screenCaptureInstantOCR" type="checkbox" /> 选区后立即 OCR</label></div>
+    <div class="form-row"><label><input id="showFloatingButton" type="checkbox" /> 页面显示浮动翻译按钮</label></div>
+    <div class="form-row"><label><input id="addPinyinToSource" type="checkbox" /> 给中文原文加拼音标注</label></div>
+    <div class="form-row"><label><input id="addFuriganaToSource" type="checkbox" /> 给日文原文加注音假名</label></div>
+    <div class="form-row" style="flex-direction:column; align-items:flex-start;">
+      <label for="renderTextCSS">前端渲染字体 CSS</label>
+      <textarea id="renderTextCSS" rows="3" placeholder="text-align: center; font-weight: bold;"></textarea>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">OpenAI 兼容 API（可选）</div>
+    <div class="form-row"><label><input id="useOpenAI" type="checkbox" /> 启用 OpenAI 兼容 API 翻译</label></div>
+    <div class="form-row" id="ocrMethodRow" style="display:none;"><label>OCR 方式
+      <select id="ocrMethod">
+        <option value="paddleocr">PaddleOCR（本地）</option>
+        <option value="imagetrans">ImageTrans（远程）</option>
+      </select></label></div>
+    <div class="form-row"><label>API URL</label><input id="openaiURL" type="text" class="wide" /></div>
+    <div class="form-row"><label>API Key</label><input id="openaiKey" type="password" class="wide" /></div>
+    <div class="form-row"><label>模型</label><input id="openaiModel" type="text" /></div>
+    <div class="form-row" style="flex-direction:column; align-items:flex-start;">
+      <label>Prompt <span class="hint">({sourceLang}, {targetLang}, {texts})</span></label>
+      <textarea id="openaiPrompt" rows="5"></textarea>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">图像处理（PaddleOCR）</div>
+    <div class="form-row"><label>X 间距 (px)</label><input id="xSpacing" type="number" min="0" max="200" style="width:80px;" /></div>
+    <div class="form-row"><label>Y 间距 (px)</label><input id="ySpacing" type="number" min="0" max="200" style="width:80px;" /></div>
+    <div class="form-row"><label><input id="useYOLODetection" type="checkbox" /> 用 YOLOv8 做文本行检测</label></div>
+    <div class="form-row"><label><input id="useYOLOForJapanese" type="checkbox" /> 日文用 YOLO 检测文本行</label></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">界面语言</div>
+    <div class="form-row"><label>界面语言
+      <select id="uiLanguage">
+        <option value="">浏览器默认</option>
+        <option value="en">English</option>
+        <option value="zh_CN">中文</option>
+      </select></label></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">存储</div>
+    <div class="form-row"><label><input id="saveTranslationResult" type="checkbox" /> 保存翻译结果</label></div>
+    <div class="form-row"><label><input id="useTranslationCache" type="checkbox" /> 使用缓存的翻译结果</label></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">自动化</div>
+    <div class="form-row"><label><input id="autoScroll" type="checkbox" /> 自动翻译时自动滚动</label></div>
+  </div>
+
+  <button id="saveBtn" class="btn-primary btn-save">保存设置</button>
+
+<script>
+(function () {
+  var DEFAULT_OPENAI_PROMPT = 'Translate the following texts from {sourceLang} to {targetLang}. Return ONLY a JSON array of translated strings in the same order (no markdown, no code fences).\nTexts: {texts}';
+
+  var DEFAULTS = {
+    serverURL: 'https://local.basiccat.org:51043',
+    pickingWay: '1',
+    useCanvas: true,
+    useCORS: true,
+    renderTextInFrontend: false,
+    screenCaptureOverlay: false,
+    renderTextCSS: 'text-align: center;\nborder-radius: 10%;',
+    displayName: '',
+    password: '',
+    sourceLang: 'auto',
+    targetLang: 'auto',
+    useOpenAI: false,
+    openaiURL: 'https://api.openai.com/v1',
+    openaiKey: '',
+    openaiModel: 'gpt-4o',
+    openaiPrompt: DEFAULT_OPENAI_PROMPT,
+    ocrMethod: 'paddleocr',
+    translationMode: 'imagetrans',
+    defaultPresetTranslation: 'glm4flash',
+    useYOLODetection: false,
+    useYOLOForJapanese: true,
+    xSpacing: 15,
+    ySpacing: 15,
+    sendRequestsViaBackground: false,
+    addPinyinToSource: false,
+    addFuriganaToSource: false,
+    showFloatingButton: false,
+    screenCaptureInstantOCR: false,
+    uiLanguage: '',
+    saveTranslationResult: false,
+    useTranslationCache: false,
+    autoScroll: false
+  };
+
+  var LANGUAGES = [
+    { name: 'Arabic', code: 'ar' }, { name: 'English', code: 'en' },
+    { name: 'Chinese', code: 'zh' }, { name: 'Japanese', code: 'ja' },
+    { name: 'Korean', code: 'ko' }, { name: 'French', code: 'fr' },
+    { name: 'Italian', code: 'it' }, { name: 'Spanish', code: 'es' },
+    { name: 'Russian', code: 'ru' }, { name: 'Portuguese', code: 'pt' },
+    { name: 'Indonesian', code: 'id' }, { name: 'Vietnamese', code: 'vi' },
+    { name: 'Thai', code: 'th' }, { name: 'Malay', code: 'ms' },
+    { name: 'Auto', code: 'auto' }
+  ];
+
+  var $ = function (id) { return document.getElementById(id); };
+  var statusEl = $('status');
+
+  function setStatus(text, type) {
+    statusEl.textContent = text;
+    statusEl.className = type || 'info';
+  }
+
+  function extId() {
+    return ($('extId').value || '').trim();
+  }
+
+  function fillLanguages() {
+    ['sourceLang', 'targetLang'].forEach(function (id) {
+      var sel = $(id);
+      LANGUAGES.forEach(function (l) {
+        var opt = document.createElement('option');
+        opt.value = l.code; opt.textContent = l.name;
+        sel.appendChild(opt);
+      });
+    });
+  }
+
+  function readForm() {
+    var s = {};
+    s.serverURL = $('serverURL').value;
+    s.pickingWay = $('pickingWay').value;
+    s.useCanvas = $('useCanvas').checked;
+    s.useCORS = $('useCORS').checked;
+    s.renderTextInFrontend = $('renderTextInFrontend').checked;
+    s.screenCaptureOverlay = $('screenCaptureOverlay').checked;
+    s.renderTextCSS = $('renderTextCSS').value;
+    s.displayName = $('displayName').value;
+    s.password = $('password').value;
+    s.sourceLang = $('sourceLang').value;
+    s.targetLang = $('targetLang').value;
+    s.useOpenAI = $('useOpenAI').checked;
+    s.openaiURL = $('openaiURL').value;
+    s.openaiKey = $('openaiKey').value;
+    s.openaiModel = $('openaiModel').value;
+    s.openaiPrompt = $('openaiPrompt').value;
+    s.ocrMethod = $('ocrMethod').value;
+    s.translationMode = $('translationMode').value;
+    s.defaultPresetTranslation = $('defaultPresetTranslation').value;
+    s.useYOLODetection = $('useYOLODetection').checked;
+    s.useYOLOForJapanese = $('useYOLOForJapanese').checked;
+    s.xSpacing = parseInt($('xSpacing').value) || 15;
+    s.ySpacing = parseInt($('ySpacing').value) || 15;
+    s.sendRequestsViaBackground = $('sendRequestsViaBackground').checked;
+    s.addPinyinToSource = $('addPinyinToSource').checked;
+    s.addFuriganaToSource = $('addFuriganaToSource').checked;
+    s.showFloatingButton = $('showFloatingButton').checked;
+    s.screenCaptureInstantOCR = $('screenCaptureInstantOCR').checked;
+    s.uiLanguage = $('uiLanguage').value;
+    s.saveTranslationResult = $('saveTranslationResult').checked;
+    s.useTranslationCache = $('useTranslationCache').checked;
+    s.autoScroll = $('autoScroll').checked;
+    return s;
+  }
+
+  function applySettings(items) {
+    var merged = {};
+    for (var k in DEFAULTS) merged[k] = DEFAULTS[k];
+    for (var k2 in items) { if (items[k2] !== undefined && items[k2] !== null) merged[k2] = items[k2]; }
+    $('serverURL').value = merged.serverURL;
+    $('pickingWay').value = merged.pickingWay;
+    $('useCanvas').checked = !!merged.useCanvas;
+    $('useCORS').checked = !!merged.useCORS;
+    $('renderTextInFrontend').checked = !!merged.renderTextInFrontend;
+    $('screenCaptureOverlay').checked = !!merged.screenCaptureOverlay;
+    $('renderTextCSS').value = merged.renderTextCSS || '';
+    $('displayName').value = merged.displayName;
+    $('password').value = merged.password;
+    $('sourceLang').value = merged.sourceLang;
+    $('targetLang').value = merged.targetLang;
+    $('useOpenAI').checked = !!merged.useOpenAI;
+    $('openaiURL').value = merged.openaiURL;
+    $('openaiKey').value = merged.openaiKey;
+    $('openaiModel').value = merged.openaiModel;
+    $('openaiPrompt').value = merged.openaiPrompt;
+    $('ocrMethod').value = merged.ocrMethod;
+    $('translationMode').value = merged.translationMode;
+    $('defaultPresetTranslation').value = merged.defaultPresetTranslation;
+    $('useYOLODetection').checked = !!merged.useYOLODetection;
+    $('useYOLOForJapanese').checked = !!merged.useYOLOForJapanese;
+    $('xSpacing').value = merged.xSpacing;
+    $('ySpacing').value = merged.ySpacing;
+    $('sendRequestsViaBackground').checked = !!merged.sendRequestsViaBackground;
+    $('addPinyinToSource').checked = !!merged.addPinyinToSource;
+    $('addFuriganaToSource').checked = !!merged.addFuriganaToSource;
+    $('showFloatingButton').checked = !!merged.showFloatingButton;
+    $('screenCaptureInstantOCR').checked = !!merged.screenCaptureInstantOCR;
+    $('uiLanguage').value = merged.uiLanguage;
+    $('saveTranslationResult').checked = !!merged.saveTranslationResult;
+    $('useTranslationCache').checked = !!merged.useTranslationCache;
+    $('autoScroll').checked = !!merged.autoScroll;
+    $('ocrMethodRow').style.display = merged.useOpenAI ? 'block' : 'none';
+  }
+
+  function send(message, cb) {
+    var id = extId();
+    if (!id) { setStatus('请先填写扩展 ID。', 'err'); return; }
+    if (typeof chrome === 'undefined' || !chrome.runtime || !chrome.runtime.sendMessage) {
+      setStatus('当前页面没有扩展环境。请确认：1) 已安装 ImageTrans 扩展；2) 本页运行在 *.basiccat.org 域名下。', 'err');
+      return;
+    }
+    chrome.runtime.sendMessage(id, message, function (resp) {
+      var err = chrome.runtime.lastError;
+      if (err) {
+        setStatus('通信失败：' + err.message, 'err');
+        return;
+      }
+      cb(resp);
+    });
+  }
+
+  function loadSettings() {
+    send({ action: 'getSettings' }, function (resp) {
+      if (resp && resp.ok) {
+        applySettings(resp.settings || {});
+        localStorage.setItem('imagetrans_ext_id', extId());
+        setStatus('已从扩展读取设置。', 'ok');
+      } else {
+        setStatus('扩展返回错误。', 'err');
+      }
+    });
+  }
+
+  function saveSettings() {
+    send({ action: 'saveSettings', settings: readForm() }, function (resp) {
+      if (resp && resp.ok) {
+        setStatus('已保存到扩展。', 'ok');
+      } else {
+        setStatus('保存失败。', 'err');
+      }
+    });
+  }
+
+  // init
+  fillLanguages();
+  var params = new URLSearchParams(location.search);
+  var fromUrl = (params.get('ext') || '').trim();
+  var stored = (localStorage.getItem('imagetrans_ext_id') || '').trim();
+  $('extId').value = fromUrl || stored || 'dcjjajdbklncgghkkjhichndapaehgni';
+  $('extIdFromUrl').addEventListener('click', function (e) {
+    e.preventDefault();
+    $('extId').value = location.hostname + '?ext=' + $('extId').value;
+  });
+
+  $('connectBtn').addEventListener('click', loadSettings);
+  $('saveBtn').addEventListener('click', saveSettings);
+  $('useOpenAI').addEventListener('change', function () {
+    if (this.checked) { $('renderTextInFrontend').checked = true; }
+    $('ocrMethodRow').style.display = this.checked ? 'block' : 'none';
+  });
+  $('publicServer').addEventListener('click', function () { $('serverURL').value = 'https://service.basiccat.org:51043'; });
+  $('localServer').addEventListener('click', function () { $('serverURL').value = 'https://local.basiccat.org:51043'; });
+
+  // auto-load once on first visit
+  if (extId()) loadSettings();
+})();
+</script>
+</body>
+</html>
