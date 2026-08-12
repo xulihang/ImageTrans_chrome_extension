@@ -105,6 +105,7 @@ function save() {
   const addPinyinToSource = document.getElementById("addPinyinToSource").checked;
   const addFuriganaToSource = document.getElementById("addFuriganaToSource").checked;
   const showFloatingButton = document.getElementById("showFloatingButton").checked;
+  const floatingBtnAction = document.getElementById("floatingBtnAction").value;
   const screenCaptureInstantOCR = document.getElementById("screenCaptureInstantOCR").checked;
   const uiLanguage = document.getElementById("uiLanguage").value;
   const saveTranslationResult = document.getElementById("saveTranslationResult").checked;
@@ -144,6 +145,7 @@ function save() {
     addPinyinToSource: addPinyinToSource,
     addFuriganaToSource: addFuriganaToSource,
     showFloatingButton: showFloatingButton,
+    floatingBtnAction: floatingBtnAction,
     screenCaptureInstantOCR: screenCaptureInstantOCR,
     xSpacing: xSpacing,
     ySpacing: ySpacing,
@@ -186,6 +188,7 @@ function load() {
     addPinyinToSource: false,
     addFuriganaToSource: false,
     showFloatingButton: false,
+    floatingBtnAction: 'translate',
     screenCaptureInstantOCR: false,
     uiLanguage: '',
     saveTranslationResult: false,
@@ -247,6 +250,7 @@ function load() {
     document.getElementById("addPinyinToSource").checked = items.addPinyinToSource;
     document.getElementById("addFuriganaToSource").checked = items.addFuriganaToSource;
     document.getElementById("showFloatingButton").checked = items.showFloatingButton;
+    document.getElementById("floatingBtnAction").value = items.floatingBtnAction || 'translate';
     document.getElementById("screenCaptureInstantOCR").checked = items.screenCaptureInstantOCR;
     document.getElementById("saveTranslationResult").checked = items.saveTranslationResult;
     document.getElementById("useTranslationCache").checked = items.useTranslationCache;

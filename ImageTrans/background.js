@@ -452,6 +452,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       }
     })();
     return true;
+  } else if (request.action === "openPopup") {
+    if (typeof chrome.action !== 'undefined' && typeof chrome.action.openPopup === 'function') {
+      try {
+        const p = chrome.action.openPopup();
+        if (p && typeof p.catch === 'function') p.catch(() => {});
+      } catch (e) { /* unsupported platform or no trusted user gesture — user can open via toolbar icon */ }
+    }
+    sendResponse({ ok: true });
   } else if (request === "showOptions") {
     // On Android, chrome.runtime.openOptionsPage can silently fail, so open the
     // options page in a new tab directly.

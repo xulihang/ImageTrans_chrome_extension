@@ -239,6 +239,7 @@ chrome.storage.sync.get({
     addPinyinToSource: false,
     addFuriganaToSource: false,
     showFloatingButton: false,
+    floatingBtnAction: 'translate',
     screenCaptureInstantOCR: false,
     ttsPlaybackMode: "source",
     ttsSourceVoice: "",
@@ -330,6 +331,9 @@ chrome.storage.sync.get({
     }
     if (items.showFloatingButton !== undefined) {
         showFloatingButton = items.showFloatingButton;
+    }
+    if (items.floatingBtnAction !== undefined) {
+        floatingBtnAction = items.floatingBtnAction;
     }
     if (items.screenCaptureInstantOCR !== undefined) {
         screenCaptureInstantOCR = items.screenCaptureInstantOCR;
@@ -4840,6 +4844,21 @@ var floatingBtnOrigLeft = 0;
 var floatingBtnOrigTop = 0;
 var floatingBtnMoved = false;
 var showFloatingButton = false;
+var floatingBtnAction = 'translate';
+var floatingBtnTitleKeys = {
+    translate: 'popup_translate',
+    popup: 'floating_btn_action_popup',
+    screencapture: 'popup_screen_capture',
+    autotranslate: 'floating_btn_action_autotranslate'
+};
+
+function updateFloatingButtonTitle(btn) {
+    btn = btn || floatingButton;
+    if (!btn) return;
+    var key = floatingBtnTitleKeys[floatingBtnAction] || 'popup_translate';
+    var title = chrome.i18n.getMessage(key);
+    if (title) btn.title = title;
+}
 
 function createFloatingButton() {
     if (floatingButton && floatingButton.isConnected) return;
@@ -4852,7 +4871,7 @@ function createFloatingButton() {
 
         var btn = document.createElement('div');
         btn.id = 'imagetrans-floating-btn';
-        btn.title = chrome.i18n.getMessage('popup_translate');
+        updateFloatingButtonTitle(btn);
 
         var btnSize = 44;
         var defaultLeft = window.innerWidth - btnSize - 20;
@@ -4966,8 +4985,8 @@ window.addEventListener('mouseup', function(e) {
     });
 
     if (!floatingBtnMoved) {
-        // It was a click — trigger translate
-        doFloatingButtonTranslate();
+        // It was a click — trigger the configured action
+        dispatchFloatingButtonAction();
     }
 });
 
@@ -5001,7 +5020,7 @@ window.addEventListener('touchend', function(e) {
     });
 
     if (!floatingBtnMoved) {
-        doFloatingButtonTranslate();
+        dispatchFloatingButtonAction();
     }
 });
 
@@ -5014,6 +5033,27 @@ function doFloatingButtonTranslate() {
     var e = getImage(coordinate.x, coordinate.y, false);
     var src = getImageSrc(e);
     ajax(src, e, true, true);
+}
+
+function dispatchFloatingButtonAction() {
+    switch (floatingBtnAction) {
+        case 'popup':
+            chrome.runtime.sendMessage({ action: 'openPopup' }, function() {});
+            break;
+        case 'screencapture':
+            startScreenCapture();
+            break;
+        case 'autotranslate':
+            if (autoTranslating) {
+                stopAutoTranslate();
+            } else {
+                startAutoTranslate();
+            }
+            break;
+        default:
+            doFloatingButtonTranslate();
+            break;
+    }
 }
 
 // Listen for storage changes to apply settings dynamically
@@ -5059,6 +5099,11 @@ chrome.storage.onChanged.addListener(function(changes, areaName) {
             floatingButton = null;
             stopFloatingBtnObserver();
         }
+    }
+
+    if (changes.floatingBtnAction) {
+        floatingBtnAction = changes.floatingBtnAction.newValue;
+        updateFloatingButtonTitle(); // button already exists, update title in place
     }
 });
 

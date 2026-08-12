@@ -280,6 +280,16 @@
         </label>
         <span style="font-size:12px;color:var(--text-secondary);" data-i18n="options_show_floating_btn_hint">Adds a draggable button on pages to quickly translate images.</span>
       </div>
+      <div class="form-row" style="flex-direction:column; align-items:flex-start;">
+        <label for="floatingBtnAction" data-i18n="options_floating_btn_action">Clicking the floating button</label>
+        <select id="floatingBtnAction" style="margin-top:4px;">
+          <option value="translate" data-i18n="popup_translate">Translate</option>
+          <option value="popup" data-i18n="floating_btn_action_popup">Open popup</option>
+          <option value="screencapture" data-i18n="popup_screen_capture">Screen Capture OCR</option>
+          <option value="autotranslate" data-i18n="floating_btn_action_autotranslate">Auto translate</option>
+        </select>
+        <span style="font-size:12px;color:var(--text-secondary);" data-i18n="options_floating_btn_action_hint">Choose what happens when you click the floating translate button.</span>
+      </div>
       <div class="form-row">
         <label class="checkbox-label">
           <input id="addPinyinToSource" type="checkbox" />
