@@ -63,7 +63,11 @@ function applyI18n() {
   let btnScreenCapture = document.getElementById('screen-capture');
   let help = document.getElementsByClassName('help')[0];
   document.getElementsByClassName('options')[0].addEventListener("click",function(){
-    chrome.runtime.openOptionsPage();
+    if (typeof chrome.runtime.openOptionsPage === 'function') {
+      chrome.runtime.openOptionsPage();
+    } else {
+      chrome.tabs.create({ url: chrome.runtime.getURL('options.html') });
+    }
   });
   document.getElementsByClassName('local')[0].addEventListener("click",function(){
     chrome.storage.sync.get({

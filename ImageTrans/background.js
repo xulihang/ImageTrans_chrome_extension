@@ -453,7 +453,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     })();
     return true;
   } else if (request === "showOptions") {
-    chrome.runtime.openOptionsPage();
+    if (typeof chrome.runtime.openOptionsPage === 'function') {
+      chrome.runtime.openOptionsPage();
+    } else {
+      chrome.tabs.create({ url: chrome.runtime.getURL('options.html') });
+    }
   } else if (request.action === "openReader") {
     (async () => {
       try {

@@ -2,11 +2,26 @@ const DEFAULT_OPENAI_PROMPT = `Translate the following texts from {sourceLang} t
 Texts: {texts}`;
 
 // --- Custom i18n: allow user to override UI language ---
-const _i18nOriginal = chrome.i18n.getMessage.bind(chrome.i18n);
-let getMessage = _i18nOriginal;
+// Guard the top-level chrome.i18n access. On some platforms (e.g. Edge on
+// Android) chrome.i18n may be unavailable in extension pages; accessing it at
+// script top level would throw and kill the whole page at load time.
+function defaultGetMessage(key, subs) {
+  try {
+    if (typeof chrome !== 'undefined' && chrome.i18n && typeof chrome.i18n.getMessage === 'function') {
+      const msg = chrome.i18n.getMessage(key, subs);
+      if (msg) return msg;
+    }
+  } catch (e) {}
+  return key;
+}
+let getMessage = defaultGetMessage;
 
 async function initI18n() {
-  const { uiLanguage } = await chrome.storage.sync.get({ uiLanguage: '' });
+  let uiLanguage = '';
+  try {
+    const items = await chrome.storage.sync.get({ uiLanguage: '' });
+    uiLanguage = items.uiLanguage;
+  } catch (e) { /* storage unavailable; use browser default */ }
   if (uiLanguage) {
     try {
       const url = chrome.runtime.getURL('_locales/' + uiLanguage + '/messages.json');
@@ -30,7 +45,7 @@ async function initI18n() {
           }
           return text;
         }
-        return _i18nOriginal(key, subs);
+        return defaultGetMessage(key, subs);
       };
     } catch(e) { /* fall back to browser default */ }
   }
@@ -59,6 +74,10 @@ function buildLanguageCodes() {
 }
 
 function save() {
+  if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.sync) {
+    alert('当前浏览器不支持扩展存储，无法保存设置。');
+    return;
+  }
   const URL = document.getElementById("serverURL").value;
   const pickingWay = document.getElementById("pickingWay").selectedOptions[0].value;
   const useCanvas = document.getElementById("useCanvas").checked;
@@ -274,11 +293,11 @@ function applyI18n() {
 }
 
 window.onload = async function (){
-  await initI18n();
+  try { await initI18n(); } catch(e) { console.error(e); }
   buildLanguageCodes();
   applyI18n();
   loadLanguageCodes();
-  load();
+  try { load(); } catch(e) { console.error(e); }
   document.getElementById("saveButton").addEventListener("click",function(){
     save();
   })
