@@ -1,9 +1,3 @@
-// --- On-screen console (Eruda) for debugging on mobile (e.g. Edge on Android) ---
-// Show the floating console only where DevTools isn't available (Android).
-if (typeof eruda !== 'undefined' && /Android/i.test(navigator.userAgent)) {
-  eruda.init();
-}
-
 // --- Open the options page ---
 // On Android (e.g. Edge on Android), chrome.runtime.openOptionsPage can silently
 // no-op, so open options.html in a new tab directly there. On desktop keep
