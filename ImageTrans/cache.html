@@ -44,7 +44,7 @@
         color: var(--primary);
       }
 
-      .toolbar { display: flex; gap: 10px; }
+      .toolbar { display: flex; gap: 10px; flex-wrap: wrap; }
 
       button {
         padding: 7px 14px;
@@ -148,6 +148,24 @@
         margin-top: 24px;
         font-size: 12px;
         color: var(--text-secondary);
+      }
+
+      /* Mobile: tighten padding, wrap toolbar buttons, and stack cards vertically */
+      @media (max-width: 600px) {
+        body { padding: 16px; }
+        .toolbar { flex-wrap: wrap; }
+        .card {
+          flex-direction: column;
+          align-items: stretch;
+          gap: 10px;
+          padding: 12px;
+        }
+        .thumb {
+          width: 100%;
+          height: auto;
+          max-height: 200px;
+          object-fit: cover;
+        }
       }
     </style>
   </head>
