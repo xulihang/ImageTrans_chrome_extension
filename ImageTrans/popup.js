@@ -84,7 +84,9 @@ function applyI18n() {
   let help = document.getElementsByClassName('help')[0];
   document.getElementsByClassName('options')[0].addEventListener("click",function(e){
     e.preventDefault();
-    openOptions();
+    openOptions().finally(function() {
+      window.close();
+    });
   });
   document.getElementsByClassName('local')[0].addEventListener("click",function(e){
     e.preventDefault();
