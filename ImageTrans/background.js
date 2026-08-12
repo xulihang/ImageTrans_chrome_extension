@@ -453,7 +453,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     })();
     return true;
   } else if (request === "showOptions") {
-    if (typeof chrome.runtime.openOptionsPage === 'function') {
+    // On Android, chrome.runtime.openOptionsPage can silently fail, so open the
+    // options page in a new tab directly.
+    if (!/Android/i.test(navigator.userAgent) && typeof chrome.runtime.openOptionsPage === 'function') {
       chrome.runtime.openOptionsPage();
     } else {
       chrome.tabs.create({ url: chrome.runtime.getURL('options.html') });

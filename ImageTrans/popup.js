@@ -1,3 +1,23 @@
+// --- On-screen console (Eruda) for debugging on mobile (e.g. Edge on Android) ---
+// Show the floating console only where DevTools isn't available (Android).
+if (typeof eruda !== 'undefined' && /Android/i.test(navigator.userAgent)) {
+  eruda.init();
+}
+
+// --- Open the options page ---
+// On Android (e.g. Edge on Android), chrome.runtime.openOptionsPage can silently
+// no-op, so open options.html in a new tab directly there. On desktop keep
+// openOptionsPage which focuses an already-open options tab.
+async function openOptions() {
+  if (!/Android/i.test(navigator.userAgent) && typeof chrome.runtime.openOptionsPage === 'function') {
+    try {
+      await chrome.runtime.openOptionsPage();
+      return;
+    } catch (e) { /* fall back to opening a new tab */ }
+  }
+  await chrome.tabs.create({ url: chrome.runtime.getURL('options.html') });
+}
+
 // --- Custom i18n: allow user to override UI language ---
 const _i18nOriginal = chrome.i18n.getMessage.bind(chrome.i18n);
 let getMessage = _i18nOriginal;
@@ -62,14 +82,12 @@ function applyI18n() {
   let btnCameraCapture = document.getElementById('camera-capture');
   let btnScreenCapture = document.getElementById('screen-capture');
   let help = document.getElementsByClassName('help')[0];
-  document.getElementsByClassName('options')[0].addEventListener("click",function(){
-    if (typeof chrome.runtime.openOptionsPage === 'function') {
-      chrome.runtime.openOptionsPage();
-    } else {
-      chrome.tabs.create({ url: chrome.runtime.getURL('options.html') });
-    }
+  document.getElementsByClassName('options')[0].addEventListener("click",function(e){
+    e.preventDefault();
+    openOptions();
   });
-  document.getElementsByClassName('local')[0].addEventListener("click",function(){
+  document.getElementsByClassName('local')[0].addEventListener("click",function(e){
+    e.preventDefault();
     chrome.storage.sync.get({
       serverURL: "https://local.basiccat.org:51043"
     }, async function(items) {
@@ -141,7 +159,8 @@ function applyI18n() {
     });
   };
 
-  help.onclick = function() {
+  help.onclick = function(e) {
+    e.preventDefault();
     window.open("https://github.com/xulihang/ImageTrans_chrome_extension","_blank");
   };
 
