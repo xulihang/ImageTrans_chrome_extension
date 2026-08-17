@@ -23,7 +23,7 @@
   [
     {
       "matches": ["<all_urls>"],
-      "js": ["getImage.js"],
+      "js": ["html-to-image.js", "getImage.js"],
       "css": ["cursor.css"],
       "run_at": "document_start"
     }

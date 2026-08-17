@@ -1217,6 +1217,167 @@ function fillRoundRect(ctx, x, y, w, h, borderRadius) {
 }
 
 async function renderTranslatedImage(base64Image, boxes) {
+    if (typeof htmlToImage === 'undefined' || !htmlToImage.toCanvas) {
+        return renderTranslatedImageCanvas(base64Image, boxes);
+    }
+    try {
+        return await renderTranslatedImageDOM(base64Image, boxes);
+    } catch (e) {
+        console.warn('[ImageTrans] DOM text rendering failed, falling back to canvas.', e);
+        return renderTranslatedImageCanvas(base64Image, boxes);
+    }
+}
+
+// Detect text direction (RTL vs LTR) from the first strong directional character.
+function detectTextDirection(text) {
+    for (const ch of text) {
+        const cp = ch.codePointAt(0);
+        if ((cp >= 0x0590 && cp <= 0x05FF) || // Hebrew
+            (cp >= 0x0600 && cp <= 0x08FF) || // Arabic + Arabic Supplement
+            (cp >= 0xFB50 && cp <= 0xFDFF) || // Arabic Presentation Forms-A
+            (cp >= 0xFE70 && cp <= 0xFEFF)) { // Arabic Presentation Forms-B
+            return 'rtl';
+        }
+        if (/[a-zA-ZÀ-˿Ͱ-ӿऀ-࿿Ḁ-῿⺀-�]/.test(ch)) {
+            return 'ltr';
+        }
+    }
+    return 'ltr';
+}
+
+// Binary-search the largest font-size that fits the box without overflowing.
+function fitBoxFontSize(el, upperBound) {
+    const cw = el.clientWidth;
+    const ch = el.clientHeight;
+    const tol = 1;
+    let lo = 4;
+    let hi = Math.max(4, Math.min(upperBound || Math.min(ch, 200), 200));
+    let best = lo;
+    for (let i = 0; i < 12; i++) {
+        const mid = (lo + hi) / 2;
+        el.style.fontSize = mid + 'px';
+        if (el.scrollWidth <= cw + tol && el.scrollHeight <= ch + tol) {
+            best = mid;
+            lo = mid;
+        } else {
+            hi = mid;
+        }
+        if (hi - lo < 0.5) break;
+    }
+    el.style.fontSize = Math.max(4, Math.floor(best)) + 'px';
+}
+
+function loadImageElement(base64Image) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error('Failed to load image for DOM rendering'));
+        if (base64Image.startsWith("data:")) {
+            img.src = base64Image;
+        } else {
+            img.src = 'data:image/jpeg;base64,' + base64Image;
+        }
+    });
+}
+
+// Render translated text by building a real DOM overlay and rasterizing it with
+// html-to-image (SVG foreignObject -> native browser layout). This makes Arabic
+// RTL bidi and CSS like writing-mode behave exactly as in a browser, and lets the
+// user's renderTextCSS apply verbatim instead of being converted to canvas props.
+async function renderTranslatedImageDOM(base64Image, boxes) {
+    const img = await loadImageElement(base64Image);
+    const natW = img.naturalWidth;
+    const natH = img.naturalHeight;
+    if (!natW || !natH) throw new Error('Invalid image dimensions');
+
+    // The wrapper is positioned off-screen; the container (the node passed to
+    // html-to-image) must sit at 0,0 in its own coordinates. html-to-image clones
+    // the captured node into an SVG foreignObject, and an off-screen offset on
+    // that node would be carried over, producing a transparent output image.
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText =
+        'all:initial;display:block;position:fixed;left:-99999px;top:0;' +
+        'width:' + natW + 'px;height:' + natH + 'px;';
+
+    const container = document.createElement('div');
+    container.style.cssText =
+        'all:initial;display:block;position:relative;left:0;top:0;' +
+        'width:' + natW + 'px;height:' + natH + 'px;';
+
+    img.style.cssText = 'all:initial;display:block;width:' + natW + 'px;height:' + natH + 'px;max-width:none;';
+    container.appendChild(img);
+
+    const clampBox = function(x, y, w, h) {
+        x = Math.max(0, x);
+        y = Math.max(0, y);
+        w = Math.min(w, natW - x);
+        h = Math.min(h, natH - y);
+        return { x: x, y: y, w: w, h: h };
+    };
+
+    const userCssHasDirection = /(^|[;])\s*direction\s*:/.test(renderTextCSS);
+
+    // Respect an explicit font-size in the user CSS as an upper bound; otherwise autofit freely.
+    let userFontSize = null;
+    const fontMatch = renderTextCSS.match(/font-size\s*:\s*([^;]+)/i);
+    if (fontMatch) {
+        const m = fontMatch[1].trim().match(/^([\d.]+)\s*(px|rem|em)?$/);
+        if (m) {
+            const n = parseFloat(m[1]);
+            userFontSize = (m[2] === 'em' || m[2] === 'rem') ? n * 16 : n;
+        }
+    }
+
+    // Base styles first; renderTextCSS is appended last so it can override any of
+    // them (font, color, background, border-radius, writing-mode, direction, ...).
+    const baseCSS =
+        'all:initial;position:absolute;display:block;box-sizing:border-box;margin:0;padding:2px;' +
+        'overflow:hidden;overflow-wrap:anywhere;line-height:1.3;color:#000;background-color:#fff;font-family:sans-serif;';
+
+    wrapper.appendChild(container);
+    (document.body || document.documentElement).appendChild(wrapper);
+
+    for (const box of boxes) {
+        const geo = box.geometry || {};
+        const bx = geo.X || geo.x || 0;
+        const by = geo.Y || geo.y || 0;
+        const bw = geo.width || geo.Width || 0;
+        const bh = geo.height || geo.Height || 0;
+        const targetText = box.target || '';
+        if (bw <= 0 || bh <= 0 || !targetText) continue;
+
+        const c = clampBox(bx, by, bw, bh);
+        if (c.w <= 0 || c.h <= 0) continue;
+
+        const el = document.createElement('div');
+        el.style.cssText = baseCSS +
+            'left:' + c.x + 'px;top:' + c.y + 'px;' +
+            'width:' + c.w + 'px;height:' + c.h + 'px;' +
+            renderTextCSS;
+        if (!userCssHasDirection) {
+            el.style.direction = detectTextDirection(targetText);
+        }
+        el.textContent = targetText;
+        container.appendChild(el);
+        fitBoxFontSize(el, userFontSize);
+    }
+
+    try {
+        const canvas = await htmlToImage.toCanvas(container, {
+            width: natW,
+            height: natH,
+            canvasWidth: natW,
+            canvasHeight: natH,
+            skipFonts: true,
+            pixelRatio: 1
+        });
+        return canvas.toDataURL('image/webp', 0.8);
+    } finally {
+        wrapper.remove();
+    }
+}
+
+function renderTranslatedImageCanvas(base64Image, boxes) {
     console.log(renderTextCSS)
     const textStyle = parseFontCSS(renderTextCSS);
     console.log(textStyle)
