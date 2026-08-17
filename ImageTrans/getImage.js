@@ -1345,6 +1345,8 @@ function detectTextDirection(text) {
 }
 
 // Binary-search the largest font-size that fits the box without overflowing.
+// Returns { fit, used } where fit is the largest size that fits the box and
+// used is the size actually applied (which may be raised to `minimum`).
 function fitBoxFontSize(el, upperBound, minimum) {
     const cw = el.clientWidth;
     const ch = el.clientHeight;
@@ -1364,7 +1366,10 @@ function fitBoxFontSize(el, upperBound, minimum) {
         }
         if (hi - lo < 0.5) break;
     }
-    el.style.fontSize = Math.max(min, Math.floor(best)) + 'px';
+    const fit = Math.floor(best);
+    const used = Math.max(min, fit);
+    el.style.fontSize = used + 'px';
+    return { fit: fit, used: used };
 }
 
 function loadImageElement(base64Image) {
@@ -1430,6 +1435,9 @@ async function renderTranslatedImageDOM(base64Image, boxes) {
 
     // Base styles first; renderTextCSS is appended last so it can override any of
     // them (font, color, background, border-radius, writing-mode, direction, ...).
+    // overflow:hidden is kept so auto-fit text normally clips at the box edge,
+    // but it is switched off when the minimum font size forces a size larger than
+    // the box can hold, so the text spills out rather than disappearing.
     const baseCSS =
         'all:initial;position:absolute;display:block;box-sizing:border-box;margin:0;padding:2px;' +
         'overflow:hidden;line-height:1.3;color:#000;background-color:#fff;font-family:sans-serif;';
@@ -1459,7 +1467,10 @@ async function renderTranslatedImageDOM(base64Image, boxes) {
         }
         el.textContent = targetText;
         container.appendChild(el);
-        fitBoxFontSize(el, userFontSize, minFontSize);
+        const sized = fitBoxFontSize(el, userFontSize, minFontSize);
+        if (sized.used > sized.fit) {
+            el.style.overflow = 'visible';
+        }
     }
 
     try {
