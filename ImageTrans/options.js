@@ -85,6 +85,7 @@ function save() {
   const renderTextInFrontend = document.getElementById("renderTextInFrontend").checked;
   const screenCaptureOverlay = document.getElementById("screenCaptureOverlay").checked;
   const renderTextCSS = document.getElementById("renderTextCSS").value;
+  const minFontSize = parseInt(document.getElementById("minFontSize").value) || 14;
   const imagetransInstanceDisplayName = document.getElementById("imagetransInstanceInput").value;
   const password = document.getElementById("imagetransPasswordInput").value;
   const sourceLang = document.getElementById("sourceLangSelect").selectedOptions[0].value;
@@ -127,6 +128,7 @@ function save() {
     renderTextInFrontend: renderTextInFrontend,
     screenCaptureOverlay: screenCaptureOverlay,
     renderTextCSS: renderTextCSS,
+    minFontSize: minFontSize,
     displayName: imagetransInstanceDisplayName,
     password: password,
     sourceLang: sourceLang,
@@ -168,6 +170,7 @@ function load() {
     renderTextInFrontend: false,
     screenCaptureOverlay: false,
     renderTextCSS: 'text-align: center;\nborder-radius: 10%;',
+    minFontSize: 14,
     displayName: "",
     password:"",
     sourceLang:"auto",
@@ -223,6 +226,7 @@ function load() {
     document.getElementById("renderTextInFrontend").checked = items.renderTextInFrontend;
     document.getElementById("screenCaptureOverlay").checked = items.screenCaptureOverlay;
     document.getElementById("renderTextCSS").value = items.renderTextCSS || '';
+    document.getElementById("minFontSize").value = items.minFontSize !== undefined ? items.minFontSize : 14;
     document.getElementById("imagetransInstanceInput").value = items.displayName;
     document.getElementById("imagetransPasswordInput").value = items.password;
     document.getElementById("useOpenAI").checked = items.useOpenAI;

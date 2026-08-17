@@ -53,6 +53,8 @@
   "options_css_rtl": { "message": "Arabic (RTL)" },
   "options_css_vcenter": { "message": "Vertical Center" },
   "options_font_css_hint": { "message": "Supports full CSS: writing-mode (vertical text), direction (RTL), font, color, background, border-radius, text-shadow, etc." },
+  "options_min_font_size": { "message": "Minimum font size (px)" },
+  "options_min_font_size_hint": { "message": "Auto-fit font size will never go below this value." },
   "options_openai_api": { "message": "OpenAI-Compatible API (optional)" },
   "options_enable_openai": { "message": "Enable OpenAI-compatible API for translation" },
   "options_ocr_method": { "message": "OCR method" },

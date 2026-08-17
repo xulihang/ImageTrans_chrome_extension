@@ -53,6 +53,8 @@
   "options_css_rtl": { "message": "阿拉伯语（RTL）" },
   "options_css_vcenter": { "message": "垂直居中" },
   "options_font_css_hint": { "message": "支持完整 CSS：writing-mode（竖排）、direction（RTL 阿拉伯语）、font、color、background、border-radius、text-shadow 等。" },
+  "options_min_font_size": { "message": "最小字体大小（px）" },
+  "options_min_font_size_hint": { "message": "自动适配的字体大小不会低于此值。" },
   "options_openai_api": { "message": "OpenAI 兼容 API（可选）" },
   "options_enable_openai": { "message": "启用 OpenAI 兼容 API 进行翻译" },
   "options_ocr_method": { "message": "OCR 方法" },

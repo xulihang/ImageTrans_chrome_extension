@@ -50,6 +50,7 @@ var pickingWay = "1";
 var useCanvas = true;
 var renderTextInFrontend = false;
 var renderTextCSS = 'text-align: center;\nborder-radius: 10%;';
+var minFontSize = 14;
 var password = "";
 var displayName = "";
 var sourceLang = "auto";
@@ -313,6 +314,7 @@ chrome.storage.sync.get({
     useCanvas: true,
     renderTextInFrontend: false,
     renderTextCSS: renderTextCSS,
+    minFontSize: 14,
     sourceLang: sourceLang,
     targetLang: targetLang,
     useOpenAI: false,
@@ -368,6 +370,9 @@ chrome.storage.sync.get({
     }
     if (items.renderTextCSS != undefined) {
         renderTextCSS = items.renderTextCSS;
+    }
+    if (items.minFontSize != undefined) {
+        minFontSize = items.minFontSize;
     }
     if (items.useOpenAI != undefined) {
         useOpenAI = items.useOpenAI;
@@ -1340,10 +1345,11 @@ function detectTextDirection(text) {
 }
 
 // Binary-search the largest font-size that fits the box without overflowing.
-function fitBoxFontSize(el, upperBound) {
+function fitBoxFontSize(el, upperBound, minimum) {
     const cw = el.clientWidth;
     const ch = el.clientHeight;
     const tol = 1;
+    const min = (typeof minimum === 'number' && minimum > 0) ? minimum : 4;
     let lo = 4;
     let hi = Math.max(4, Math.min(upperBound || Math.min(ch, 200), 200));
     let best = lo;
@@ -1358,7 +1364,7 @@ function fitBoxFontSize(el, upperBound) {
         }
         if (hi - lo < 0.5) break;
     }
-    el.style.fontSize = Math.max(4, Math.floor(best)) + 'px';
+    el.style.fontSize = Math.max(min, Math.floor(best)) + 'px';
 }
 
 function loadImageElement(base64Image) {
@@ -1453,7 +1459,7 @@ async function renderTranslatedImageDOM(base64Image, boxes) {
         }
         el.textContent = targetText;
         container.appendChild(el);
-        fitBoxFontSize(el, userFontSize);
+        fitBoxFontSize(el, userFontSize, minFontSize);
     }
 
     try {
@@ -1570,7 +1576,7 @@ function calcFontSize(ctx, text, maxWidth, maxHeight, textStyle) {
         }
         if (hi - lo < 1) break;
     }
-    return Math.floor(bestSize);
+    return Math.max((typeof minFontSize === 'number' && minFontSize > 0) ? minFontSize : 4, Math.floor(bestSize));
 }
 
 function isCJK(ch) {
@@ -5322,6 +5328,7 @@ chrome.storage.onChanged.addListener(function(changes, areaName) {
     if (changes.useCanvas !== undefined) useCanvas = changes.useCanvas.newValue;
     if (changes.renderTextInFrontend !== undefined) renderTextInFrontend = changes.renderTextInFrontend.newValue;
     if (changes.renderTextCSS) renderTextCSS = changes.renderTextCSS.newValue;
+    if (changes.minFontSize !== undefined) minFontSize = changes.minFontSize.newValue;
     if (changes.sourceLang) sourceLang = changes.sourceLang.newValue;
     if (changes.targetLang) targetLang = changes.targetLang.newValue;
     if (changes.useOpenAI !== undefined) {
