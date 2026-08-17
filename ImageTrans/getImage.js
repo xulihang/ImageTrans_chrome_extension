@@ -1385,6 +1385,7 @@ function loadImageElement(base64Image) {
     });
 }
 
+
 // Render translated text by building a real DOM overlay and rasterizing it with
 // html-to-image (SVG foreignObject -> native browser layout). This makes Arabic
 // RTL bidi and CSS like writing-mode behave exactly as in a browser, and lets the
@@ -1433,12 +1434,12 @@ async function renderTranslatedImageDOM(base64Image, boxes) {
         }
     }
 
-    // Base styles first; renderTextCSS is appended last so it can override any of
-    // them (font, color, background, border-radius, writing-mode, direction, ...).
-    // overflow:hidden is kept so auto-fit text normally clips at the box edge,
-    // but it is switched off when the minimum font size forces a size larger than
-    // the box can hold, so the text spills out rather than disappearing.
-    const baseCSS =
+    // Base text styles first; the user's text CSS is appended last so it can
+    // override any of them. overflow:hidden is kept so auto-fit text normally
+    // clips at the box edge. When the minimum font size makes the text overflow,
+    // the element is grown to the full text block and moved, so the background
+    // paints over the whole overflow region too.
+    const textBaseCSS =
         'all:initial;position:absolute;display:block;box-sizing:border-box;margin:0;padding:2px;' +
         'overflow:hidden;line-height:1.3;color:#000;background-color:#fff;font-family:sans-serif;';
 
@@ -1457,8 +1458,12 @@ async function renderTranslatedImageDOM(base64Image, boxes) {
         const c = clampBox(bx, by, bw, bh);
         if (c.w <= 0 || c.h <= 0) continue;
 
+        // Single layer: background + text live on one element. When the minimum
+        // font size makes the text overflow, the element grows to cover the whole
+        // text block (so the overflow region keeps the background) and then moves
+        // so that block stays inside the image.
         const el = document.createElement('div');
-        el.style.cssText = baseCSS +
+        el.style.cssText = textBaseCSS +
             'left:' + c.x + 'px;top:' + c.y + 'px;' +
             'width:' + c.w + 'px;height:' + c.h + 'px;' +
             renderTextCSS;
@@ -1470,19 +1475,21 @@ async function renderTranslatedImageDOM(base64Image, boxes) {
         const sized = fitBoxFontSize(el, userFontSize, minFontSize);
         if (sized.used > sized.fit) {
             // The minimum font size pushed the text above what the box can hold.
-            // scrollWidth/Height report the full text extents (including the
-            // overflow that would be cut by overflow:hidden), so shift the box so
-            // that whole text block stays inside the image, then stop clipping so
-            // the oversized text still renders over the neighbouring area.
-            const textW = el.scrollWidth;
-            const textH = el.scrollHeight;
+            // scrollWidth/Height give the full text extents. Grow the element to
+            // those extents so the background paints over the overflow too, then
+            // move it so the grown block stays inside the image. Because the box
+            // grows, the original text underneath is still covered by the white
+            // background even after the move.
+            const textW = Math.min(el.scrollWidth, natW);
+            const textH = Math.min(el.scrollHeight, natH);
+            el.style.width = textW + 'px';
+            el.style.height = textH + 'px';
             let nx = c.x;
             let ny = c.y;
             if (nx + textW > natW) nx = Math.max(0, natW - textW);
             if (ny + textH > natH) ny = Math.max(0, natH - textH);
             if (nx !== c.x) el.style.left = nx + 'px';
             if (ny !== c.y) el.style.top = ny + 'px';
-            el.style.overflow = 'visible';
         }
     }
 
@@ -1530,62 +1537,62 @@ function renderTranslatedImageCanvas(base64Image, boxes) {
                 const bw = geo.width || geo.Width || 0;
                 const bh = geo.height || geo.Height || 0;
                 const targetText = box.target || '';
-
                 if (bw <= 0 || bh <= 0 || !targetText) continue;
 
-                const c1 = clampBox(bx, by, bw, bh);
-                ctx.fillStyle = textStyle.backgroundColor;
-                fillRoundRect(ctx, c1.x, c1.y, c1.w, c1.h, textStyle.borderRadius);
-            }
-
-            for (const box of boxes) {
-                const geo = box.geometry || {};
-                const bx = geo.X || geo.x || 0;
-                const by = geo.Y || geo.y || 0;
-                const bw = geo.width || geo.Width || 0;
-                const bh = geo.height || geo.Height || 0;
-                const targetText = box.target || '';
-
-                if (bw <= 0 || bh <= 0 || !targetText) continue;
                 const c2 = clampBox(bx, by, bw, bh);
                 const displayText = applyTextTransform(targetText, textStyle.textTransform);
 
                 const fontSize = calcFontSize(ctx, displayText, c2.w, c2.h, textStyle);
                 ctx.font = buildFontString(fontSize, textStyle);
+
+                // Lay out the wrapped text; when the minimum font size forces it
+                // larger than the box, the text block (lines x widest line) is what
+                // we draw over, so the background also fills the overflow region.
+                const textLines = wrapLines(ctx, displayText, c2.w - 4);
+                const lineHeight = fontSize * 1.3;
+                const blockW = c2.w;
+                const blockH = (textLines.length - 1) * lineHeight + fontSize;
+                let bw2 = blockW;
+                let bh2 = Math.max(c2.h, blockH);
+
+                // Shift the whole block (background + text) so it stays inside the
+                // image; start from the box origin, growing down, then clamp up.
+                let tx = c2.x;
+                let ty = c2.y;
+                if (ty + bh2 > c.height) ty = Math.max(0, c.height - bh2);
+                // Keep the widest line from running off the right/left edge.
+                let maxLineW = 0;
+                for (let li = 0; li < textLines.length; li++) {
+                    const w = ctx.measureText(textLines[li]).width;
+                    if (w > maxLineW) maxLineW = w;
+                }
+                if (maxLineW + 4 > c.width) {
+                    maxLineW = c.width - 4;
+                    bw2 = c.width;
+                } else if (maxLineW + 4 > bw2) {
+                    bw2 = maxLineW + 4;
+                }
+                if (textStyle.textAlign === 'center') {
+                    const half = bw2 / 2;
+                    if (tx + bw2 > c.width) tx = Math.max(0, c.width - bw2);
+                    if (tx < 0) tx = 0;
+                } else if (textStyle.textAlign === 'right') {
+                    if (tx + bw2 > c.width) tx = Math.max(0, c.width - bw2);
+                } else {
+                    if (tx + bw2 > c.width) tx = Math.max(0, c.width - bw2);
+                }
+
+                // Cover the whole text block with the background, then draw text.
+                ctx.fillStyle = textStyle.backgroundColor;
+                fillRoundRect(ctx, tx, ty, bw2, bh2, textStyle.borderRadius);
+
                 ctx.fillStyle = textStyle.color;
                 ctx.textBaseline = 'top';
                 ctx.strokeStyle = textStyle.strokeColor;
                 if (textStyle.strokeWidth !== null) {
                     ctx.lineWidth = textStyle.strokeWidth;
                 }
-
-                // When the minimum font size forced the text larger than the box
-                // can hold it spills below the box. Shift the draw origin up (and
-                // keep the box inside the image) so the overflowing text is still
-                // drawn on the canvas instead of past its edge.
-                let tx = c2.x;
-                let ty = c2.y;
-                const textLines = wrapLines(ctx, displayText, c2.w - 4);
-                const textH = (textLines.length - 1) * fontSize * 1.3 + fontSize;
-                if (ty + textH > c.height) ty = Math.max(0, c.height - textH);
-                // Also keep the widest line from running off the right/left edge.
-                let maxLineW = 0;
-                for (let li = 0; li < textLines.length; li++) {
-                    const w = ctx.measureText(textLines[li]).width;
-                    if (w > maxLineW) maxLineW = w;
-                }
-                if (textStyle.textAlign === 'center') {
-                    const half = maxLineW / 2;
-                    const centerX = tx + c2.w / 2;
-                    if (centerX + half > c.width) tx = Math.max(0, c.width - half - c2.w / 2);
-                    if (centerX - half < 0) tx = Math.max(0, half - c2.w / 2);
-                } else if (textStyle.textAlign === 'right') {
-                    if (tx + c2.w - maxLineW < 0) tx = Math.max(0, maxLineW - c2.w);
-                } else {
-                    if (tx + maxLineW > c.width) tx = Math.max(0, c.width - maxLineW);
-                }
-
-                drawTextBox(ctx, displayText, tx, ty, c2.w, c2.h, fontSize, textStyle);
+                drawTextBox(ctx, displayText, tx, ty, bw2, bh2, fontSize, textStyle);
             }
 
             resolve(c.toDataURL('image/webp', 0.8));
