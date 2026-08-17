@@ -1469,6 +1469,19 @@ async function renderTranslatedImageDOM(base64Image, boxes) {
         container.appendChild(el);
         const sized = fitBoxFontSize(el, userFontSize, minFontSize);
         if (sized.used > sized.fit) {
+            // The minimum font size pushed the text above what the box can hold.
+            // scrollWidth/Height report the full text extents (including the
+            // overflow that would be cut by overflow:hidden), so shift the box so
+            // that whole text block stays inside the image, then stop clipping so
+            // the oversized text still renders over the neighbouring area.
+            const textW = el.scrollWidth;
+            const textH = el.scrollHeight;
+            let nx = c.x;
+            let ny = c.y;
+            if (nx + textW > natW) nx = Math.max(0, natW - textW);
+            if (ny + textH > natH) ny = Math.max(0, natH - textH);
+            if (nx !== c.x) el.style.left = nx + 'px';
+            if (ny !== c.y) el.style.top = ny + 'px';
             el.style.overflow = 'visible';
         }
     }
@@ -1546,7 +1559,33 @@ function renderTranslatedImageCanvas(base64Image, boxes) {
                     ctx.lineWidth = textStyle.strokeWidth;
                 }
 
-                drawTextBox(ctx, displayText, c2.x, c2.y, c2.w, c2.h, fontSize, textStyle);
+                // When the minimum font size forced the text larger than the box
+                // can hold it spills below the box. Shift the draw origin up (and
+                // keep the box inside the image) so the overflowing text is still
+                // drawn on the canvas instead of past its edge.
+                let tx = c2.x;
+                let ty = c2.y;
+                const textLines = wrapLines(ctx, displayText, c2.w - 4);
+                const textH = (textLines.length - 1) * fontSize * 1.3 + fontSize;
+                if (ty + textH > c.height) ty = Math.max(0, c.height - textH);
+                // Also keep the widest line from running off the right/left edge.
+                let maxLineW = 0;
+                for (let li = 0; li < textLines.length; li++) {
+                    const w = ctx.measureText(textLines[li]).width;
+                    if (w > maxLineW) maxLineW = w;
+                }
+                if (textStyle.textAlign === 'center') {
+                    const half = maxLineW / 2;
+                    const centerX = tx + c2.w / 2;
+                    if (centerX + half > c.width) tx = Math.max(0, c.width - half - c2.w / 2);
+                    if (centerX - half < 0) tx = Math.max(0, half - c2.w / 2);
+                } else if (textStyle.textAlign === 'right') {
+                    if (tx + c2.w - maxLineW < 0) tx = Math.max(0, maxLineW - c2.w);
+                } else {
+                    if (tx + maxLineW > c.width) tx = Math.max(0, c.width - maxLineW);
+                }
+
+                drawTextBox(ctx, displayText, tx, ty, c2.w, c2.h, fontSize, textStyle);
             }
 
             resolve(c.toDataURL('image/webp', 0.8));
