@@ -164,33 +164,34 @@ function getCacheAlways(dataURL) {
   });
 }
 
-// Insert the reader's original images as <img> elements, then run the normal
-// translation flow on each so that clicking an image opens the result dialog
-// with TTS. Images are passed directly via the message payload (images); a
-// storage.local fallback is kept for older callers.
-async function injectReaderImages(count, payloadImages) {
-  let images = payloadImages || null;
-  if (!images) {
+// Fetch a single original image's dataURL from the background by its IndexedDB
+// key. Images are pulled one at a time so no single message ever carries MBs of
+// base64 data.
+function getReaderImageByKeyData(key) {
+  return new Promise(function(resolve) {
     try {
-      const data = await new Promise(function(resolve) {
-        chrome.storage.local.get('imagetrans_reader_images', resolve);
+      chrome.runtime.sendMessage({ action: "getReaderImageByKey", key: key }, function(response) {
+        console.log('[reader-cs] getReaderImageByKey(%s) -> dataURL length %d, ok=%s',
+          key, response && response.dataURL ? response.dataURL.length : 0, response && String(response.ok));
+        resolve(response && response.ok ? response.dataURL : null);
       });
-      images = data && data.imagetrans_reader_images ? data.imagetrans_reader_images : [];
     } catch (e) {
-      console.error('injectReaderImages: storage read failed', e);
+      console.error('[reader-cs] getReaderImageByKey threw:', e);
+      resolve(null);
     }
-    // Clean up the temporary storage (message-payload path writes no storage).
-    chrome.storage.local.remove('imagetrans_reader_images', function(){});
-  }
+  });
+}
 
-  if (!images || images.length === 0) return 0;
-
+// Render a list of original-image dataURLs into <img> elements, then run the
+// normal translation flow on each so that clicking an image opens the result
+// dialog with TTS.
+function renderReaderDataURLs(dataURLs) {
+  if (!dataURLs || dataURLs.length === 0) return 0;
   // Prefer a dedicated container if the hosted page exposes one, else insert at
   // the top of the body so it doesn't disturb the page layout.
   var container = document.getElementById('imagetrans-reader') || document.body;
-
-  for (var i = 0; i < images.length; i++) {
-    var dataURL = images[i];
+  for (var i = 0; i < dataURLs.length; i++) {
+    var dataURL = dataURLs[i];
     if (!dataURL) continue;
     var img = document.createElement('img');
     img.src = dataURL;
@@ -211,8 +212,98 @@ async function injectReaderImages(count, payloadImages) {
       ajax(im.src, im, true, true);
     }, 50 * i, img);
   }
-  return images.length;
+  return dataURLs.length;
 }
+
+// Fetch each key's image dataURL from the background, one at a time, to stay
+// far under the message-size limit (which in Firefox is much smaller than
+// Chrome's and silently drops oversized messages).
+async function readerDataURLsFromKeys(keys) {
+  const out = [];
+  for (let i = 0; i < keys.length; i++) {
+    const d = await getReaderImageByKeyData(keys[i]);
+    if (d) out.push(d);
+  }
+  return out;
+}
+
+// Insert the reader's original images as <img> elements (run the normal
+// translation flow on each). Accepts a list of IndexedDB keys (new path) or a
+// list of dataURLs / storage.local fallback (old path).
+async function injectReaderImages(count, payloadKeys) {
+  console.log('[reader-cs] injectReaderImages received: count =', count,
+    'payload is', Array.isArray(payloadKeys) ? 'array len ' + payloadKeys.length : String(payloadKeys),
+    'first =', Array.isArray(payloadKeys) ? String(payloadKeys[0]).slice(0, 30) : 'n/a');
+  let dataURLs = null;
+  // Older callers pass the actual list of images; new callers pass keys.
+  if (payloadKeys && Array.isArray(payloadKeys) && payloadKeys.length && !/^data:/.test(String(payloadKeys[0]))) {
+    // Treat payload as keys -> fetch each image individually.
+    dataURLs = await readerDataURLsFromKeys(payloadKeys);
+  } else {
+    // Already a list of dataURLs (old path), or nothing.
+    dataURLs = payloadKeys || null;
+  }
+  if (!dataURLs) {
+    try {
+      const data = await new Promise(function(resolve) {
+        chrome.storage.local.get('imagetrans_reader_images', resolve);
+      });
+      dataURLs = data && data.imagetrans_reader_images ? data.imagetrans_reader_images : [];
+    } catch (e) {
+      console.error('injectReaderImages: storage read failed', e);
+    }
+    // Clean up the temporary storage (message-payload path writes no storage).
+    chrome.storage.local.remove('imagetrans_reader_images', function(){});
+  }
+  return renderReaderDataURLs(dataURLs);
+}
+
+// Self-init for the reader page. The background no longer push-messages the
+// reader tab (Firefox silently fails to deliver a message to a fresh remote
+// tab); instead the reader page's own content script PULLS the matching keys
+// and then fetches each image, using only the content-script -> background
+// message direction. The filter is read from our own URL (?imagetrans_filter=...).
+async function readerSelfInit() {
+  // Only run on the exact reader page (www.basiccat.org/reader.html), not on any
+  // other page whose URL happens to contain the substring "reader.html".
+  let url = null;
+  try { url = new URL(window.location.href); } catch (e) { url = null; }
+  if (!url) return;
+  if (!/^www\.basiccat\.org$/i.test(url.hostname) || url.pathname !== '/reader.html') return;
+  console.log('[reader-cs] reader self-init on', window.location.href);
+  const filter = url.searchParams.get('imagetrans_filter') || '';
+  let keys = [];
+  try {
+    const resp = await new Promise(function(resolve) {
+      let settled = false;
+      const timer = setTimeout(function(){ if(!settled){ settled=true; resolve(null); } }, 5000);
+      chrome.runtime.sendMessage({ action: 'getReaderImagesForReader', filter: filter }, function(r) {
+        if (!settled) { settled = true; clearTimeout(timer); resolve(r); }
+      });
+    });
+    keys = (resp && resp.ok && Array.isArray(resp.keys)) ? resp.keys : [];
+    console.log('[reader-cs] pulled %d keys for filter "%s"', keys.length, filter);
+  } catch (e) {
+    console.error('[reader-cs] reader self-init pull failed:', e);
+  }
+  if (keys.length === 0) return;
+  // The script runs at document_start; ensure the DOM (body) exists before we
+  // append images.
+  if (!document.body) {
+    await new Promise(function(resolve) {
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', resolve, { once: true });
+      } else {
+        resolve();
+      }
+    });
+  }
+  const dataURLs = await readerDataURLsFromKeys(keys);
+  renderReaderDataURLs(dataURLs);
+}
+
+// Run the reader self-init on every page load; it no-ops unless on reader.html.
+readerSelfInit();
 
 chrome.storage.sync.get({
     serverURL: serverURL,
@@ -377,7 +468,10 @@ chrome.runtime.onMessage.addListener(
 
     // Messages from the extension background/pages use request.action.
     if (request && request.action === "injectReaderImages") {
-      injectReaderImages(request.count, request.images).then(function(n) {
+      // The background passes the IndexedDB keys (request.keys); older callers
+      // passed the images directly (request.images). injectReaderImages handles
+      // both, fetching each image's dataURL on demand when given keys.
+      injectReaderImages(request.count, request.keys || request.images).then(function(n) {
         sendResponse({ ok: true, injected: n });
       });
       return true;

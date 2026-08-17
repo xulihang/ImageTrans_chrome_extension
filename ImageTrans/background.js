@@ -200,15 +200,41 @@ async function listTranslationCache(filter) {
   });
 }
 
-// Return the original-image dataURLs of records matching the given filter,
-// ordered by translation time (oldest first). Used by the reader feature.
-async function getReaderImages(filter) {
+// Return the IndexedDB keys of records matching the given filter, ordered by
+// translation time (oldest first). Used by the reader feature. Only the small
+// keys are sent to the reader page; each image's dataURL is fetched on demand
+// via the getReaderImageByKey message so a single message never carries MBs of
+// base64 data (Chrome tolerates it, Firefox drops oversized messages).
+async function getReaderImageKeys(filter) {
   const entries = await listTranslationCache(filter);
   const withOrig = entries
     .map(function(e) { return e.record; })
     .filter(function(rec) { return rec && rec.originalImage; });
   withOrig.sort(function(a, b) { return (a.timestamp || 0) - (b.timestamp || 0); });
-  return withOrig.map(function(rec) { return rec.originalImage; });
+  const keys = [];
+  for (const rec of withOrig) {
+    const hash = rec.originalImage ? await computeImageHash(rec.originalImage) : null;
+    if (hash) keys.push(hash);
+  }
+  return keys;
+}
+
+// Fetch the original-image dataURL for a single cache key (used by the reader
+// page's content script, one image at a time to stay far under Firefox's
+// message-size limit).
+async function getReaderImageByKey(key) {
+  if (!key) return null;
+  const db = await openTranslationDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(TRANSLATION_STORE, 'readonly');
+    const store = tx.objectStore(TRANSLATION_STORE);
+    const req = store.get(key);
+    req.onsuccess = () => {
+      const rec = req.result;
+      resolve(rec && rec.originalImage ? rec.originalImage : null);
+    };
+    req.onerror = () => reject(req.error);
+  });
 }
 
 async function deleteTranslationCache(key) {
@@ -471,29 +497,59 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   } else if (request.action === "openReader") {
     (async () => {
       try {
-        // Always open a fresh reader tab (don't reuse an existing one).
-        let tab = await chrome.tabs.create({ url: "https://www.basiccat.org/reader.html" });
-        // The page may still be loading; wait for it to be complete before we
-        // tell its content script to inject the images.
+        console.log('[reader] openReader called, filter =', request.filter || '');
+        const filter = request.filter || '';
+        // Pass the filter to the reader content script via a URL query param.
+        // The reader page's own content script then PULLS the keys from the
+        // background (see getReaderImagesForReader) and fetches each image on
+        // demand. We deliberately do NOT chrome.tabs.sendMessage the reader tab:
+        // Firefox fails (silently, no callback) to deliver a message to a
+        // freshly-created remote tab even when the content script is loaded,
+        // while the content-script->background direction works reliably.
+        const url = 'https://www.basiccat.org/reader.html?imagetrans_filter=' +
+          encodeURIComponent(filter);
+        let tab = await chrome.tabs.create({ url: url });
+        console.log('[reader] reader tab created id =', tab.id, 'status =', tab.status);
         let attempts = 0;
         while (tab.status !== 'complete' && attempts < 50) {
           await new Promise(r => setTimeout(r, 200));
           attempts++;
           tab = await chrome.tabs.get(tab.id);
         }
-        // Read the matching images directly in the background (no storage.local,
-        // which has a tight quota) and pass them straight through the message.
-        const images = await getReaderImages(request.filter || '');
-        if (images.length === 0) {
-          sendResponse({ ok: true, count: 0 });
-          return;
-        }
-        chrome.tabs.sendMessage(tab.id, { action: "injectReaderImages", images: images }, () => {
-          // Ignore lastError (content script may not be ready on the target page);
-          // it will pick up the storage on its own init if so.
-        });
-        sendResponse({ ok: true, count: images.length });
+        console.log('[reader] reader tab settled status =', tab.status, 'after', attempts, 'waits');
+        const keys = await getReaderImageKeys(filter);
+        console.log('[reader] matched %d keys', keys.length);
+        sendResponse({ ok: true, count: keys.length });
       } catch (err) {
+        console.error('[reader] openReader error:', err.message, err.stack);
+        sendResponse({ ok: false, error: err.message });
+      }
+    })();
+    return true;
+  } else if (request.action === "getReaderImagesForReader") {
+    // Called by the reader page's own content script to PULL the matching keys
+    // (filter comes from the reader URL query param). Same direction as every
+    // other content-script -> background message, which works in Firefox.
+    (async () => {
+      try {
+        const keys = await getReaderImageKeys(request.filter || '');
+        console.log('[reader] getReaderImagesForReader -> %d keys', keys.length);
+        sendResponse({ ok: true, keys: keys });
+      } catch (err) {
+        console.error('[reader] getReaderImagesForReader error:', err.message);
+        sendResponse({ ok: false, error: err.message });
+      }
+    })();
+    return true;
+  } else if (request.action === "getReaderImageByKey") {
+    (async () => {
+      try {
+        console.log('[reader] getReaderImageByKey key =', request.key);
+        const dataURL = await getReaderImageByKey(request.key);
+        console.log('[reader] getReaderImageByKey found dataURL length =', dataURL ? dataURL.length : 0);
+        sendResponse({ ok: true, dataURL: dataURL });
+      } catch (err) {
+        console.error('[reader] getReaderImageByKey error:', err.message);
         sendResponse({ ok: false, error: err.message });
       }
     })();
