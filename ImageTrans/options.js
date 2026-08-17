@@ -355,4 +355,7 @@ window.onload = async function (){
   document.getElementById("cssPresetRTL").addEventListener("click",function(){
     document.getElementById("renderTextCSS").value = 'direction: rtl;\ntext-align: start;';
   })
+  document.getElementById("cssPresetVCenter").addEventListener("click",function(){
+    document.getElementById("renderTextCSS").value = 'text-align: center;\nborder-radius: 10%;\ndisplay: flex;\nalign-items: center;\njustify-content: center;';
+  })
 }

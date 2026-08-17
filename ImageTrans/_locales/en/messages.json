@@ -51,6 +51,7 @@
   "options_css_rounded_uppercase": { "message": "Rounded + Uppercase" },
   "options_css_vertical": { "message": "Vertical Text" },
   "options_css_rtl": { "message": "Arabic (RTL)" },
+  "options_css_vcenter": { "message": "Vertical Center" },
   "options_font_css_hint": { "message": "Supports full CSS: writing-mode (vertical text), direction (RTL), font, color, background, border-radius, text-shadow, etc." },
   "options_openai_api": { "message": "OpenAI-Compatible API (optional)" },
   "options_enable_openai": { "message": "Enable OpenAI-compatible API for translation" },
