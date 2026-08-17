@@ -1332,7 +1332,7 @@ async function renderTranslatedImageDOM(base64Image, boxes) {
     // them (font, color, background, border-radius, writing-mode, direction, ...).
     const baseCSS =
         'all:initial;position:absolute;display:block;box-sizing:border-box;margin:0;padding:2px;' +
-        'overflow:hidden;overflow-wrap:anywhere;line-height:1.3;color:#000;background-color:#fff;font-family:sans-serif;';
+        'overflow:hidden;line-height:1.3;color:#000;background-color:#fff;font-family:sans-serif;';
 
     wrapper.appendChild(container);
     (document.body || document.documentElement).appendChild(wrapper);
