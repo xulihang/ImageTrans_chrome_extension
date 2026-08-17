@@ -350,9 +350,9 @@ window.onload = async function (){
     document.getElementById("renderTextCSS").value = 'text-align: center;\nborder-radius: 8px;\ntext-transform: uppercase;';
   })
   document.getElementById("cssPresetVertical").addEventListener("click",function(){
-    document.getElementById("renderTextCSS").value = 'writing-mode: vertical-rl;\ntext-align: center;';
+    document.getElementById("renderTextCSS").value = 'writing-mode: vertical-rl;\ntext-align: start;';
   })
   document.getElementById("cssPresetRTL").addEventListener("click",function(){
-    document.getElementById("renderTextCSS").value = 'direction: rtl;\ntext-align: center;';
+    document.getElementById("renderTextCSS").value = 'direction: rtl;\ntext-align: start;';
   })
 }
