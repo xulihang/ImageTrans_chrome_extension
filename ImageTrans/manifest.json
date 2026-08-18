@@ -74,8 +74,7 @@
         "paddleocr/rec.onnx",
         "paddleocr/ppocrv6_dict.txt",
         "paddleocr/ort-wasm-simd-threaded.jsep.js",
-        "paddleocr/ort-wasm-simd-threaded.jsep.wasm",
-        "paddleocr/model.onnx"
+        "paddleocr/ort-wasm-simd-threaded.jsep.wasm"
       ],
       "matches": ["<all_urls>"]
     }

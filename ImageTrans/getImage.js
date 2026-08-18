@@ -1793,6 +1793,9 @@ var ppocrv6_small_dict = chrome.runtime.getURL('paddleocr/ppocrv6_dict.txt');
 // Detection model choice: "tiny" (bundled) or "small" (downloaded on demand).
 var paddleDetModel = "small";
 var PADDLE_DET_SMALL_URL = 'https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.9.1/onnx/PP-OCRv6/det/PP-OCRv6_det_small.onnx';
+// YOLO text-line detection model (no longer bundled). Downloaded from ModelScope
+// on first use and cached by the background service worker (IndexedDB).
+var YOLO_MODEL_URL = 'https://www.modelscope.cn/models/xulihang/ImageTrans/resolve/master/model.onnx';
 // Recognition model choice for the default Chinese/English: "tiny" (bundled,
 // paddleocr/tiny/rec.onnx) or "small" (bundled, paddleocr/rec.onnx, higher
 // accuracy). Only affects the default rec; language-specific rec models (e.g.
@@ -2037,7 +2040,7 @@ function doPaddleOCRRequest(dataURL, sourceLang, scale) {
             ySpacing: ySpacing
         };
         if (useYOLO) {
-            msg.yoloModelUrl = chrome.runtime.getURL('paddleocr/model.onnx');
+            msg.yoloModelUrl = YOLO_MODEL_URL;
         }
         window.postMessage(msg, '*');
     });
