@@ -191,7 +191,7 @@ function load() {
     defaultPresetTranslation: 'glm4flash',
     useYOLODetection: false,
     useYOLOForJapanese: true,
-    paddleDetModel: 'tiny',
+    paddleDetModel: 'small',
     paddleRecModel: 'tiny',
     paddleOCRParams: '',
     xSpacing: 15,

@@ -325,7 +325,7 @@ chrome.storage.sync.get({
     ocrMethod: 'paddleocr',
     useYOLODetection: false,
     useYOLOForJapanese: true,
-    paddleDetModel: 'tiny',
+    paddleDetModel: 'small',
     paddleOCRParams: '',
     translationMode: 'imagetrans',
     defaultPresetTranslation: defaultPresetTranslation,
@@ -1791,7 +1791,7 @@ var paddlePendingRequests = {};
 var ppocrv6_small_rec = chrome.runtime.getURL('paddleocr/rec.onnx');
 var ppocrv6_small_dict = chrome.runtime.getURL('paddleocr/ppocrv6_dict.txt');
 // Detection model choice: "tiny" (bundled) or "small" (downloaded on demand).
-var paddleDetModel = "tiny";
+var paddleDetModel = "small";
 var PADDLE_DET_SMALL_URL = 'https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.9.1/onnx/PP-OCRv6/det/PP-OCRv6_det_small.onnx';
 // Recognition model choice for the default Chinese/English: "tiny" (bundled,
 // paddleocr/tiny/rec.onnx) or "small" (bundled, paddleocr/rec.onnx, higher
