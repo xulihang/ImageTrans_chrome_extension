@@ -1790,9 +1790,9 @@ var paddleInitResolver = null;
 var paddlePendingRequests = {};
 var ppocrv6_small_rec = chrome.runtime.getURL('paddleocr/rec.onnx');
 var ppocrv6_small_dict = chrome.runtime.getURL('paddleocr/ppocrv6_dict.txt');
-// Detection model choice: "tiny" (bundled) or "small" (downloaded on demand).
+// Detection model choice: "tiny" (bundled) or "small" (bundled, PP-OCRv6).
 var paddleDetModel = "small";
-var PADDLE_DET_SMALL_URL = 'https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.9.1/onnx/PP-OCRv6/det/PP-OCRv6_det_small.onnx';
+var PADDLE_DET_SMALL_URL = chrome.runtime.getURL('paddleocr/PP-OCRv6_det_small.onnx');
 // Recognition model choice for the default Chinese/English: "tiny" (bundled,
 // paddleocr/tiny/rec.onnx) or "small" (bundled, paddleocr/rec.onnx, higher
 // accuracy). Only affects the default rec; language-specific rec models (e.g.
