@@ -506,14 +506,7 @@
     if (yoloSession && yoloModelUrl === yoloUrl) return;
     yoloModelUrl = yoloUrl;
     var sessionOpts = { executionProviders: ["wasm"], graphOptimizationLevel: "all" };
-    // Remote models (e.g. ModelScope) are fetched through the extension's
-    // background SW which caches them in IndexedDB, then loaded from bytes.
-    if (isRemoteUrl(yoloUrl)) {
-      var buffer = await fetchModelViaExtension(yoloUrl);
-      yoloSession = await window.ort.InferenceSession.create(buffer, sessionOpts);
-    } else {
-      yoloSession = await window.ort.InferenceSession.create(yoloUrl, sessionOpts);
-    }
+    yoloSession = await window.ort.InferenceSession.create(yoloUrl, sessionOpts);
   }
 
   async function doOCRYolo(imageDataURL, sourceLang, xSpacing, ySpacing, yoloUrl) {
