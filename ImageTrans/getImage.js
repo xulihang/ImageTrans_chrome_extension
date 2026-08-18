@@ -1788,6 +1788,7 @@ var paddleInitDone = false;
 var paddleCurrentModelKey = null;
 var paddleInitResolver = null;
 var paddlePendingRequests = {};
+var ppocrv6_small_rec = chrome.runtime.getURL('paddleocr/rec.onnx');
 var ppocrv6_small_dict = chrome.runtime.getURL('paddleocr/ppocrv6_dict.txt');
 // Detection model choice: "tiny" or "small" (both downloaded from ModelScope
 // on first use and cached by the background service worker).
@@ -1816,9 +1817,7 @@ var PADDLE_MODEL_URLS = {
         dict: 'https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.4.0/paddle/PP-OCRv5/rec/ch_PP-OCRv5_rec_mobile_infer/ppocrv5_dict.txt'
     },
     japanese: {
-        // PP-OCRv6 tiny doesn't support Japanese, so Japanese always uses the
-        // multilingual small rec (downloaded remotely). Dict stays bundled.
-        rec: PADDLE_REC_SMALL_URL,
+        rec: ppocrv6_small_rec,
         dict: ppocrv6_small_dict
     },
     arabic: {
