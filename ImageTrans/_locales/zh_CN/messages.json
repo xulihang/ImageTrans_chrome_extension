@@ -67,6 +67,8 @@
   "options_paddle_det_tiny": { "message": "Tiny（内置）" },
   "options_paddle_det_small": { "message": "Small（远程下载）" },
   "options_paddle_det_small_hint": { "message": "small 检测模型首次使用时从 ModelScope 下载。" },
+  "options_paddle_extra_params": { "message": "额外OCR参数 (JSON)" },
+  "options_paddle_extra_params_hint": { "message": "初始化时传给 PaddleOCR。支持 det_db_thresh、det_db_box_thresh、det_db_unclip_ratio、erode_size、dev（调试可视化）和 log。" },
   "options_ocr_imagetrans": { "message": "ImageTrans" },
   "options_api_url": { "message": "API URL" },
   "options_api_key": { "message": "API 密钥" },

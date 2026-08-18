@@ -65,7 +65,7 @@
     });
   }
 
-  async function init(detPath, recPath, dicUrl, modelKey, wasmPath) {
+  async function init(detPath, recPath, dicUrl, modelKey, wasmPath, extraParams) {
     // Same model already loaded — reuse
     if (currentModelKey === modelKey && initPromise) return initPromise;
     // Switching to a different model — reset and re-init
@@ -95,14 +95,14 @@
       const res = await fetch(dicUrl);
       const dic = await res.text();
 
-      await Paddle.init({
+      await Paddle.init(Object.assign({
         detPath: detInput,
         recPath: recInput,
         dic: dic,
         ort: window.ort,
         node: false,
         cv: window.cv
-      });
+      }, extraParams || {}));
 
       currentModelKey = modelKey;
       paddleReady = true;
@@ -635,7 +635,7 @@
       case 'PADDLE_INIT':
         (async function() {
           try {
-            await init(data.detPath, data.recPath, data.dicPath, data.modelKey || 'default', data.wasmPath);
+            await init(data.detPath, data.recPath, data.dicPath, data.modelKey || 'default', data.wasmPath, data.extraParams);
             window.postMessage({
               source: 'imagetrans-extension',
               type: 'PADDLE_INIT_RESULT',

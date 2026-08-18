@@ -326,6 +326,7 @@ chrome.storage.sync.get({
     useYOLODetection: false,
     useYOLOForJapanese: true,
     paddleDetModel: 'tiny',
+    paddleOCRParams: '',
     translationMode: 'imagetrans',
     defaultPresetTranslation: defaultPresetTranslation,
     sendRequestsViaBackground: false,
@@ -404,6 +405,15 @@ chrome.storage.sync.get({
     }
     if (items.paddleDetModel) {
         paddleDetModel = items.paddleDetModel;
+    }
+    if (items.paddleOCRParams !== undefined) {
+        try {
+            paddleOCRParams = JSON.parse(items.paddleOCRParams || '{}') || {};
+        } catch (e) {
+            console.warn('[ImageTrans] Invalid paddleOCRParams JSON, ignored:', items.paddleOCRParams);
+            paddleOCRParams = {};
+        }
+        paddleOCRParamsSig = JSON.stringify(paddleOCRParams);
     }
     if (items.translationMode) {
         translationMode = items.translationMode;
@@ -1780,6 +1790,11 @@ var ppocrv6_small_dict = chrome.runtime.getURL('paddleocr/ppocrv6_dict.txt');
 // Detection model choice: "tiny" (bundled) or "small" (downloaded on demand).
 var paddleDetModel = "tiny";
 var PADDLE_DET_SMALL_URL = 'https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.9.1/onnx/PP-OCRv6/det/PP-OCRv6_det_small.onnx';
+// Extra PaddleOCR init params configured in options, e.g. {det_db_thresh:0.6, erode_size:2}.
+// Stored as a JSON string; parsed on load. Included in the model key so changing
+// them triggers a re-init.
+var paddleOCRParams = {};
+var paddleOCRParamsSig = '{}';
 var PADDLE_MODEL_URLS = {
     defaultv5: {
         det: 'https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.4.0/onnx/PP-OCRv5/det/ch_PP-OCRv5_mobile_det.onnx',
@@ -1826,6 +1841,17 @@ var PADDLE_LANG_TO_MODEL = {
     ro: 'latin', bg: 'latin', el: 'latin', ms: 'latin'
 };
 
+// Short fingerprint of a string, used to fold the extra OCR params into the
+// model key so changing them triggers a PaddleOCR re-init.
+function hashString(str) {
+    var hash = 0;
+    for (var i = 0; i < str.length; i++) {
+        hash = ((hash << 5) - hash) + str.charCodeAt(i);
+        hash |= 0;
+    }
+    return (hash >>> 0).toString(36);
+}
+
 function getPaddleModelInfo(sourceLang) {
     var langKey = PADDLE_LANG_TO_MODEL[sourceLang] || 'default';
     var defaultDetUrl;
@@ -1834,8 +1860,9 @@ function getPaddleModelInfo(sourceLang) {
     } else {
         defaultDetUrl = chrome.runtime.getURL('paddleocr/tiny/det.onnx');
     }
-    // Include the det model in the key so switching tiny/small re-initializes.
-    var modelKey = langKey + '_det_' + paddleDetModel;
+    // Include the det model + extra params in the key so switching either
+    // (tiny/small, or the extra OCR params) re-initializes the pipeline.
+    var modelKey = langKey + '_det_' + paddleDetModel + '_p' + hashString(paddleOCRParamsSig);
     var modelInfo = PADDLE_MODEL_URLS[langKey];
     if (modelInfo) {
         return {
@@ -1973,6 +2000,7 @@ function ensurePaddleModel(sourceLang) {
             dicPath: modelInfo.dicUrl,
             modelKey: modelInfo.modelKey,
             wasmPath: chrome.runtime.getURL('paddleocr/'),
+            extraParams: paddleOCRParams,
             requestId: 'init_' + modelInfo.modelKey
         }, '*');
     });
@@ -5439,6 +5467,14 @@ chrome.storage.onChanged.addListener(function(changes, areaName) {
     if (changes.useYOLODetection !== undefined) useYOLODetection = changes.useYOLODetection.newValue;
     if (changes.useYOLOForJapanese !== undefined) useYOLOForJapanese = changes.useYOLOForJapanese.newValue;
     if (changes.paddleDetModel) paddleDetModel = changes.paddleDetModel.newValue;
+    if (changes.paddleOCRParams !== undefined) {
+        try {
+            paddleOCRParams = JSON.parse(changes.paddleOCRParams.newValue || '{}') || {};
+        } catch (e) {
+            paddleOCRParams = {};
+        }
+        paddleOCRParamsSig = JSON.stringify(paddleOCRParams);
+    }
     if (changes.translationMode) translationMode = changes.translationMode.newValue;
     if (changes.defaultPresetTranslation) defaultPresetTranslation = changes.defaultPresetTranslation.newValue;
     if (changes.sendRequestsViaBackground !== undefined) sendRequestsViaBackground = changes.sendRequestsViaBackground.newValue;

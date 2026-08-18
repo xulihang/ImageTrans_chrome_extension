@@ -67,6 +67,8 @@
   "options_paddle_det_tiny": { "message": "Tiny (bundled)" },
   "options_paddle_det_small": { "message": "Small (download)" },
   "options_paddle_det_small_hint": { "message": "The small detection model is downloaded from ModelScope on first use." },
+  "options_paddle_extra_params": { "message": "Extra OCR Params (JSON)" },
+  "options_paddle_extra_params_hint": { "message": "Passed to PaddleOCR init. Supports det_db_thresh, det_db_box_thresh, det_db_unclip_ratio, erode_size, dev (debug visuals) and log." },
   "options_ocr_imagetrans": { "message": "ImageTrans" },
   "options_api_url": { "message": "API URL" },
   "options_api_key": { "message": "API Key" },
