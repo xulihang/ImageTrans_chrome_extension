@@ -325,6 +325,7 @@ chrome.storage.sync.get({
     ocrMethod: 'paddleocr',
     useYOLODetection: false,
     useYOLOForJapanese: true,
+    paddleDetModel: 'tiny',
     translationMode: 'imagetrans',
     defaultPresetTranslation: defaultPresetTranslation,
     sendRequestsViaBackground: false,
@@ -400,6 +401,9 @@ chrome.storage.sync.get({
     }
     if (items.useYOLOForJapanese != undefined) {
         useYOLOForJapanese = items.useYOLOForJapanese;
+    }
+    if (items.paddleDetModel) {
+        paddleDetModel = items.paddleDetModel;
     }
     if (items.translationMode) {
         translationMode = items.translationMode;
@@ -1773,6 +1777,9 @@ var paddleInitResolver = null;
 var paddlePendingRequests = {};
 var ppocrv6_small_rec = chrome.runtime.getURL('paddleocr/rec.onnx');
 var ppocrv6_small_dict = chrome.runtime.getURL('paddleocr/ppocrv6_dict.txt');
+// Detection model choice: "tiny" (bundled) or "small" (downloaded on demand).
+var paddleDetModel = "tiny";
+var PADDLE_DET_SMALL_URL = 'https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.9.1/onnx/PP-OCRv6/det/PP-OCRv6_det_small.onnx';
 var PADDLE_MODEL_URLS = {
     defaultv5: {
         det: 'https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.4.0/onnx/PP-OCRv5/det/ch_PP-OCRv5_mobile_det.onnx',
@@ -1820,19 +1827,28 @@ var PADDLE_LANG_TO_MODEL = {
 };
 
 function getPaddleModelInfo(sourceLang) {
-    var modelKey = PADDLE_LANG_TO_MODEL[sourceLang] || 'default';
-    var defaultDetUrl = chrome.runtime.getURL('paddleocr/tiny/det.onnx');
-    var modelInfo = PADDLE_MODEL_URLS[modelKey];
+    var langKey = PADDLE_LANG_TO_MODEL[sourceLang] || 'default';
+    var defaultDetUrl;
+    if (paddleDetModel === 'small') {
+        defaultDetUrl = PADDLE_DET_SMALL_URL;
+    } else {
+        defaultDetUrl = chrome.runtime.getURL('paddleocr/tiny/det.onnx');
+    }
+    // Include the det model in the key so switching tiny/small re-initializes.
+    var modelKey = langKey + '_det_' + paddleDetModel;
+    var modelInfo = PADDLE_MODEL_URLS[langKey];
     if (modelInfo) {
         return {
             modelKey: modelKey,
-            detUrl: modelInfo.det || defaultDetUrl,
+            // A language-specific det (e.g. Arabic) is only kept with the tiny
+            // default; selecting "small" uses the chosen det for every language.
+            detUrl: paddleDetModel === 'small' ? defaultDetUrl : (modelInfo.det || defaultDetUrl),
             recUrl: modelInfo.rec,
             dicUrl: modelInfo.dict
         };
     }
     return {
-        modelKey: 'default',
+        modelKey: modelKey,
         detUrl: defaultDetUrl,
         recUrl: chrome.runtime.getURL('paddleocr/tiny/rec.onnx'),
         dicUrl: chrome.runtime.getURL('paddleocr/tiny/ppocrv6_tiny_dict.txt')
@@ -1943,6 +1959,7 @@ function injectPaddleLibraries() {
 
 function ensurePaddleModel(sourceLang) {
     var modelInfo = getPaddleModelInfo(sourceLang);
+    console.log('[ImageTrans] PaddleOCR model:', modelInfo.modelKey, '| det:', modelInfo.detUrl, '| rec:', modelInfo.recUrl);
     if (paddleCurrentModelKey === modelInfo.modelKey && paddleInitDone) {
         return Promise.resolve();
     }
@@ -5421,6 +5438,7 @@ chrome.storage.onChanged.addListener(function(changes, areaName) {
     if (changes.ocrMethod) ocrMethod = changes.ocrMethod.newValue;
     if (changes.useYOLODetection !== undefined) useYOLODetection = changes.useYOLODetection.newValue;
     if (changes.useYOLOForJapanese !== undefined) useYOLOForJapanese = changes.useYOLOForJapanese.newValue;
+    if (changes.paddleDetModel) paddleDetModel = changes.paddleDetModel.newValue;
     if (changes.translationMode) translationMode = changes.translationMode.newValue;
     if (changes.defaultPresetTranslation) defaultPresetTranslation = changes.defaultPresetTranslation.newValue;
     if (changes.sendRequestsViaBackground !== undefined) sendRequestsViaBackground = changes.sendRequestsViaBackground.newValue;
