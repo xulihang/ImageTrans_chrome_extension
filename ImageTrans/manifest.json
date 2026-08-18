@@ -69,7 +69,6 @@
         "paddleocr/esearch-ocr/dist/esearch-ocr.umd.js",
         "paddleocr/page-ocr.js",
         "paddleocr/tiny/ppocrv6_tiny_dict.txt",
-        "paddleocr/rec.onnx",
         "paddleocr/ppocrv6_dict.txt",
         "paddleocr/ort-wasm-simd-threaded.jsep.js",
         "paddleocr/ort-wasm-simd-threaded.jsep.wasm"
