@@ -782,7 +782,17 @@ async function ajaxMyMemory(src, img, checkData, showOverlay) {
             return;
         }
 
-        if (defaultPresetTranslation === "glm4flash") {
+        if (defaultPresetTranslation === "original") {
+            // Fill the recognized source text back so OCR results can be viewed in place.
+            for (let i = 0; i < boxes.length; i++) {
+                boxes[i].target = sourceTexts[i] || '';
+            }
+        } else if (defaultPresetTranslation === "blank") {
+            // Skip translation entirely and leave the text regions empty.
+            for (let i = 0; i < boxes.length; i++) {
+                boxes[i].target = '';
+            }
+        } else if (defaultPresetTranslation === "glm4flash") {
             let reflowedTexts = sourceTexts.map(function(t) { return reflowText(sourceLang, t); });
             let translations;
             try {
@@ -4290,6 +4300,18 @@ function handleScreenOCRResult(dataURL, boxes) {
             }
             displayResult(dataURL, boxes);
         });
+    } else if (defaultPresetTranslation === "original") {
+        // Fill the recognized source text back so OCR results can be viewed in place.
+        for (var j = 0; j < boxes.length; j++) {
+            boxes[j].target = sourceTexts[j] || '';
+        }
+        displayResult(dataURL, boxes);
+    } else if (defaultPresetTranslation === "blank") {
+        // Skip translation entirely and leave the text regions empty.
+        for (var j = 0; j < boxes.length; j++) {
+            boxes[j].target = '';
+        }
+        displayResult(dataURL, boxes);
     } else if (defaultPresetTranslation === "glm4flash") {
         var reflowedTexts = sourceTexts.map(function(t) { return reflowText(sourceLang, t); });
         return Promise.race([

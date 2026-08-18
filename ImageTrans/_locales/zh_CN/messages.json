@@ -115,6 +115,8 @@
   "options_default_preset_translation": { "message": "默认PaddleOCR用预设翻译" },
   "options_preset_mymemory": { "message": "MyMemory" },
   "options_preset_glm4flash": { "message": "GLM-4-Flash" },
+  "options_preset_original": { "message": "原文" },
+  "options_preset_blank": { "message": "空白" },
   "alert_openai_not_configured": { "message": "未配置 OpenAI API URL 或密钥。请在选项页面中设置。" },
   "overlay_translating": { "message": "翻译中…" },
   "overlay_waiting": { "message": "等待翻译中…" },

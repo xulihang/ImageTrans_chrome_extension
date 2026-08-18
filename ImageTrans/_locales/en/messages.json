@@ -115,6 +115,8 @@
   "options_default_preset_translation": { "message": "Default Preset Translation for PaddleOCR" },
   "options_preset_mymemory": { "message": "MyMemory" },
   "options_preset_glm4flash": { "message": "GLM-4-Flash" },
+  "options_preset_original": { "message": "Original Text" },
+  "options_preset_blank": { "message": "Blank" },
   "alert_openai_not_configured": { "message": "OpenAI API URL or Key is not configured. Please set them in the options page." },
   "overlay_translating": { "message": "Translating..." },
   "overlay_waiting": { "message": "Waiting to translate..." },
