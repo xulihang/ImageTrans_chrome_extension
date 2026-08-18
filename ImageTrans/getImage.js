@@ -326,6 +326,7 @@ chrome.storage.sync.get({
     useYOLODetection: false,
     useYOLOForJapanese: true,
     paddleDetModel: 'small',
+    paddleRecModel: 'small',
     paddleOCRParams: '',
     translationMode: 'imagetrans',
     defaultPresetTranslation: defaultPresetTranslation,
@@ -1790,14 +1791,19 @@ var paddleInitResolver = null;
 var paddlePendingRequests = {};
 var ppocrv6_small_rec = chrome.runtime.getURL('paddleocr/rec.onnx');
 var ppocrv6_small_dict = chrome.runtime.getURL('paddleocr/ppocrv6_dict.txt');
-// Detection model choice: "tiny" (bundled) or "small" (bundled, PP-OCRv6).
+// Detection model choice: "small" (bundled, PP-OCRv6, the default) or "tiny"
+// (downloaded from ModelScope on first use). Only affects the default det;
+// language-specific det models keep their own.
 var paddleDetModel = "small";
 var PADDLE_DET_SMALL_URL = chrome.runtime.getURL('paddleocr/PP-OCRv6_det_small.onnx');
-// Recognition model choice for the default Chinese/English: "tiny" (bundled,
-// paddleocr/tiny/rec.onnx) or "small" (bundled, paddleocr/rec.onnx, higher
-// accuracy). Only affects the default rec; language-specific rec models (e.g.
-// Arabic, Korean) keep their own model.
-var paddleRecModel = "tiny";
+var PADDLE_DET_TINY_URL = 'https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.9.1/onnx/PP-OCRv6/det/PP-OCRv6_det_tiny.onnx';
+// Recognition model choice for the default Chinese/English: "small" (bundled,
+// paddleocr/rec.onnx, higher accuracy, the default) or "tiny" (downloaded from
+// ModelScope on first use). Only affects the default rec; language-specific
+// rec models (e.g. Arabic, Korean) keep their own model.
+var paddleRecModel = "small";
+var PADDLE_REC_SMALL_URL = chrome.runtime.getURL('paddleocr/rec.onnx');
+var PADDLE_REC_TINY_URL = 'https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.9.1/onnx/PP-OCRv6/rec/PP-OCRv6_rec_tiny.onnx';
 // Extra PaddleOCR init params configured in options, e.g. {det_db_thresh:0.6, erode_size:2}.
 // Stored as a JSON string; parsed on load. Included in the model key so changing
 // them triggers a re-init.
@@ -1866,14 +1872,15 @@ function getPaddleModelInfo(sourceLang) {
     if (paddleDetModel === 'small') {
         defaultDetUrl = PADDLE_DET_SMALL_URL;
     } else {
-        defaultDetUrl = chrome.runtime.getURL('paddleocr/tiny/det.onnx');
+        defaultDetUrl = PADDLE_DET_TINY_URL;
     }
     var defaultRecUrl, defaultDicUrl;
     if (paddleRecModel === 'small') {
         defaultRecUrl = ppocrv6_small_rec;
         defaultDicUrl = ppocrv6_small_dict;
     } else {
-        defaultRecUrl = chrome.runtime.getURL('paddleocr/tiny/rec.onnx');
+        // Tiny rec.onnx is downloaded remotely; the dictionary stays bundled.
+        defaultRecUrl = PADDLE_REC_TINY_URL;
         defaultDicUrl = chrome.runtime.getURL('paddleocr/tiny/ppocrv6_tiny_dict.txt');
     }
     // Include the det/rec models + extra params in the key so switching any of

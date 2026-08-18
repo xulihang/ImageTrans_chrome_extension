@@ -192,7 +192,7 @@ function load() {
     useYOLODetection: false,
     useYOLOForJapanese: true,
     paddleDetModel: 'small',
-    paddleRecModel: 'tiny',
+    paddleRecModel: 'small',
     paddleOCRParams: '',
     xSpacing: 15,
     ySpacing: 15,
