@@ -406,6 +406,9 @@ chrome.storage.sync.get({
     if (items.paddleDetModel) {
         paddleDetModel = items.paddleDetModel;
     }
+    if (items.paddleRecModel) {
+        paddleRecModel = items.paddleRecModel;
+    }
     if (items.paddleOCRParams !== undefined) {
         try {
             paddleOCRParams = JSON.parse(items.paddleOCRParams || '{}') || {};
@@ -1790,6 +1793,11 @@ var ppocrv6_small_dict = chrome.runtime.getURL('paddleocr/ppocrv6_dict.txt');
 // Detection model choice: "tiny" (bundled) or "small" (downloaded on demand).
 var paddleDetModel = "tiny";
 var PADDLE_DET_SMALL_URL = 'https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.9.1/onnx/PP-OCRv6/det/PP-OCRv6_det_small.onnx';
+// Recognition model choice for the default Chinese/English: "tiny" (bundled,
+// paddleocr/tiny/rec.onnx) or "small" (bundled, paddleocr/rec.onnx, higher
+// accuracy). Only affects the default rec; language-specific rec models (e.g.
+// Arabic, Korean) keep their own model.
+var paddleRecModel = "tiny";
 // Extra PaddleOCR init params configured in options, e.g. {det_db_thresh:0.6, erode_size:2}.
 // Stored as a JSON string; parsed on load. Included in the model key so changing
 // them triggers a re-init.
@@ -1860,9 +1868,17 @@ function getPaddleModelInfo(sourceLang) {
     } else {
         defaultDetUrl = chrome.runtime.getURL('paddleocr/tiny/det.onnx');
     }
-    // Include the det model + extra params in the key so switching either
-    // (tiny/small, or the extra OCR params) re-initializes the pipeline.
-    var modelKey = langKey + '_det_' + paddleDetModel + '_p' + hashString(paddleOCRParamsSig);
+    var defaultRecUrl, defaultDicUrl;
+    if (paddleRecModel === 'small') {
+        defaultRecUrl = ppocrv6_small_rec;
+        defaultDicUrl = ppocrv6_small_dict;
+    } else {
+        defaultRecUrl = chrome.runtime.getURL('paddleocr/tiny/rec.onnx');
+        defaultDicUrl = chrome.runtime.getURL('paddleocr/tiny/ppocrv6_tiny_dict.txt');
+    }
+    // Include the det/rec models + extra params in the key so switching any of
+    // them (tiny/small, or the extra OCR params) re-initializes the pipeline.
+    var modelKey = langKey + '_det_' + paddleDetModel + '_rec_' + paddleRecModel + '_p' + hashString(paddleOCRParamsSig);
     var modelInfo = PADDLE_MODEL_URLS[langKey];
     if (modelInfo) {
         return {
@@ -1877,8 +1893,8 @@ function getPaddleModelInfo(sourceLang) {
     return {
         modelKey: modelKey,
         detUrl: defaultDetUrl,
-        recUrl: chrome.runtime.getURL('paddleocr/tiny/rec.onnx'),
-        dicUrl: chrome.runtime.getURL('paddleocr/tiny/ppocrv6_tiny_dict.txt')
+        recUrl: defaultRecUrl,
+        dicUrl: defaultDicUrl
     };
 }
 
@@ -5467,6 +5483,7 @@ chrome.storage.onChanged.addListener(function(changes, areaName) {
     if (changes.useYOLODetection !== undefined) useYOLODetection = changes.useYOLODetection.newValue;
     if (changes.useYOLOForJapanese !== undefined) useYOLOForJapanese = changes.useYOLOForJapanese.newValue;
     if (changes.paddleDetModel) paddleDetModel = changes.paddleDetModel.newValue;
+    if (changes.paddleRecModel) paddleRecModel = changes.paddleRecModel.newValue;
     if (changes.paddleOCRParams !== undefined) {
         try {
             paddleOCRParams = JSON.parse(changes.paddleOCRParams.newValue || '{}') || {};

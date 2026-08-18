@@ -398,6 +398,14 @@
         <span style="font-size:12px;color:var(--text-secondary);" data-i18n="options_paddle_det_small_hint">The small detection model is downloaded from ModelScope on first use.</span>
       </div>
       <div class="form-row">
+        <label for="paddleRecModel" data-i18n="options_paddle_rec_model">Recognition Model</label>
+        <select id="paddleRecModel">
+          <option value="tiny" data-i18n="options_paddle_rec_tiny">Tiny (bundled)</option>
+          <option value="small" data-i18n="options_paddle_rec_small">Small (bundled)</option>
+        </select>
+        <span style="font-size:12px;color:var(--text-secondary);" data-i18n="options_paddle_rec_small_hint">The small recognition model is bundled and more accurate. Only affects the default Chinese/English recognition.</span>
+      </div>
+      <div class="form-row">
         <label for="paddleOCRParams" data-i18n="options_paddle_extra_params">Extra OCR Params (JSON)</label>
         <input id="paddleOCRParams" type="text" placeholder='{"det_db_thresh":0.6,"erode_size":2}' class="wide" />
         <span style="font-size:12px;color:var(--text-secondary);" data-i18n="options_paddle_extra_params_hint">Passed to PaddleOCR init. Supports det_db_thresh, det_db_box_thresh, det_db_unclip_ratio, erode_size, dev (debug visuals) and log.</span>
