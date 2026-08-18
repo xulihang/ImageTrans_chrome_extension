@@ -1798,13 +1798,12 @@ var PADDLE_DET_TINY_URL = 'https://www.modelscope.cn/models/RapidAI/RapidOCR/res
 // YOLO text-line detection model (no longer bundled). Downloaded from ModelScope
 // on first use and cached by the background service worker (IndexedDB).
 var YOLO_MODEL_URL = 'https://www.modelscope.cn/models/xulihang/ImageTrans/resolve/master/model.onnx';
-// Recognition model choice for the default Chinese/English: "tiny" or "small"
-// (both downloaded from ModelScope, higher accuracy with small). Only affects
-// the default rec; language-specific rec models (e.g. Arabic, Korean) keep
-// their own model.
+// Recognition model choice for the default Chinese/English: "tiny" (downloaded
+// from ModelScope) or "small" (bundled, higher accuracy). Only affects the
+// default rec; language-specific rec models (e.g. Arabic, Korean) keep their
+// own model.
 var paddleRecModel = "tiny";
 var PADDLE_REC_TINY_URL = 'https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.9.1/onnx/PP-OCRv6/rec/PP-OCRv6_rec_tiny.onnx';
-var PADDLE_REC_SMALL_URL = 'https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.9.1/onnx/PP-OCRv6/rec/PP-OCRv6_rec_small.onnx';
 // Extra PaddleOCR init params configured in options, e.g. {det_db_thresh:0.6, erode_size:2}.
 // Stored as a JSON string; parsed on load. Included in the model key so changing
 // them triggers a re-init.
@@ -1876,11 +1875,11 @@ function getPaddleModelInfo(sourceLang) {
         defaultDetUrl = PADDLE_DET_TINY_URL;
     }
     var defaultRecUrl, defaultDicUrl;
-    // Both tiny and small rec.onnx are downloaded remotely; the dictionary stays bundled.
     if (paddleRecModel === 'small') {
-        defaultRecUrl = PADDLE_REC_SMALL_URL;
+        defaultRecUrl = ppocrv6_small_rec;
         defaultDicUrl = ppocrv6_small_dict;
     } else {
+        // Tiny rec.onnx is downloaded remotely; the dictionary stays bundled.
         defaultRecUrl = PADDLE_REC_TINY_URL;
         defaultDicUrl = chrome.runtime.getURL('paddleocr/tiny/ppocrv6_tiny_dict.txt');
     }
