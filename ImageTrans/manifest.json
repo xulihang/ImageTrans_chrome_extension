@@ -68,6 +68,8 @@
         "paddleocr/ort.min.js",
         "paddleocr/esearch-ocr/dist/esearch-ocr.umd.js",
         "paddleocr/page-ocr.js",
+        "paddleocr/tiny/det.onnx",
+        "paddleocr/tiny/rec.onnx",
         "paddleocr/tiny/ppocrv6_tiny_dict.txt",
         "paddleocr/rec.onnx",
         "paddleocr/ppocrv6_dict.txt",
