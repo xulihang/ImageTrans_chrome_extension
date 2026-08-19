@@ -326,7 +326,7 @@ chrome.storage.sync.get({
     useYOLODetection: false,
     useYOLOForJapanese: true,
     paddleDetModel: 'small',
-    paddleRecModel: 'small',
+    paddleRecModel: 'tiny',
     paddleExecutionProvider: 'webgpu',
     paddleOCRParams: '',
     translationMode: 'imagetrans',
@@ -1795,17 +1795,19 @@ var paddleInitResolver = null;
 var paddlePendingRequests = {};
 var ppocrv6_small_rec = chrome.runtime.getURL('paddleocr/rec.onnx');
 var ppocrv6_small_dict = chrome.runtime.getURL('paddleocr/ppocrv6_dict.txt');
-// Detection model choice: "small" (bundled, PP-OCRv6, the default) or "tiny"
-// (downloaded from ModelScope on first use). Only affects the default det;
-// language-specific det models keep their own.
+// Detection model choice: "small" (bundled, PP-OCRv6, accurate, the default)
+// or "tiny" (downloaded from ModelScope on first use). Detection runs once per
+// image, so keep the accurate small model by default. Language-specific det
+// models (e.g. Japanese small, Arabic) keep their own.
 var paddleDetModel = "small";
 var PADDLE_DET_SMALL_URL = chrome.runtime.getURL('paddleocr/PP-OCRv6_det_small.onnx');
 var PADDLE_DET_TINY_URL = 'https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.9.1/onnx/PP-OCRv6/det/PP-OCRv6_det_tiny.onnx';
-// Recognition model choice for the default Chinese/English: "small" (bundled,
-// paddleocr/rec.onnx, higher accuracy, the default) or "tiny" (downloaded from
-// ModelScope on first use). Only affects the default rec; language-specific
-// rec models (e.g. Arabic, Korean) keep their own model.
-var paddleRecModel = "small";
+// Recognition model choice for the default Chinese/English: "tiny" (downloaded
+// from ModelScope on first use, fastest, the default) or "small" (bundled,
+// paddleocr/rec.onnx, higher accuracy). Recognition runs per detected region,
+// so tiny gives the biggest speedup. Language-specific rec models (e.g.
+// Japanese, Arabic, Korean) keep their own model.
+var paddleRecModel = "tiny";
 // Inference engine for ONNX Runtime: "webgpu" (GPU, default, faster on phones) or "wasm" (CPU).
 // Falls back to wasm automatically when WebGPU is unavailable.
 var paddleExecutionProvider = "webgpu";
@@ -1823,6 +1825,7 @@ var PADDLE_MODEL_URLS = {
         dict: 'https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.4.0/paddle/PP-OCRv5/rec/ch_PP-OCRv5_rec_mobile_infer/ppocrv5_dict.txt'
     },
     japanese: {
+        det: PADDLE_DET_SMALL_URL,
         rec: ppocrv6_small_rec,
         dict: ppocrv6_small_dict
     },
@@ -1898,8 +1901,9 @@ function getPaddleModelInfo(sourceLang) {
     if (modelInfo) {
         return {
             modelKey: modelKey,
-            // A language-specific det (e.g. Arabic) is only kept with the tiny
-            // default; selecting "small" uses the chosen det for every language.
+            // A language-specific det (e.g. Japanese keeps the bundled small,
+            // Arabic has its own) is only kept with the tiny default; selecting
+            // "small" uses the chosen det for every language.
             detUrl: paddleDetModel === 'small' ? defaultDetUrl : (modelInfo.det || defaultDetUrl),
             recUrl: modelInfo.rec,
             dicUrl: modelInfo.dict

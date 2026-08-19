@@ -194,7 +194,7 @@ function load() {
     useYOLODetection: false,
     useYOLOForJapanese: true,
     paddleDetModel: 'small',
-    paddleRecModel: 'small',
+    paddleRecModel: 'tiny',
     paddleExecutionProvider: 'webgpu',
     paddleOCRParams: '',
     xSpacing: 15,
