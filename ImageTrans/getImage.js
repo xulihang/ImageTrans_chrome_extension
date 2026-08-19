@@ -1924,6 +1924,26 @@ function getPaddleModelInfo(sourceLang) {
     };
 }
 
+function loadGzippedLibrary(src) {
+    return fetch(src)
+        .then(function(response) {
+            return response.body.pipeThrough(new DecompressionStream('gzip'));
+        })
+        .then(function(decompressedStream) {
+            return new Response(decompressedStream).text();
+        })
+        .then(function(code) {
+            return new Promise(function(resolve, reject) {
+                var script = document.createElement('script');
+                script.setAttribute('type', 'text/javascript');
+                script.textContent = code;
+                document.body.appendChild(script);
+                console.log(src + ' loaded (gzip inline)');
+                resolve(true);
+            });
+        });
+}
+
 function loadLibrary(src, type, id) {
     return new Promise(function(resolve, reject) {
         var scriptEle = document.createElement("script");
@@ -1941,6 +1961,11 @@ function loadLibrary(src, type, id) {
         });
     });
 }
+
+// Firefox keeps a gzipped copy of the (large) OpenCV bundle, whose network
+// messages Firefox limits more tightly than Chrome does. The browser-detection
+// branch below keeps the Chrome and Firefox repos' getImage.js identical.
+var isFirefox = /Firefox\//i.test(navigator.userAgent);
 
 function injectPaddleLibraries() {
     if (paddleInjected) return Promise.resolve();
@@ -2010,7 +2035,9 @@ function injectPaddleLibraries() {
         window.addEventListener('message', messageListener);
 
         Promise.all([
-            loadLibrary(chrome.runtime.getURL('paddleocr/opencv.js'), 'text/javascript'),
+            isFirefox
+                ? loadGzippedLibrary(chrome.runtime.getURL('paddleocr/opencv.js.gz'))
+                : loadLibrary(chrome.runtime.getURL('paddleocr/opencv.js'), 'text/javascript'),
             loadLibrary(chrome.runtime.getURL('paddleocr/ort.min.js'), 'text/javascript')
         ]).then(function() {
             return loadLibrary(chrome.runtime.getURL('paddleocr/esearch-ocr/dist/esearch-ocr.umd.js'), 'text/javascript');
