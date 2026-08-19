@@ -195,7 +195,7 @@ function load() {
     useYOLOForJapanese: true,
     paddleDetModel: 'small',
     paddleRecModel: 'small',
-    paddleExecutionProvider: 'wasm',
+    paddleExecutionProvider: 'webgpu',
     paddleOCRParams: '',
     xSpacing: 15,
     ySpacing: 15,
@@ -264,7 +264,7 @@ function load() {
       document.getElementById("paddleRecModel").value = items.paddleRecModel;
     }
     document.getElementById("paddleOCRParams").value = items.paddleOCRParams || '';
-    document.getElementById("paddleExecutionProvider").value = items.paddleExecutionProvider || 'wasm';
+    document.getElementById("paddleExecutionProvider").value = items.paddleExecutionProvider || 'webgpu';
     document.getElementById("xSpacing").value = items.xSpacing;
     document.getElementById("ySpacing").value = items.ySpacing;
     if (items.uiLanguage) {

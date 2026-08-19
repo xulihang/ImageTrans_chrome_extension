@@ -327,7 +327,7 @@ chrome.storage.sync.get({
     useYOLOForJapanese: true,
     paddleDetModel: 'small',
     paddleRecModel: 'small',
-    paddleExecutionProvider: 'wasm',
+    paddleExecutionProvider: 'webgpu',
     paddleOCRParams: '',
     translationMode: 'imagetrans',
     defaultPresetTranslation: defaultPresetTranslation,
@@ -1806,9 +1806,9 @@ var PADDLE_DET_TINY_URL = 'https://www.modelscope.cn/models/RapidAI/RapidOCR/res
 // ModelScope on first use). Only affects the default rec; language-specific
 // rec models (e.g. Arabic, Korean) keep their own model.
 var paddleRecModel = "small";
-// Inference engine for ONNX Runtime: "wasm" (CPU, default) or "webgpu" (GPU, faster on phones).
+// Inference engine for ONNX Runtime: "webgpu" (GPU, default, faster on phones) or "wasm" (CPU).
 // Falls back to wasm automatically when WebGPU is unavailable.
-var paddleExecutionProvider = "wasm";
+var paddleExecutionProvider = "webgpu";
 var PADDLE_REC_SMALL_URL = chrome.runtime.getURL('paddleocr/rec.onnx');
 var PADDLE_REC_TINY_URL = 'https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.9.1/onnx/PP-OCRv6/rec/PP-OCRv6_rec_tiny.onnx';
 // Extra PaddleOCR init params configured in options, e.g. {det_db_thresh:0.6, erode_size:2}.

@@ -408,8 +408,8 @@
       <div class="form-row">
         <label for="paddleExecutionProvider" data-i18n="options_paddle_execution_provider">Inference Engine</label>
         <select id="paddleExecutionProvider">
+          <option value="webgpu" selected data-i18n="options_paddle_ep_webgpu">WebGPU (GPU)</option>
           <option value="wasm" data-i18n="options_paddle_ep_wasm">WebAssembly (WASM)</option>
-          <option value="webgpu" data-i18n="options_paddle_ep_webgpu">WebGPU (GPU)</option>
         </select>
         <span style="font-size:12px;color:var(--text-secondary);" data-i18n="options_paddle_execution_provider_hint">WebGPU runs on the GPU and can be much faster on phones. Falls back to WASM automatically when WebGPU is unavailable.</span>
       </div>
