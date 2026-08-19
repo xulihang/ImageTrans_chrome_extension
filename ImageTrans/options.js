@@ -1,6 +1,9 @@
 const DEFAULT_OPENAI_PROMPT = `Translate the following texts from {sourceLang} to {targetLang}. Return ONLY a JSON array of translated strings in the same order (no markdown, no code fences).
 Texts: {texts}`;
 
+// Default PaddleOCR init params, matching getImage.js PADDLE_OCR_DEFAULT_PARAMS.
+const PADDLE_OCR_DEFAULT_PARAMS = '{"det_db_thresh":0.3,"det_db_box_thresh":0.6,"detMean":[0.5, 0.5, 0.5],"detStd":[0.5, 0.5, 0.5],"det_db_unclip_ratio":1.5,"erode_size":1}';
+
 // --- Custom i18n: allow user to override UI language ---
 // Guard the top-level chrome.i18n access. On some platforms (e.g. Edge on
 // Android) chrome.i18n may be unavailable in extension pages; accessing it at
@@ -196,7 +199,7 @@ function load() {
     paddleDetModel: 'small',
     paddleRecModel: 'tiny',
     paddleExecutionProvider: 'webgpu',
-    paddleOCRParams: '',
+    paddleOCRParams: PADDLE_OCR_DEFAULT_PARAMS,
     xSpacing: 15,
     ySpacing: 15,
     sendRequestsViaBackground: false,
@@ -263,7 +266,7 @@ function load() {
     if (items.paddleRecModel) {
       document.getElementById("paddleRecModel").value = items.paddleRecModel;
     }
-    document.getElementById("paddleOCRParams").value = items.paddleOCRParams || '';
+    document.getElementById("paddleOCRParams").value = items.paddleOCRParams || PADDLE_OCR_DEFAULT_PARAMS;
     document.getElementById("paddleExecutionProvider").value = items.paddleExecutionProvider || 'webgpu';
     document.getElementById("xSpacing").value = items.xSpacing;
     document.getElementById("ySpacing").value = items.ySpacing;

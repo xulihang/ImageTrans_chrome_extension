@@ -31,6 +31,11 @@
   }
 })();
 
+// Default PaddleOCR init params (JSON string). Used whenever the option is empty.
+// detMean/detStd (not mean/std) are the keys the det model reads for input
+// normalization. Softer det_db_thresh (0.3) + box_thresh (0.6) and [0.5,0.5,0.5]
+// normalization often fare better on horizontal Chinese text detection.
+var PADDLE_OCR_DEFAULT_PARAMS = '{"det_db_thresh":0.3,"det_db_box_thresh":0.6,"detMean":[0.5, 0.5, 0.5],"detStd":[0.5, 0.5, 0.5],"det_db_unclip_ratio":1.5,"erode_size":1}';
 var x=0;
 var y=0;
 var canvas;
@@ -328,7 +333,7 @@ chrome.storage.sync.get({
     paddleDetModel: 'small',
     paddleRecModel: 'tiny',
     paddleExecutionProvider: 'webgpu',
-    paddleOCRParams: '',
+    paddleOCRParams: PADDLE_OCR_DEFAULT_PARAMS,
     translationMode: 'imagetrans',
     defaultPresetTranslation: defaultPresetTranslation,
     sendRequestsViaBackground: false,
@@ -416,7 +421,9 @@ chrome.storage.sync.get({
     }
     if (items.paddleOCRParams !== undefined) {
         try {
-            paddleOCRParams = JSON.parse(items.paddleOCRParams || '{}') || {};
+            // Empty/blank stored value falls back to the default params so the
+            // tuned defaults apply even for existing users who never set them.
+            paddleOCRParams = JSON.parse(items.paddleOCRParams || PADDLE_OCR_DEFAULT_PARAMS) || {};
         } catch (e) {
             console.warn('[ImageTrans] Invalid paddleOCRParams JSON, ignored:', items.paddleOCRParams);
             paddleOCRParams = {};
@@ -5507,7 +5514,7 @@ chrome.storage.onChanged.addListener(function(changes, areaName) {
     if (changes.paddleRecModel) paddleRecModel = changes.paddleRecModel.newValue;
     if (changes.paddleOCRParams !== undefined) {
         try {
-            paddleOCRParams = JSON.parse(changes.paddleOCRParams.newValue || '{}') || {};
+            paddleOCRParams = JSON.parse(changes.paddleOCRParams.newValue || PADDLE_OCR_DEFAULT_PARAMS) || {};
         } catch (e) {
             paddleOCRParams = {};
         }
