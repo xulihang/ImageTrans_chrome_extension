@@ -21,6 +21,10 @@
 <body>
 <h1>PaddleOCR 本地测试</h1>
 <div id="status">正在加载依赖库...</div>
+<select id="ep-select">
+  <option value="wasm">WebAssembly (WASM)</option>
+  <option value="webgpu">WebGPU (GPU)</option>
+</select>
 <input type="file" id="file-input" accept="image/*" disabled>
 <div id="container">
   <div id="image-area">
@@ -269,13 +273,29 @@ async function init() {
     const dic = await res.text();
 
     statusEl.textContent = '正在初始化 PaddleOCR...';
+    var eps;
+    var ep = document.getElementById('ep-select').value;
+    if (ep === 'webgpu') {
+      var adapter = null;
+      try { adapter = navigator.gpu ? await navigator.gpu.requestAdapter() : null; } catch (e) { adapter = null; }
+      if (adapter) {
+        eps = ['webgpu', 'wasm'];
+        if (ort.env && ort.env.webgpu) ort.env.webgpu.powerPreference = 'high-performance';
+      } else {
+        statusEl.textContent = 'WebGPU 不可用，回退到 WASM...';
+        eps = ['wasm'];
+      }
+    } else {
+      eps = ['wasm'];
+    }
     await Paddle.init({
       detPath: DET_PATH,
       recPath: REC_PATH,
       dic: dic,
       ort: ort,
       node: false,
-      cv: cv
+      cv: cv,
+      ortOption: { executionProviders: eps, graphOptimizationLevel: 'all' }
     });
 
     paddleReady = true;

@@ -406,6 +406,14 @@
         <span style="font-size:12px;color:var(--text-secondary);" data-i18n="options_paddle_rec_small_hint">The small recognition model is bundled and more accurate. Only affects the default Chinese/English recognition.</span>
       </div>
       <div class="form-row">
+        <label for="paddleExecutionProvider" data-i18n="options_paddle_execution_provider">Inference Engine</label>
+        <select id="paddleExecutionProvider">
+          <option value="wasm" data-i18n="options_paddle_ep_wasm">WebAssembly (WASM)</option>
+          <option value="webgpu" data-i18n="options_paddle_ep_webgpu">WebGPU (GPU)</option>
+        </select>
+        <span style="font-size:12px;color:var(--text-secondary);" data-i18n="options_paddle_execution_provider_hint">WebGPU runs on the GPU and can be much faster on phones. Falls back to WASM automatically when WebGPU is unavailable.</span>
+      </div>
+      <div class="form-row">
         <label for="paddleOCRParams" data-i18n="options_paddle_extra_params">Extra OCR Params (JSON)</label>
         <input id="paddleOCRParams" type="text" placeholder='{"det_db_thresh":0.6,"erode_size":2}' class="wide" />
         <span style="font-size:12px;color:var(--text-secondary);" data-i18n="options_paddle_extra_params_hint">Passed to PaddleOCR init. Supports det_db_thresh, det_db_box_thresh, det_db_unclip_ratio, erode_size, dev (debug visuals) and log.</span>

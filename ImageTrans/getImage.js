@@ -327,6 +327,7 @@ chrome.storage.sync.get({
     useYOLOForJapanese: true,
     paddleDetModel: 'small',
     paddleRecModel: 'small',
+    paddleExecutionProvider: 'wasm',
     paddleOCRParams: '',
     translationMode: 'imagetrans',
     defaultPresetTranslation: defaultPresetTranslation,
@@ -409,6 +410,9 @@ chrome.storage.sync.get({
     }
     if (items.paddleRecModel) {
         paddleRecModel = items.paddleRecModel;
+    }
+    if (items.paddleExecutionProvider) {
+        paddleExecutionProvider = items.paddleExecutionProvider;
     }
     if (items.paddleOCRParams !== undefined) {
         try {
@@ -1802,6 +1806,9 @@ var PADDLE_DET_TINY_URL = 'https://www.modelscope.cn/models/RapidAI/RapidOCR/res
 // ModelScope on first use). Only affects the default rec; language-specific
 // rec models (e.g. Arabic, Korean) keep their own model.
 var paddleRecModel = "small";
+// Inference engine for ONNX Runtime: "wasm" (CPU, default) or "webgpu" (GPU, faster on phones).
+// Falls back to wasm automatically when WebGPU is unavailable.
+var paddleExecutionProvider = "wasm";
 var PADDLE_REC_SMALL_URL = chrome.runtime.getURL('paddleocr/rec.onnx');
 var PADDLE_REC_TINY_URL = 'https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.9.1/onnx/PP-OCRv6/rec/PP-OCRv6_rec_tiny.onnx';
 // Extra PaddleOCR init params configured in options, e.g. {det_db_thresh:0.6, erode_size:2}.
@@ -1883,9 +1890,10 @@ function getPaddleModelInfo(sourceLang) {
         defaultRecUrl = PADDLE_REC_TINY_URL;
         defaultDicUrl = chrome.runtime.getURL('paddleocr/tiny/ppocrv6_tiny_dict.txt');
     }
-    // Include the det/rec models + extra params in the key so switching any of
-    // them (tiny/small, or the extra OCR params) re-initializes the pipeline.
-    var modelKey = langKey + '_det_' + paddleDetModel + '_rec_' + paddleRecModel + '_p' + hashString(paddleOCRParamsSig);
+    // Include the det/rec models, execution provider and extra params in the key
+    // so switching any of them (tiny/small, wasm/webgpu, or the extra OCR params)
+    // re-initializes the pipeline.
+    var modelKey = langKey + '_det_' + paddleDetModel + '_rec_' + paddleRecModel + '_ep_' + paddleExecutionProvider + '_p' + hashString(paddleOCRParamsSig);
     var modelInfo = PADDLE_MODEL_URLS[langKey];
     if (modelInfo) {
         return {
@@ -2023,6 +2031,7 @@ function ensurePaddleModel(sourceLang) {
             dicPath: modelInfo.dicUrl,
             modelKey: modelInfo.modelKey,
             wasmPath: chrome.runtime.getURL('paddleocr/'),
+            executionProvider: paddleExecutionProvider,
             extraParams: paddleOCRParams,
             requestId: 'init_' + modelInfo.modelKey
         }, '*');
@@ -2041,7 +2050,8 @@ function doPaddleOCRRequest(dataURL, sourceLang, scale) {
             sourceLang: sourceLang || 'auto',
             requestId: requestId,
             xSpacing: xSpacing,
-            ySpacing: ySpacing
+            ySpacing: ySpacing,
+            executionProvider: paddleExecutionProvider
         };
         if (useYOLO) {
             msg.yoloModelUrl = chrome.runtime.getURL('paddleocr/model.onnx');

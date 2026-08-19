@@ -65,7 +65,31 @@
     });
   }
 
-  async function init(detPath, recPath, dicUrl, modelKey, wasmPath, extraParams) {
+  // Execution provider for ONNX Runtime sessions: "wasm" (CPU) or "webgpu" (GPU).
+  // Set on init so both the PaddleOCR and YOLO sessions use the same engine.
+  var currentExecutionProvider = 'wasm';
+
+  // Probe whether a GPU adapter can actually be created. navigator.gpu existing
+  // doesn't guarantee one — on phones the adapter can still be null (e.g. the
+  // GPU process failed to start), and ORT would throw when creating the session.
+  // Returns the adapter (truthy) when available, otherwise null.
+  function webgpuAvailable() {
+    if (typeof navigator === 'undefined' || !navigator.gpu || !navigator.gpu.requestAdapter) {
+      return Promise.resolve(null);
+    }
+    return navigator.gpu.requestAdapter().catch(function() { return null; });
+  }
+
+  // 'webgpu' is listed before 'wasm' so that any op the WebGPU EP doesn't
+  // support falls back to CPU automatically instead of failing the session.
+  function buildExecutionProviders(ep) {
+    if (ep === 'webgpu' && typeof navigator !== 'undefined' && navigator.gpu) {
+      return ['webgpu', 'wasm'];
+    }
+    return ['wasm'];
+  }
+
+  async function init(detPath, recPath, dicUrl, modelKey, wasmPath, extraParams, executionProvider) {
     // Same model already loaded — reuse
     if (currentModelKey === modelKey && initPromise) return initPromise;
     // Switching to a different model — reset and re-init
@@ -76,9 +100,36 @@
     initPromise = (async function() {
       await waitForDeps();
 
+      currentExecutionProvider = (executionProvider === 'webgpu') ? 'webgpu' : 'wasm';
+
       if (window.ort.env && window.ort.env.wasm) {
         window.ort.env.wasm.wasmPaths = wasmPath;
       }
+      // Probe WebGPU up front so a phone without a working GPU adapter falls
+      // back to WASM instead of failing session creation.
+      var executionProviders;
+      if (currentExecutionProvider === 'webgpu') {
+        var webgpuAdapter = await webgpuAvailable();
+        if (webgpuAdapter) {
+          executionProviders = ['webgpu', 'wasm'];
+          if (window.ort.env && window.ort.env.webgpu) {
+            window.ort.env.webgpu.powerPreference = 'high-performance';
+          }
+          var adapterInfo = '';
+          try {
+            var info = await webgpuAdapter.info;
+            if (info) adapterInfo = ((info.vendor || '') + ' ' + (info.architecture || '')).trim();
+          } catch (e) { adapterInfo = ''; }
+          console.log('[ImageTrans] Using WebGPU inference' + (adapterInfo ? ' (GPU: ' + adapterInfo + ')' : ''));
+        } else {
+          console.warn('[ImageTrans] WebGPU not available in this page context, falling back to WASM.');
+          currentExecutionProvider = 'wasm';
+          executionProviders = ['wasm'];
+        }
+      } else {
+        executionProviders = ['wasm'];
+      }
+      console.log('[ImageTrans] ONNX Runtime execution providers:', executionProviders.join(', '));
 
       // For remote URLs (e.g. modelscope), fetch via extension's background SW
       // which caches models in extension-owned IndexedDB so they persist across sites
@@ -101,7 +152,11 @@
         dic: dic,
         ort: window.ort,
         node: false,
-        cv: window.cv
+        cv: window.cv,
+        ortOption: {
+          executionProviders: executionProviders,
+          graphOptimizationLevel: 'all'
+        }
       }, extraParams || {}));
 
       currentModelKey = modelKey;
@@ -332,6 +387,7 @@
   // --- YOLOv8 detection ---
   var yoloSession = null;
   var yoloModelUrl = null;
+  var yoloSessionEp = null;
   var INPUT_SIZE_YOLO = 640;
   var YOLO_CONF_THRESHOLD = 0.25;
   var YOLO_NMS_THRESHOLD = 0.45;
@@ -503,9 +559,12 @@
   }
 
   async function ensureYOLOModel(yoloUrl) {
-    if (yoloSession && yoloModelUrl === yoloUrl) return;
+    var ep = currentExecutionProvider;
+    if (yoloSession && yoloModelUrl === yoloUrl && yoloSessionEp === ep) return;
     yoloModelUrl = yoloUrl;
-    var sessionOpts = { executionProviders: ["wasm"], graphOptimizationLevel: "all" };
+    yoloSessionEp = ep;
+    var sessionOpts = { executionProviders: buildExecutionProviders(ep), graphOptimizationLevel: "all" };
+    console.log('[ImageTrans] YOLO execution providers:', sessionOpts.executionProviders.join(', '));
     yoloSession = await window.ort.InferenceSession.create(yoloUrl, sessionOpts);
   }
 
@@ -635,7 +694,7 @@
       case 'PADDLE_INIT':
         (async function() {
           try {
-            await init(data.detPath, data.recPath, data.dicPath, data.modelKey || 'default', data.wasmPath, data.extraParams);
+            await init(data.detPath, data.recPath, data.dicPath, data.modelKey || 'default', data.wasmPath, data.extraParams, data.executionProvider);
             window.postMessage({
               source: 'imagetrans-extension',
               type: 'PADDLE_INIT_RESULT',

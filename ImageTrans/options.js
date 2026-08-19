@@ -102,6 +102,7 @@ function save() {
   const useYOLOForJapanese = document.getElementById("useYOLOForJapanese").checked;
   const paddleDetModel = document.getElementById("paddleDetModel").value;
   const paddleRecModel = document.getElementById("paddleRecModel").value;
+  const paddleExecutionProvider = document.getElementById("paddleExecutionProvider").value;
   const paddleOCRParams = document.getElementById("paddleOCRParams").value.trim();
   const xSpacing = parseInt(document.getElementById("xSpacing").value) || 15;
   const ySpacing = parseInt(document.getElementById("ySpacing").value) || 15;
@@ -148,6 +149,7 @@ function save() {
     useYOLOForJapanese: useYOLOForJapanese,
     paddleDetModel: paddleDetModel,
     paddleRecModel: paddleRecModel,
+    paddleExecutionProvider: paddleExecutionProvider,
     paddleOCRParams: paddleOCRParams,
     sendRequestsViaBackground: sendRequestsViaBackground,
     addPinyinToSource: addPinyinToSource,
@@ -193,6 +195,7 @@ function load() {
     useYOLOForJapanese: true,
     paddleDetModel: 'small',
     paddleRecModel: 'small',
+    paddleExecutionProvider: 'wasm',
     paddleOCRParams: '',
     xSpacing: 15,
     ySpacing: 15,
@@ -261,6 +264,7 @@ function load() {
       document.getElementById("paddleRecModel").value = items.paddleRecModel;
     }
     document.getElementById("paddleOCRParams").value = items.paddleOCRParams || '';
+    document.getElementById("paddleExecutionProvider").value = items.paddleExecutionProvider || 'wasm';
     document.getElementById("xSpacing").value = items.xSpacing;
     document.getElementById("ySpacing").value = items.ySpacing;
     if (items.uiLanguage) {
