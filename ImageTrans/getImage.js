@@ -328,7 +328,7 @@ chrome.storage.sync.get({
     openaiKey: '',
     openaiModel: 'gpt-4o',
     openaiPrompt: '',
-    openaiExtraParams: '',
+    openaiExtraParams: '{"thinking":{"type":"disabled"}}',
     ocrMethod: 'paddleocr',
     useYOLODetection: false,
     useYOLOForJapanese: true,

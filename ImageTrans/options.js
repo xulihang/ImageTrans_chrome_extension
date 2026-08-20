@@ -4,6 +4,9 @@ Texts: {texts}`;
 // Default PaddleOCR init params, matching getImage.js PADDLE_OCR_DEFAULT_PARAMS.
 const PADDLE_OCR_DEFAULT_PARAMS = '{"det_db_thresh":0.3,"det_db_box_thresh":0.6,"detMean":[0.5, 0.5, 0.5],"detStd":[0.5, 0.5, 0.5],"det_db_unclip_ratio":1.5,"erode_size":1}';
 
+// Default OpenAI extra params, merged into the chat/completions request body.
+const DEFAULT_OPENAI_EXTRA_PARAMS = '{"thinking":{"type":"disabled"}}';
+
 // --- Custom i18n: allow user to override UI language ---
 // Guard the top-level chrome.i18n access. On some platforms (e.g. Edge on
 // Android) chrome.i18n may be unavailable in extension pages; accessing it at
@@ -193,7 +196,7 @@ function load() {
     openaiKey: '',
     openaiModel: 'gpt-4o',
     openaiPrompt: DEFAULT_OPENAI_PROMPT,
-    openaiExtraParams: '',
+    openaiExtraParams: DEFAULT_OPENAI_EXTRA_PARAMS,
     ocrMethod: 'paddleocr',
     translationMode: 'imagetrans',
     defaultPresetTranslation: 'glm4flash',
