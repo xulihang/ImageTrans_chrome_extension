@@ -61,9 +61,9 @@ var displayName = "";
 var sourceLang = "auto";
 var targetLang = "auto";
 var useOpenAI = false;
-var openaiURL = "https://api.openai.com/v1";
+var openaiURL = "https://api.deepseek.com/v1";
 var openaiKey = "";
-var openaiModel = "gpt-4o";
+var openaiModel = "deepseek-v4-flash";
 var openaiPrompt = "";
 var openaiExtraParams = "";
 
@@ -324,9 +324,9 @@ chrome.storage.sync.get({
     sourceLang: sourceLang,
     targetLang: targetLang,
     useOpenAI: false,
-    openaiURL: 'https://api.openai.com/v1',
+    openaiURL: 'https://api.deepseek.com/v1',
     openaiKey: '',
-    openaiModel: 'gpt-4o',
+    openaiModel: 'deepseek-v4-flash',
     openaiPrompt: '',
     openaiExtraParams: '{"thinking":{"type":"disabled"}}',
     ocrMethod: 'paddleocr',
