@@ -360,6 +360,10 @@
         <label for="openaiPrompt"><span data-i18n="options_prompt">Prompt</span> <span style="font-weight:400;color:var(--text-secondary);" data-i18n="options_prompt_hint">({sourceLang}, {targetLang}, {texts})</span></label>
       </div>
       <textarea id="openaiPrompt" rows="5"></textarea>
+      <div class="form-row" style="margin-top:10px;">
+        <label for="openaiExtraParams"><span data-i18n="options_openai_extra_params">Extra params (JSON)</span> <span style="font-weight:400;color:var(--text-secondary);" data-i18n="options_openai_extra_params_hint">Merged into the request body, e.g. {"thinking": {"type": "disabled"}}</span></label>
+      </div>
+      <textarea id="openaiExtraParams" rows="2" placeholder='{"thinking": {"type": "disabled"}}'></textarea>
     </div>
 
     <!-- Image Processing -->

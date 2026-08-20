@@ -65,6 +65,7 @@ var openaiURL = "https://api.openai.com/v1";
 var openaiKey = "";
 var openaiModel = "gpt-4o";
 var openaiPrompt = "";
+var openaiExtraParams = "";
 
 // TTS state
 var ttsUtterance = null;
@@ -327,6 +328,7 @@ chrome.storage.sync.get({
     openaiKey: '',
     openaiModel: 'gpt-4o',
     openaiPrompt: '',
+    openaiExtraParams: '',
     ocrMethod: 'paddleocr',
     useYOLODetection: false,
     useYOLOForJapanese: true,
@@ -400,6 +402,9 @@ chrome.storage.sync.get({
     }
     if (items.openaiPrompt) {
         openaiPrompt = items.openaiPrompt;
+    }
+    if (items.openaiExtraParams !== undefined) {
+        openaiExtraParams = items.openaiExtraParams;
     }
     if (items.ocrMethod) {
         ocrMethod = items.ocrMethod;
@@ -1030,10 +1035,10 @@ async function ajaxOpenAI(src, img, checkData, showOverlay) {
                 'Content-Type': 'application/json',
                 'Authorization': 'Bearer ' + openaiKey
             },
-            body: JSON.stringify({
+            body: JSON.stringify(Object.assign({
                 model: openaiModel,
                 messages: [{ role: 'user', content: prompt }]
-            })
+            }, parseOpenAIExtraParams()))
         });
         console.log(prompt);
         console.log(openaiResponse);
@@ -4471,6 +4476,19 @@ function translateScreenTextsViaMyMemory(sourceTexts) {
     return Promise.all(promises);
 }
 
+// Parse OpenAI extra params (a JSON object string) into a plain object.
+// Returns {} when the field is empty or invalid, so request bodies stay unchanged.
+function parseOpenAIExtraParams() {
+    if (!openaiExtraParams) return {};
+    try {
+        var parsed = JSON.parse(openaiExtraParams);
+        return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+    } catch (e) {
+        console.error('Invalid openaiExtraParams JSON:', openaiExtraParams);
+        return {};
+    }
+}
+
 function translateScreenTextsViaOpenAI(sourceTexts) {
     var actualTargetLang = targetLang === 'auto' ? 'english' : targetLang;
     var prompt = openaiPrompt
@@ -4486,10 +4504,10 @@ function translateScreenTextsViaOpenAI(sourceTexts) {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer ' + openaiKey
         },
-        body: JSON.stringify({
+        body: JSON.stringify(Object.assign({
             model: openaiModel,
             messages: [{ role: 'user', content: prompt }]
-        })
+        }, parseOpenAIExtraParams()))
     }).then(function(resp) {
         if (!resp.ok) {
             return resp.text().then(function(t) { throw new Error('OpenAI API error HTTP ' + resp.status + ': ' + t); });
@@ -5534,6 +5552,7 @@ chrome.storage.onChanged.addListener(function(changes, areaName) {
     if (changes.openaiKey) openaiKey = changes.openaiKey.newValue;
     if (changes.openaiModel) openaiModel = changes.openaiModel.newValue;
     if (changes.openaiPrompt) openaiPrompt = changes.openaiPrompt.newValue;
+    if (changes.openaiExtraParams !== undefined) openaiExtraParams = changes.openaiExtraParams.newValue;
     if (changes.ocrMethod) ocrMethod = changes.ocrMethod.newValue;
     if (changes.useYOLODetection !== undefined) useYOLODetection = changes.useYOLODetection.newValue;
     if (changes.useYOLOForJapanese !== undefined) useYOLOForJapanese = changes.useYOLOForJapanese.newValue;

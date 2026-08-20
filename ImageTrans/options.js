@@ -98,6 +98,7 @@ function save() {
   const openaiKey = document.getElementById("openaiKey").value;
   const openaiModel = document.getElementById("openaiModel").value;
   const openaiPrompt = document.getElementById("openaiPrompt").value;
+  const openaiExtraParams = document.getElementById("openaiExtraParams").value.trim();
   const ocrMethod = document.getElementById("ocrMethod").value;
   const translationMode = document.getElementById("translationMode").value;
   const defaultPresetTranslation = document.getElementById("defaultPresetTranslation").value;
@@ -145,6 +146,7 @@ function save() {
     openaiKey: openaiKey,
     openaiModel: openaiModel,
     openaiPrompt: openaiPrompt,
+    openaiExtraParams: openaiExtraParams,
     ocrMethod: ocrMethod,
     translationMode: translationMode,
     defaultPresetTranslation: defaultPresetTranslation,
@@ -191,6 +193,7 @@ function load() {
     openaiKey: '',
     openaiModel: 'gpt-4o',
     openaiPrompt: DEFAULT_OPENAI_PROMPT,
+    openaiExtraParams: '',
     ocrMethod: 'paddleocr',
     translationMode: 'imagetrans',
     defaultPresetTranslation: 'glm4flash',
@@ -249,6 +252,7 @@ function load() {
     document.getElementById("openaiKey").value = items.openaiKey;
     document.getElementById("openaiModel").value = items.openaiModel;
     document.getElementById("openaiPrompt").value = items.openaiPrompt;
+    document.getElementById("openaiExtraParams").value = items.openaiExtraParams || '';
     if (items.ocrMethod) {
       document.getElementById("ocrMethod").value = items.ocrMethod;
     }

@@ -83,6 +83,8 @@
   "options_model": { "message": "模型" },
   "options_prompt": { "message": "提示词" },
   "options_prompt_hint": { "message": "({sourceLang}, {targetLang}, {texts})" },
+  "options_openai_extra_params": { "message": "额外参数 (JSON)" },
+  "options_openai_extra_params_hint": { "message": "合并到请求体中，例如 {\"thinking\": {\"type\": \"disabled\"}}" },
   "options_image_processing": { "message": "图片处理（用于PaddleOCR）" },
   "options_x_spacing": { "message": "X 间距（像素）" },
   "options_x_spacing_hint": { "message": "合并相邻文本框的最大水平间距" },

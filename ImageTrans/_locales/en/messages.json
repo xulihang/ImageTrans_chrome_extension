@@ -83,6 +83,8 @@
   "options_model": { "message": "Model" },
   "options_prompt": { "message": "Prompt" },
   "options_prompt_hint": { "message": "({sourceLang}, {targetLang}, {texts})" },
+  "options_openai_extra_params": { "message": "Extra params (JSON)" },
+  "options_openai_extra_params_hint": { "message": "Merged into the request body, e.g. {\"thinking\": {\"type\": \"disabled\"}}" },
   "options_image_processing": { "message": "Image Processing (for PaddleOCR)" },
   "options_x_spacing": { "message": "X spacing (px)" },
   "options_x_spacing_hint": { "message": "Max horizontal gap for merging adjacent text boxes" },
