@@ -1986,6 +1986,15 @@ function loadLibrary(src, type, id) {
 // branch below keeps the Chrome and Firefox repos' getImage.js identical.
 var isFirefox = /Firefox\//i.test(navigator.userAgent);
 
+// Resolve the stored "Inference Engine" option ('webgpu' | 'webgpu-force' |
+// 'wasm') into the value page-ocr.js consumes. Firefox's WebGPU is unreliable,
+// so the regular 'webgpu' option is downgraded to WASM there; 'webgpu-force'
+// is left intact so users can always try WebGPU on any browser.
+function effectiveExecutionProvider() {
+    if (paddleExecutionProvider === 'webgpu' && isFirefox) return 'wasm';
+    return paddleExecutionProvider;
+}
+
 function injectPaddleLibraries() {
     if (paddleInjected) return Promise.resolve();
     paddleInjected = true;
@@ -2088,7 +2097,7 @@ function ensurePaddleModel(sourceLang) {
             dicPath: modelInfo.dicUrl,
             modelKey: modelInfo.modelKey,
             wasmPath: chrome.runtime.getURL('paddleocr/'),
-            executionProvider: paddleExecutionProvider,
+            executionProvider: effectiveExecutionProvider(),
             extraParams: paddleOCRParams,
             requestId: 'init_' + modelInfo.modelKey
         }, '*');
@@ -2108,7 +2117,7 @@ function doPaddleOCRRequest(dataURL, sourceLang, scale) {
             requestId: requestId,
             xSpacing: xSpacing,
             ySpacing: ySpacing,
-            executionProvider: paddleExecutionProvider
+            executionProvider: effectiveExecutionProvider()
         };
         if (useYOLO) {
             msg.yoloModelUrl = chrome.runtime.getURL('paddleocr/model.onnx');

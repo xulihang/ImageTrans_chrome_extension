@@ -82,8 +82,10 @@
 
   // 'webgpu' is listed before 'wasm' so that any op the WebGPU EP doesn't
   // support falls back to CPU automatically instead of failing the session.
+  // 'webgpu-force' forces WebGPU without the navigator.gpu pre-check (used by
+  // the "always try WebGPU" option, e.g. on Firefox where it may be unstable).
   function buildExecutionProviders(ep) {
-    if (ep === 'webgpu' && typeof navigator !== 'undefined' && navigator.gpu) {
+    if ((ep === 'webgpu' || ep === 'webgpu-force') && typeof navigator !== 'undefined' && (navigator.gpu || ep === 'webgpu-force')) {
       return ['webgpu', 'wasm'];
     }
     return ['wasm'];
@@ -100,16 +102,22 @@
     initPromise = (async function() {
       await waitForDeps();
 
-      currentExecutionProvider = (executionProvider === 'webgpu') ? 'webgpu' : 'wasm';
+      // 'webgpu-force' behaves like 'webgpu' for session building but skips the
+      // adapter pre-check, so an unavailable/GPU-less browser still tries WebGPU.
+      // It is kept distinct in currentExecutionProvider so the YOLO session is
+      // built with the same forced intent.
+      var forceWebGPU = (executionProvider === 'webgpu-force');
+      currentExecutionProvider = forceWebGPU ? 'webgpu-force' : ((executionProvider === 'webgpu') ? 'webgpu' : 'wasm');
 
       if (window.ort.env && window.ort.env.wasm) {
         window.ort.env.wasm.wasmPaths = wasmPath;
       }
       // Probe WebGPU up front so a phone without a working GPU adapter falls
-      // back to WASM instead of failing session creation.
+      // back to WASM instead of failing session creation. In force mode we skip
+      // the probe and always attempt WebGPU.
       var executionProviders;
-      if (currentExecutionProvider === 'webgpu') {
-        var webgpuAdapter = await webgpuAvailable();
+      if (currentExecutionProvider === 'webgpu' || currentExecutionProvider === 'webgpu-force') {
+        var webgpuAdapter = forceWebGPU ? true : await webgpuAvailable();
         if (webgpuAdapter) {
           executionProviders = ['webgpu', 'wasm'];
           if (window.ort.env && window.ort.env.webgpu) {

@@ -413,9 +413,10 @@
         <label for="paddleExecutionProvider" data-i18n="options_paddle_execution_provider">Inference Engine</label>
         <select id="paddleExecutionProvider">
           <option value="webgpu" selected data-i18n="options_paddle_ep_webgpu">WebGPU (GPU)</option>
+          <option value="webgpu-force" data-i18n="options_paddle_ep_webgpu_force">WebGPU (Force)</option>
           <option value="wasm" data-i18n="options_paddle_ep_wasm">WebAssembly (WASM)</option>
         </select>
-        <span style="font-size:12px;color:var(--text-secondary);" data-i18n="options_paddle_execution_provider_hint">WebGPU runs on the GPU and can be much faster on phones. Falls back to WASM automatically when WebGPU is unavailable.</span>
+        <span style="font-size:12px;color:var(--text-secondary);" data-i18n="options_paddle_execution_provider_hint">WebGPU runs on the GPU and can be much faster on phones. Falls back to WASM automatically when WebGPU is unavailable. On Firefox WebGPU is disabled for regular "WebGPU" (it can be unstable); pick "WebGPU (Force)" to always try WebGPU.</span>
       </div>
       <div class="form-row">
         <label for="paddleOCRParams" data-i18n="options_paddle_extra_params">Extra OCR Params (JSON)</label>
