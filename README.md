@@ -26,6 +26,7 @@ Other versions:
 * [Features](#features)
 * [Installation](#installation)
 * [Usage](#usage)
+* [Browser mode vs. ImageTrans desktop](#browser-mode-vs-imagetrans-desktop)
 * [Configuration](#configuration)
 * [Extra Features](#extra-features)
 * [Supported Web Sites](#supported-web-sites)
@@ -88,6 +89,29 @@ Instead of translating every image one by one, turn on auto-translate and just s
 3. Scroll through the page. Images that come into view are translated automatically — there's no need to click each one.
 
 Scroll through the whole page and the images translate as they appear on screen.
+
+## Browser mode vs. ImageTrans desktop
+
+Both the fully in-browser (local) mode and the [ImageTrans](https://www.basiccat.org/imagetrans/) desktop app do OCR, translation and text rendering, and both let you plug in a custom API. The desktop version is a far more complete tool for demanding, high-quality work:
+
+| | Browser (local PaddleOCR) | [ImageTrans](https://www.basiccat.org/imagetrans/) desktop |
+| :-- | :-- | :-- |
+| Basic OCR / translation / text rendering | ✅ | ✅ |
+| Custom (OpenAI-compatible) translation API | ✅ | ✅ |
+| Vertical text (e.g. Japanese manga) | ✅ | ✅ |
+| Layout analysis (ppdoclayout, DeepSeek-OCR) for reading order & text merging | ❌ | ✅ |
+| Translation memory, term management, corpus concordance | ❌ | ✅ |
+| Context-aware translation (uses surrounding text / vision models to improve quality) | ❌ | ✅ |
+| OCR quality — proofread & correct with LLMs | ❌ | ✅ |
+| More OCR engines + custom OCR plugin support | ❌ | ✅ (incl. macOS Vision OCR, PaddleOCR-VL, and LLM OCR via ChatGPT / Gemini) |
+| Text removal / inpainting | ❌ | ✅ (binarization, PatchMatch, LaMa, Gemini Nano; screentone-preserving) |
+| Professional typesetting (smart line-breaking, punctuation, text-color detection, rotation, rich font styles) | ❌ | ✅ |
+| Image editor, search & replace, alignment guides | ❌ | ✅ |
+| Export PSD (separate text layers), Excel/Word/XLIFF | ❌ | ✅ |
+| Batch processing with custom pipelines, command-line & API server | ❌ | ✅ |
+| Extra tools — PDF→Markdown & searchable PDF, subtitle extraction (SRT), scanning, real-time screen translation | ❌ | ✅ |
+
+How to choose? If you just want to translate images on web pages quickly, the browser extension alone is usually enough — its local OCR mode runs entirely **inside the browser**, with no separate ImageTrans desktop program to install, so it works out of the box on any device (phones, tablets, Chromebooks, etc.). If you want the full toolset — the highest recognition and translation quality, clean text removal and professional typesetting — use the ImageTrans desktop app together with this extension; and since the extension can connect to it over the network, other devices can share that same desktop setup too.
 
 ## Configuration
 
