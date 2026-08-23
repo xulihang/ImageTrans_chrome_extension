@@ -104,7 +104,7 @@ Both the fully in-browser local mode (PaddleOCR) and [ImageTrans](https://www.ba
 | Vertical text (e.g. Japanese manga) | ✅ | ✅ |
 | Layout analysis (ppdoclayout, DeepSeek-OCR) for reading order & text merging | ❌ | ✅ |
 | Translation memory, term management, corpus concordance | ❌ | ✅ |
-| Context-aware translation (uses surrounding text / vision models to improve quality) | ❌ | ✅ |
+| Context-aware translation (uses the preceding images' text and, with a vision model, their image content) | ❌ | ✅ |
 | OCR quality — proofread & correct with LLMs | ❌ | ✅ |
 | More OCR engines + custom OCR plugin support | ❌ | ✅ (incl. macOS Vision OCR, PaddleOCR-VL, and LLM OCR via ChatGPT / Gemini) |
 | Text removal / inpainting | ❌ | ✅ (binarization, PatchMatch, LaMa, Gemini Nano; screentone-preserving) |

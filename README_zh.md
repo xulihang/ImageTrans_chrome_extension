@@ -102,7 +102,7 @@ https://github.com/user-attachments/assets/7078e908-9526-4945-948f-458543a50d08
 | 竖排文字（如日文漫画） | ✅ | ✅ |
 | 布局分析（ppdoclayout、DeepSeek-OCR）确定阅读顺序并正确合并文字 | ❌ | ✅ |
 | 翻译记忆库、术语管理、语料检索 | ❌ | ✅ |
-| 上下文感知翻译（利用周围文字 / 视觉模型提高质量） | ❌ | ✅ |
+| 上下文感知翻译（利用前几张图片的文本，若为视觉模型还可读取图片内容） | ❌ | ✅ |
 | OCR 质量——用大模型校对纠错 | ❌ | ✅ |
 | 更多 OCR 引擎 + 自定义 OCR 插件 | ❌ | ✅（含 macOS Vision OCR、PaddleOCR-VL，以及 ChatGPT / Gemini 的 LLM OCR） |
 | 文字去除 / 图像修复 | ❌ | ✅（二值化、PatchMatch、LaMa、Gemini Nano，可保留网点） |
