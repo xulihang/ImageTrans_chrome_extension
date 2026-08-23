@@ -186,6 +186,11 @@
   "options_use_translation_cache_hint": { "message": "If a cached result exists in IndexedDB for an image, use it directly instead of re-translating." },
   "options_auto_scroll": { "message": "Auto-scroll during auto-translate" },
   "options_auto_scroll_hint": { "message": "When auto-translating, scroll to the next untranslated image after each translation completes." },
+  "options_text_repair_mode": { "message": "Text repair mode" },
+  "options_text_repair_white": { "message": "Fill white" },
+  "options_text_repair_background": { "message": "Fill detected background color" },
+  "options_text_repair_none": { "message": "No fill" },
+  "options_text_repair_hint": { "message": "Fill the area behind the translated text with white, a color matched to the local background, or nothing." },
   "options_view_cache": { "message": "View cached results" },
 
   "cache_title": { "message": "ImageTrans Cache" },

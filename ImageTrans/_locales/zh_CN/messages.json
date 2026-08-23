@@ -186,6 +186,11 @@
   "options_use_translation_cache_hint": { "message": "如果 IndexedDB 中存在该图片的翻译缓存，直接使用，不再重新翻译。" },
   "options_auto_scroll": { "message": "自动翻译时滚动页面" },
   "options_auto_scroll_hint": { "message": "启用自动翻译时，每翻译完一张图片自动滚动到下一张未翻译的图片。" },
+  "options_text_repair_mode": { "message": "文字修复模式" },
+  "options_text_repair_white": { "message": "填充白色" },
+  "options_text_repair_background": { "message": "填充识别的背景颜色" },
+  "options_text_repair_none": { "message": "不填充" },
+  "options_text_repair_hint": { "message": "用白色、与局部背景相近的颜色，或什么都不填充，来填充译文文字背后的区域。" },
   "options_view_cache": { "message": "查看缓存结果" },
 
   "cache_title": { "message": "ImageTrans 缓存" },

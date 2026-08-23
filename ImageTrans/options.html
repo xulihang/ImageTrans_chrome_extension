@@ -326,6 +326,15 @@
           <button id="cssPresetVCenter" class="btn-secondary" style="font-size:12px;" data-i18n="options_css_vcenter">Vertical Center</button>
         </div>
       </div>
+      <div class="form-row" style="flex-direction:column; align-items:flex-start;">
+        <label for="textRepairMode" data-i18n="options_text_repair_mode">Text repair mode</label>
+        <select id="textRepairMode" style="margin-top:4px;">
+          <option value="white" data-i18n="options_text_repair_white">Fill white</option>
+          <option value="background" data-i18n="options_text_repair_background">Fill detected background color</option>
+          <option value="none" data-i18n="options_text_repair_none">No fill</option>
+        </select>
+        <span style="font-size:12px;color:var(--text-secondary);" data-i18n="options_text_repair_hint">Fill the area behind the translated text with white, a color matched to the local background, or nothing.</span>
+      </div>
     </div>
 
     <!-- OpenAI API -->

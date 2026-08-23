@@ -123,6 +123,7 @@ function save() {
   const saveTranslationResult = document.getElementById("saveTranslationResult").checked;
   const useTranslationCache = document.getElementById("useTranslationCache").checked;
   const autoScroll = document.getElementById("autoScroll").checked;
+  const textRepairMode = document.getElementById("textRepairMode").value;
 
   // PaddleOCR requires a specific language; "auto" is not supported.
   var usingPaddleOCR = translationMode === "local" || (useOpenAI && ocrMethod === "paddleocr");
@@ -170,7 +171,8 @@ function save() {
     uiLanguage: uiLanguage,
     saveTranslationResult: saveTranslationResult,
     useTranslationCache: useTranslationCache,
-    autoScroll: autoScroll
+    autoScroll: autoScroll,
+    textRepairMode: textRepairMode
   }, function() {
     alert(getMessage("alert_saved"));
     chrome.runtime.sendMessage({action: "updateCORSStatus", enabled: useCORS});
@@ -217,7 +219,8 @@ function load() {
     uiLanguage: '',
     saveTranslationResult: false,
     useTranslationCache: false,
-    autoScroll: false
+    autoScroll: false,
+    textRepairMode: 'white'
   }, function(items) {
     if (items.serverURL) {
         document.getElementById("serverURL").value = items.serverURL;
@@ -289,6 +292,7 @@ function load() {
     document.getElementById("saveTranslationResult").checked = items.saveTranslationResult;
     document.getElementById("useTranslationCache").checked = items.useTranslationCache;
     document.getElementById("autoScroll").checked = items.autoScroll;
+    document.getElementById("textRepairMode").value = items.textRepairMode || 'white';
     document.getElementById("ocrMethodSection").style.display = items.useOpenAI ? 'block' : 'none';
   });
 }

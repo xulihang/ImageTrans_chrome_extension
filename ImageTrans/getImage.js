@@ -55,6 +55,7 @@ var pickingWay = "1";
 var useCanvas = true;
 var renderTextInFrontend = false;
 var renderTextCSS = 'text-align: center;\nborder-radius: 10%;';
+var textRepairMode = 'white'; // 'white' | 'background' | 'none'
 var minFontSize = 14;
 var password = "";
 var displayName = "";
@@ -353,7 +354,8 @@ chrome.storage.sync.get({
     ySpacing: 15,
     saveTranslationResult: false,
     useTranslationCache: false,
-    autoScroll: false
+    autoScroll: false,
+    textRepairMode: 'white'
 }, async function(items) {
     if (items.serverURL) {
         serverURL = items.serverURL;
@@ -381,6 +383,9 @@ chrome.storage.sync.get({
     }
     if (items.renderTextCSS != undefined) {
         renderTextCSS = items.renderTextCSS;
+    }
+    if (items.textRepairMode !== undefined) {
+        textRepairMode = items.textRepairMode;
     }
     if (items.minFontSize != undefined) {
         minFontSize = items.minFontSize;
@@ -1335,6 +1340,77 @@ function applyTextTransform(text, transform) {
     }
 }
 
+// Sample the ring just outside a text box to estimate the local background
+// color. Gathers the four border strips of a region slightly larger than the
+// box, then takes the per-channel median. Returns 'rgb(r,g,b)' or null when
+// there is nothing meaningful to sample.
+function detectBackgroundColor(img, box) {
+    if (!img) return null;
+    const w = img.naturalWidth || img.width;
+    const h = img.naturalHeight || img.height;
+    if (!w || !h) return null;
+    const geo = box.geometry || {};
+    const bx = Math.round(geo.X || geo.x || 0);
+    const by = Math.round(geo.Y || geo.y || 0);
+    const bw = Math.round(geo.width || 0);
+    const bh = Math.round(geo.height || 0);
+    if (bw <= 0 || bh <= 0) return null;
+
+    // A sampling ring just outside the box (larger than a typical stroke so the
+    // sampled band avoids the text glyphs themselves).
+    const m = Math.max(4, Math.round(Math.min(bw, bh) * 0.15));
+    const cw = Math.min(bw + 2 * m, w);
+    const ch = Math.min(bh + 2 * m, h);
+    if (cw <= 0 || ch <= 0) return null;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = cw;
+    canvas.height = ch;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    // Source top-left, clamped so the sampling region stays on the image.
+    const ox = Math.max(0, Math.min(bx - m, w - cw));
+    const oy = Math.max(0, Math.min(by - m, h - ch));
+    ctx.drawImage(img, ox, oy, cw, ch, 0, 0, cw, ch);
+    let data;
+    try { data = ctx.getImageData(0, 0, cw, ch).data; } catch (e) { return null; }
+
+    // Box edges in sampling-canvas coordinates.
+    const innerL = bx - ox;
+    const innerR = innerL + bw;
+    const innerT = by - oy;
+    const innerB = innerT + bh;
+
+    // Collect pixels from the 4 border strips (each 2px wide, corners excluded).
+    const pixels = [];
+    const collect = function(atX, atY) {
+        if (atX < 0 || atX >= cw || atY < 0 || atY >= ch) return;
+        const i = (atY * cw + atX) * 4;
+        pixels.push(data[i], data[i + 1], data[i + 2]);
+    };
+    // Top strip
+    for (let x = Math.max(0, innerL) + 1; x < Math.min(cw, innerR) - 1; x++) { collect(x, innerT - 1); collect(x, innerT - 2); }
+    // Bottom strip
+    for (let x = Math.max(0, innerL) + 1; x < Math.min(cw, innerR) - 1; x++) { collect(x, innerB); collect(x, innerB + 1); }
+    // Left strip
+    for (let y = Math.max(0, innerT) + 1; y < Math.min(ch, innerB) - 1; y++) { collect(innerL - 1, y); collect(innerL - 2, y); }
+    // Right strip
+    for (let y = Math.max(0, innerT) + 1; y < Math.min(ch, innerB) - 1; y++) { collect(innerR, y); collect(innerR + 1, y); }
+
+    if (pixels.length === 0) return null;
+    const r = medianChannel(pixels, 0);
+    const g = medianChannel(pixels, 1);
+    const b = medianChannel(pixels, 2);
+    return 'rgb(' + r + ',' + g + ',' + b + ')';
+}
+
+// Per-channel median of a flattened [r,g,b, ...] pixel buffer.
+function medianChannel(buffer, offset) {
+    const vals = [];
+    for (let i = offset; i < buffer.length; i += 3) vals.push(buffer[i]);
+    vals.sort((a, b) => a - b);
+    return vals[Math.floor(vals.length / 2)];
+}
+
 function fillRoundRect(ctx, x, y, w, h, borderRadius) {
     let r = borderRadius.value;
     if (borderRadius.unit === '%') {
@@ -1513,10 +1589,18 @@ async function renderTranslatedImageDOM(base64Image, boxes) {
         // text block (so the overflow region keeps the background) and then moves
         // so that block stays inside the image.
         const el = document.createElement('div');
-        el.style.cssText = textBaseCSS +
+        let elCSS = textBaseCSS +
             'left:' + c.x + 'px;top:' + c.y + 'px;' +
             'width:' + c.w + 'px;height:' + c.h + 'px;' +
             renderTextCSS;
+        if (textRepairMode === 'none') {
+            // Don't paint a background over the original text; just overlay.
+            elCSS += ';background-color:transparent;';
+        } else if (textRepairMode === 'background') {
+            const detected = detectBackgroundColor(img, box);
+            if (detected) elCSS += ';background-color:' + detected;
+        }
+        el.style.cssText = elCSS;
         if (!userCssHasDirection) {
             el.style.direction = detectTextDirection(targetText);
         }
@@ -1641,8 +1725,17 @@ function renderTranslatedImageCanvas(base64Image, boxes) {
                 }
 
                 // Cover the whole text block with the background, then draw text.
-                ctx.fillStyle = textStyle.backgroundColor;
-                fillRoundRect(ctx, tx, ty, bw2, bh2, textStyle.borderRadius);
+                // The fill color can be the user-configured background color, a
+                // color matched to the local background, or nothing at all.
+                let fillColor = textStyle.backgroundColor;
+                if (textRepairMode === 'background') {
+                    const detected = detectBackgroundColor(img, box);
+                    if (detected) fillColor = detected;
+                }
+                if (textRepairMode !== 'none') {
+                    ctx.fillStyle = fillColor;
+                    fillRoundRect(ctx, tx, ty, bw2, bh2, textStyle.borderRadius);
+                }
 
                 ctx.fillStyle = textStyle.color;
                 ctx.textBaseline = 'top';
@@ -5564,6 +5657,7 @@ chrome.storage.onChanged.addListener(function(changes, areaName) {
     if (changes.useCanvas !== undefined) useCanvas = changes.useCanvas.newValue;
     if (changes.renderTextInFrontend !== undefined) renderTextInFrontend = changes.renderTextInFrontend.newValue;
     if (changes.renderTextCSS) renderTextCSS = changes.renderTextCSS.newValue;
+    if (changes.textRepairMode !== undefined) textRepairMode = changes.textRepairMode.newValue;
     if (changes.minFontSize !== undefined) minFontSize = changes.minFontSize.newValue;
     if (changes.sourceLang) sourceLang = changes.sourceLang.newValue;
     if (changes.targetLang) targetLang = changes.targetLang.newValue;
