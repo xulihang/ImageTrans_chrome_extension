@@ -60,7 +60,7 @@ On Android, use Kiwi Browser or Microsoft Edge. On iOS, use Orion Browser.
 ### With ImageTrans server
 
 1. Pin the ImageTrans extension to the toolbar.
-2. Open ImageTrans. Open the server through **Tools → Server**. Press the **Start the server** button and then the **Reconnect** button. Check **silent translation mode** if you want ImageTrans to do tasks silently.
+2. Open ImageTrans. Open the server through **Tools → Server**. Press the **Start the server** button and then the **Reconnect** button.
 3. Open or create an ImageTrans project and set things up, like its language pair. Choose params like `ocrengine` and `language` as needed.
 4. In Chrome, right-click on the image to translate it.
 5. If the context menu is disabled, use the popup menu to translate the image. After setup you can call it quickly with **CTRL+SHIFT+F** (**CTRL+SHIFT+V** on Mac), press **TAB** to switch buttons, then **Enter** to run the desired action ( translating, altering source/target, getting the image's `src`, and more).
@@ -80,17 +80,7 @@ Look for these in the popup and through keyboard shortcuts:
 
 * **Screen capture OCR** (**CTRL+SHIFT+L**) — draw a region to recognize/translate it. The recognized area stays with your selection; copy text, read it aloud, or re-pick a new region.
 * **Camera translate** — allow camera access and translate what it sees.
-* **Start/Stop Auto Translating** — automatically translate the images currently in the viewport.
-
-### Translate a whole page by scrolling (auto-translate)
-
-Instead of translating every image one by one, turn on auto-translate and just scroll:
-
-1. In the **Options** page → **Automation**, check **Auto-scroll during auto-translate** so the extension keeps translating the next images as you scroll.
-2. Open the extension popup and press **Start Auto Translating**.
-3. Scroll through the page. Images that come into view are translated automatically — there's no need to click each one.
-
-Scroll through the whole page and the images translate as they appear on screen.
+* **Start/Stop Auto Translating** — automatically translate the images currently in the viewport. Enable auto scrolling to translate all the images.
 
 ## Local PaddleOCR vs. ImageTrans server
 
@@ -125,7 +115,8 @@ The **Options** page groups settings into a few sections:
 * **Image Processing (for PaddleOCR)** — spacing for merging adjacent text boxes, YOLOv8 text-line detection, detection/recognition model choice, inference engine (WebGPU or WASM), and extra OCR params.
 * **OpenAI-Compatible API (optional)** — enable an LLM-based translator and configure its URL, key, model and prompt.
 * **Storage** — save translation results to IndexedDB, reuse the cached results, and view them in the built-in reader (with ZIP download), optionally filtering by page.
-* **Automation** — auto-scroll to the next untranslated image during auto-translate, show a floating translate button, and choose what it does when clicked.
+* **Automation** — during auto-translate, automatically scroll to the next untranslated image.
+* **Floating Translate Button** — show a draggable on-page translate button and choose what it does when clicked.
 * **Language Learners** — add pinyin to Chinese source text and/or furigana to Japanese source text.
 * **Interface Language** — override the extension UI language independently of the browser (it can also be set per-usage on the popup and Options pages).
 
