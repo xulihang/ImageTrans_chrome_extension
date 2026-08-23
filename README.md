@@ -111,7 +111,7 @@ Both the fully in-browser (local) mode and the [ImageTrans](https://www.basiccat
 | Batch processing with custom pipelines, command-line & API server | ❌ | ✅ |
 | Extra tools — PDF→Markdown & searchable PDF, subtitle extraction (SRT), scanning, real-time screen translation | ❌ | ✅ |
 
-How to choose? If you just want to translate images on web pages quickly, the browser extension alone is usually enough — its local OCR mode runs entirely **inside the browser**, with no separate ImageTrans desktop program to install, so it works out of the box on any device (phones, tablets, Chromebooks, etc.). If you want the full toolset — the highest recognition and translation quality, clean text removal and professional typesetting — use the ImageTrans desktop app together with this extension; and since the extension can connect to it over the network, other devices can share that same desktop setup too.
+How to choose? If you just want to translate images on web pages quickly, the browser extension alone is usually enough — its local OCR mode runs entirely **inside the browser**, with no separate ImageTrans desktop program to install, so it works out of the box on most devices (phones, tablets, Chromebooks, etc.). If you want the full toolset — the highest recognition and translation quality, clean text removal and professional typesetting — use the ImageTrans desktop app together with this extension; and since the extension can connect to it over the network, other devices can share that same desktop setup too. (Note: iOS doesn't support local OCR, so on iOS — e.g. Orion Browser — you need the ImageTrans server mode.)
 
 ## Configuration
 
