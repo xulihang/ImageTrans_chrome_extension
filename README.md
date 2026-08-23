@@ -2,11 +2,14 @@
 
 > **Languages / 语言:** [English](README.md) · [简体中文](README_zh.md)
 
-Chrome Extension for [ImageTrans](https://www.basiccat.org/imagetrans). You can use this to translate images on webpages.
+Translate images on webpages — across all of them in a row, or just one frame you grab. Built for comics, manga, manhua, webtoons and doujinshi.
 
-It is designed to be used together with [ImageTrans](https://www.basiccat.org/imagetrans) and [ImageTrans_wsServer](https://github.com/xulihang/ImageTrans_wsServer). It can also work without ImageTrans using local PaddleOCR.
+It can be used in two ways:
 
-It has two translation modes: whole image translation and screen capture translation.
+* **With [ImageTrans](https://www.basiccat.org/imagetrans)** — the desktop app does the recognition and translation on your own device, giving the highest quality.
+* **Fully in-browser** — using the built-in local [PaddleOCR](https://www.paddlepaddle.org.cn/) for text recognition and a free or [OpenAI-compatible](https://platform.openai.com/docs) translation API of your choice, with no extra software to install.
+
+Recognition, translation and rendering all happen on your machine — nothing is sent to us, and there's no subscription to pay.
 
 | Whole image translation | Screen capture translation |
 | :---: | :---: |
@@ -15,43 +18,87 @@ It has two translation modes: whole image translation and screen capture transla
 Other versions:
 
 * [Firefox addon](https://github.com/xulihang/ImageTrans_firefox_extension)
+* [Edge addon](https://github.com/xulihang/ImageTrans_firefox_extension#edge)
 * [online image translator (web version)](https://www.basiccat.org/online-image-translator/)
 
 ## Table of Contents
 
+* [Features](#features)
 * [Installation](#installation)
 * [Usage](#usage)
+* [Configuration](#configuration)
 * [Extra Features](#extra-features)
 * [Supported Web Sites](#supported-web-sites)
 * [Video](#video)
 * [FAQ](#faq)
 
+## Features
+
+* **Whole image translation** — replace any image on a page with its translated version, keeping the original layout.
+* **Screen capture OCR & translation** — draw a rectangle over any area (images, scans, game screens) to recognize and translate the text in it. Recognized text is selectable and copiable.
+* **Camera translation** — point the camera at real-world text (signs, menus, paper) and translate it.
+* **Auto-translate** — automatically translate the images currently in your viewport, without touching the rest of the page. (If you enable auto-scroll, it keeps translating the next images as you move down the page.)
+* **Batch & automation** — translate freely any way you like; a floating translate button and keyboard shortcuts get you running faster.
+* **Text to speech** — have the recognized source text and/or translation read aloud, separately or continuously.
+* **Learn-a-language extras** — Japanese furigana and Chinese pinyin annotations added to the source text.
+* **Translation cache** — save the original image, translated image and text boxes locally, reuse cached results, and re-read them later in the built-in reader.
+
 ## Installation
 
-1. Install from [Chrome Web Store](https://chromewebstore.google.com/detail/imagetrans/lkijcgjookpddgfacoankphnpbinmhia?hl=en), or manually install it by downloading this repository and installing the extension through **More Tools → Extensions → Load unpacked**. Remember to enable developer mode.
-2. Purchase and install ImageTrans (optional if you just use PaddleOCR).
-3. Download [ImageTrans_wsServer.jar](https://github.com/xulihang/ImageTrans_wsServer/releases/download/builds/ImageTrans_wsServer.jar) and put it together with ImageTrans.
+1. Install from [Chrome Web Store](https://chromewebstore.google.com/detail/imagetrans/lkijcgjookpddgfacoankphnpbinmhia?hl=en), or install manually by downloading this repository and loading the extension through **More Tools → Extensions → Load unpacked** (remember to enable developer mode).
+2. (Optional, for best quality) Purchase and install [ImageTrans](https://www.basiccat.org/imagetrans). You can otherwise work fully in-browser with PaddleOCR.
+3. (Optional, for working with ImageTrans) Download [ImageTrans_wsServer.jar](https://github.com/xulihang/ImageTrans_wsServer/releases/download/builds/ImageTrans_wsServer.jar) and put it together with ImageTrans.
 4. (Optional. The function is already built into the extension.) Install and enable [Allow CORS](https://chromewebstore.google.com/detail/allow-cors-access-control/lhobafahddgcelffkeicbaginigeejlf) to remove restrictions on downloading images for some websites.
 
-For Android, use Kiwi Browser or Microsoft Edge. For iOS, use Orion Browser.
+On Android, use Kiwi Browser or Microsoft Edge. On iOS, use Orion Browser.
 
 ## Usage
 
+### With ImageTrans (desktop app)
+
 1. Pin the ImageTrans extension to the toolbar.
-2. Open ImageTrans. Open the server through **Tools → Server**. Press the **Start the server** button and then press the **Reconnect** button. Check **silent translation mode** if you want ImageTrans to do tasks silently.
-3. Open or create an ImageTrans project. Set up things like its language pair in project settings. Choose params like `ocrengine` and `language`.
+2. Open ImageTrans. Open the server through **Tools → Server**. Press the **Start the server** button and then the **Reconnect** button. Check **silent translation mode** if you want ImageTrans to do tasks silently.
+3. Open or create an ImageTrans project and set things up, like its language pair. Choose params like `ocrengine` and `language` as needed.
 4. In Chrome, right-click on the image to translate it.
-5. If the context menu is disabled, you can use the popup menu to translate the image in the center of the screen. You can also set it to translate the image behind the mouse cursor. After the setup, press **CTRL+SHIFT+F** (**CTRL+SHIFT+V** on Mac) to call the popup and press **TAB** to alter the buttons. Then press **Enter** to run the desired action like translating the image or getting the image's `src`.
+5. If the context menu is disabled, use the popup menu to translate the image. After setup you can call it quickly with **CTRL+SHIFT+F** (**CTRL+SHIFT+V** on Mac), press **TAB** to switch buttons, then **Enter** to run the desired action ( translating, altering source/target, getting the image's `src`, and more).
 
-Automatic batch translation and regional OCR via screen capture are also supported, where text is copiable.
+### Fully in-browser (no ImageTrans)
 
-ImageTrans is optional if you use PaddleOCR. You can also set up OpenAI-compatible APIs to use ChatGPT, Gemini, DeepSeek, etc., for text translation.
+1. Open the extension **Options** page.
+2. Set **Translation Mode** to *Local PaddleOCR + Free Translation or OpenAI*.
+3. Pick an OCR method: **PaddleOCR (local)** for in-browser recognition, or **ImageTrans** if you use a remote server.
+4. Select a **Source lang** / **Target lang** (PaddleOCR needs an explicit language pair, not "auto").
+5. For translation, either pick one of the built-in free preset translators (e.g. **GLM-4-Flash**, **MyMemory**), or enable **OpenAI-compatible API** and fill in your API URL, key and model to use ChatGPT, Gemini, DeepSeek, GLM, etc.
+6. Save, reload the page, then right-click on an image or use the popup to translate.
 
-PaddleOCR's function is limited (lack of supported languages and options, low performance). You need to set the language pair on the options page as well.
+### Screen capture, camera & auto-translate
+
+Look for these in the popup and through keyboard shortcuts:
+
+* **Screen capture OCR** (**CTRL+SHIFT+L** on Windows, **CTRL+SHIFT+L** on Mac) — draw a region to recognize/translate it. The recognized area stays with your selection; copy text, read it aloud, or re-pick a new region.
+* **Camera translate** — allow camera access and translate what it sees.
+* **Start/Stop Auto Translating** — automatically translate the images currently in the viewport.
+
+## Configuration
+
+The **Options** page groups settings into a few sections:
+
+* **Translation** — translation mode (local in-browser or ImageTrans server), source/target language, and the default preset translator for PaddleOCR.
+* **Server Connection** — server URL (local `ImageTrans_wsServer` or a public/remote instance), instance display name, optional password, and whether requests are sent from the background service worker.
+* **Image Capture and Rendering** — where the image is picked from (behind the mouse cursor or center of the screen), Canvas vs DOM rendering, CORS headers for cross-domain images, front-end text rendering with custom font CSS (vertical text, RTL, fonts, colors, minimum font size, etc.).
+* **Image Processing (for PaddleOCR)** — spacing for merging adjacent text boxes, YOLOv8 text-line detection, detection/recognition model choice, inference engine (WebGPU or WASM), and extra OCR params.
+* **OpenAI-Compatible API (optional)** — enable an LLM-based translator and configure its URL, key, model and prompt.
+* **Storage** — save translation results to IndexedDB, reuse the cached results, and view them in the built-in reader (with ZIP download), optionally filtering by page.
+* **Automation** — auto-scroll to the next untranslated image during auto-translate, show a floating translate button, and choose what it does when clicked.
+* **Language Learners** — add pinyin to Chinese source text and/or furigana to Japanese source text.
+* **Interface Language** — override the extension UI language independently of the browser (it can also be set per-usage on the popup and Options pages).
 
 ## Extra Features
 
-For language learners, Japanese furigana and Chinese pinyin annotation are supported.
+* **Furigana / pinyin annotations** — useful for Japanese learners: add furigana to Japanese source text and pinyin to Chinese source text.
+* **Text to speech** — in screen-capture and camera results you can speak the source, the translation, or both, and auto-play through the full list.
+* **Floating translate button** — a draggable on-page button for quick translation; its click action is configurable.
+* **Translation cache & reader** — with saving enabled, each translation (original image, translated image, text boxes) is stored in IndexedDB. Cached results can be reused to avoid re-translating, and can be browsed in the built-in reader or exported as a ZIP.
 
 ## Supported Web Sites
 
@@ -73,7 +120,7 @@ I've tested replacing images on the following sites:
 
 * Why does it say "Failed to connect to ImageTrans server"?
 
-   Please check whether you are running the server. You can visit <https://local.basiccat.org:51043/translator> to see if it is running.
+   Please check whether you are running the server. You can visit <https://local.basiccat.org:51043/translator> to see if it is running. If you're working fully in-browser, make sure **Translation Mode** is not set to ImageTrans.
 
 * What are the differences from other image translation extensions?
 
