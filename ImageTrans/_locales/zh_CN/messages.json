@@ -52,6 +52,7 @@
   "options_css_vertical": { "message": "竖排文字" },
   "options_css_rtl": { "message": "阿拉伯语（RTL）" },
   "options_css_vcenter": { "message": "垂直居中" },
+  "options_css_stroke": { "message": "文字描边" },
   "options_font_css_hint": { "message": "支持完整 CSS：writing-mode（竖排）、direction（RTL 阿拉伯语）、font、color、background、border-radius、text-shadow 等。" },
   "options_min_font_size": { "message": "最小字体大小（px）" },
   "options_min_font_size_hint": { "message": "自动适配的字体大小不会低于此值。" },

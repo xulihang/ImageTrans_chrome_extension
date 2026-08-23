@@ -393,6 +393,9 @@ window.onload = async function (){
   document.getElementById("cssPresetRTL").addEventListener("click",function(){
     document.getElementById("renderTextCSS").value = 'direction: rtl;\ntext-align: start;';
   })
+  document.getElementById("cssPresetStroke").addEventListener("click",function(){
+    document.getElementById("renderTextCSS").value = 'text-align: center;\ncolor: #000000;\ntext-shadow: -1px 0 0 #FFFFFF, 1px 0 0 #FFFFFF, 0 -1px 0 #FFFFFF, 0 1px 0 #FFFFFF, -1px -1px 0 #FFFFFF, 1px -1px 0 #FFFFFF, -1px 1px 0 #FFFFFF, 1px 1px 0 #FFFFFF, -2px 0 0 #FFFFFF, 2px 0 0 #FFFFFF, 0 -2px 0 #FFFFFF, 0 2px 0 #FFFFFF, -2px -2px 0 #FFFFFF, 2px -2px 0 #FFFFFF, -2px 2px 0 #FFFFFF, 2px 2px 0 #FFFFFF, -3px 0 0 #FFFFFF, 3px 0 0 #FFFFFF, 0 -3px 0 #FFFFFF, 0 3px 0 #FFFFFF, -3px -3px 0 #FFFFFF, 3px -3px 0 #FFFFFF, -3px 3px 0 #FFFFFF, 3px 3px 0 #FFFFFF;';
+  })
   document.getElementById("cssPresetVCenter").addEventListener("click",function(){
     document.getElementById("renderTextCSS").value = 'text-align: center;\nborder-radius: 10%;\ndisplay: flex;\nalign-items: center;\njustify-content: center;';
   })

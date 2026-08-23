@@ -1289,7 +1289,8 @@ function parseFontCSS(cssText) {
         backgroundColor: '#FFFFFF',
         borderRadius: { value: 0, unit: 'px' },
         strokeColor: '#FFFFFF',
-        strokeWidth: null
+        strokeWidth: null,
+        textShadows: []
     };
     if (!cssText) return style;
     const rules = cssText.split(';').map(s => s.trim()).filter(Boolean);
@@ -1317,9 +1318,37 @@ function parseFontCSS(cssText) {
                 break;
             case '-webkit-text-stroke-color': style.strokeColor = val; break;
             case '-webkit-text-stroke-width': style.strokeWidth = parseFloat(val) || null; break;
+            case 'text-shadow': style.textShadows = parseTextShadows(val); break;
         }
     }
     return style;
+}
+
+// Parse CSS `text-shadow` into an array of {dx, dy, blur, color}. Colors may
+// appear before or after the offsets; comma separates multiple shadows.
+function parseTextShadows(str) {
+    const list = [];
+    const parts = str.split(',').map(s => s.trim()).filter(Boolean);
+    for (const part of parts) {
+        // Split off the color (a token that is not a number or length unit).
+        const tokens = part.split(/\s+/).filter(Boolean);
+        let color = null;
+        const nums = [];
+        for (const tok of tokens) {
+            if (color === null && /^[#a-zA-Z]/.test(tok) && isNaN(parseFloat(tok))) {
+                color = tok;
+            } else if (!isNaN(parseFloat(tok))) {
+                nums.push(parseFloat(tok));
+            } else if (color === null) {
+                color = tok; // e.g. named color
+            }
+        }
+        const dx = nums[0] || 0;
+        const dy = nums[1] || 0;
+        const blur = nums[2] || 0;
+        list.push({ dx: dx, dy: dy, blur: blur, color: color || '#000000' });
+    }
+    return list;
 }
 
 function buildFontString(fontSize, style) {
@@ -1877,7 +1906,27 @@ function drawTextBox(ctx, text, x, y, maxWidth, maxHeight, fontSize, textStyle) 
         } else {
             ctx.textAlign = 'left';
         }
+        // CSS `text-shadow` outlines are drawn as offset fills behind the text,
+        // mirroring how the DOM renderer applies a multi-directional text-shadow.
+        for (let si = 0; si < textStyle.textShadows.length; si++) {
+            const s = textStyle.textShadows[si];
+            ctx.save();
+            if (s.blur > 0) {
+                ctx.fillStyle = s.color;
+                ctx.shadowColor = s.color;
+                ctx.shadowBlur = s.blur;
+                ctx.shadowOffsetX = s.dx;
+                ctx.shadowOffsetY = s.dy;
+                ctx.fillText(lines[i], lineX, lineY);
+            } else {
+                ctx.fillStyle = s.color;
+                ctx.translate(s.dx, s.dy);
+                ctx.fillText(lines[i], lineX, lineY);
+            }
+            ctx.restore();
+        }
         ctx.strokeText(lines[i], lineX, lineY);
+        ctx.fillStyle = textStyle.color;
         ctx.fillText(lines[i], lineX, lineY);
         lineY += lineHeight;
     }
