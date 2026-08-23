@@ -11,14 +11,17 @@ It can be used in two ways:
 
 Recognition, translation and rendering all happen on your machine — nothing is sent to us, and there's no subscription to pay.
 
-| Whole image translation | Screen capture translation |
-| :---: | :---: |
-| <img src="https://github.com/xulihang/ImageTrans_chrome_extension/assets/5462205/e3cf01e9-9545-483b-b1d1-c488c775d72f" width="300"> | <img src="https://github.com/user-attachments/assets/7078e908-9526-4945-948f-458543a50d08" width="300"> |
+**Whole image translation:**
+
+https://github.com/xulihang/ImageTrans_chrome_extension/assets/5462205/e3cf01e9-9545-483b-b1d1-c488c775d72f
+
+**Screen capture translation:**
+
+https://github.com/user-attachments/assets/7078e908-9526-4945-948f-458543a50d08
 
 Other versions:
 
 * [Firefox addon](https://github.com/xulihang/ImageTrans_firefox_extension)
-* [Edge addon](https://github.com/xulihang/ImageTrans_firefox_extension#edge)
 * [online image translator (web version)](https://www.basiccat.org/online-image-translator/)
 
 ## Table of Contents

@@ -11,14 +11,17 @@
 
 识别、翻译和渲染都在你的设备本地完成——数据不会上传到我们这边，也不需要订阅付费。
 
-| 整图翻译 | 截屏翻译 |
-| :---: | :---: |
-| <img src="https://github.com/xulihang/ImageTrans_chrome_extension/assets/5462205/e3cf01e9-9545-483b-b1d1-c488c775d72f" width="300"> | <img src="https://github.com/user-attachments/assets/7078e908-9526-4945-948f-458543a50d08" width="300"> |
+**整图翻译：**
+
+https://github.com/xulihang/ImageTrans_chrome_extension/assets/5462205/e3cf01e9-9545-483b-b1d1-c488c775d72f
+
+**截屏翻译：**
+
+https://github.com/user-attachments/assets/7078e908-9526-4945-948f-458543a50d08
 
 其它版本：
 
 * [Firefox 扩展](https://github.com/xulihang/ImageTrans_firefox_extension)
-* [Edge 扩展](https://github.com/xulihang/ImageTrans_firefox_extension#edge)
 * [在线图片翻译器（网页版）](https://www.basiccat.org/zh/online-image-translator/)
 
 ## 目录
@@ -145,8 +148,8 @@
 
 ## 视频
 
-* YouTube 上的演示视频：[链接](https://www.youtube.com/watch?v=R7pv02jwL_k)
-* B站上的演示和教程视频：[链接](https://www.bilibili.com/video/BV1E5411p73K/)
+* YouTube 上的演示视频：https://www.youtube.com/watch?v=R7pv02jwL_k
+* B站上的演示和教程视频：https://www.bilibili.com/video/BV1E5411p73K/
 
 ## 常见问题
 
