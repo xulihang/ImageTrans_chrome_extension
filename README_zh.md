@@ -9,7 +9,7 @@
 * **配合 [ImageTrans](https://www.basiccat.org/imagetrans)** —— 由本地的 **ImageTrans 桌面程序**完成文字识别与翻译（通过其本地服务器中转），质量最好。
 * **完全在浏览器里完成** —— 用内置的本地 [PaddleOCR](https://www.paddlepaddle.org.cn/) 识别文字，再用自选的免费或 [OpenAI 兼容](https://platform.openai.com/docs) 翻译接口进行翻译，无需安装任何额外软件。
 
-识别、翻译和渲染都在你的设备本地完成——数据不会上传到我们这边，也不需要订阅付费。
+识别、翻译和渲染都在你的设备本地完成——数据不会上传到我们这边，也不需要订阅付费。可以在数秒内完成图片翻译。
 
 **整图翻译：**
 

@@ -9,7 +9,7 @@ It can be used in two ways:
 * **With [ImageTrans](https://www.basiccat.org/imagetrans)** — the local **ImageTrans desktop program** does the recognition and translation (relayed through its local server bridge), giving the highest quality.
 * **Fully in-browser** — using the built-in local [PaddleOCR](https://www.paddlepaddle.org.cn/) for text recognition and a free or [OpenAI-compatible](https://platform.openai.com/docs) translation API of your choice, with no extra software to install.
 
-Recognition, translation and rendering all happen on your machine — nothing is sent to us, and there's no subscription to pay.
+Recognition, translation and rendering all happen on your machine — nothing is sent to us, and there's no subscription to pay. The translation can complete in seconds.
 
 **Whole image translation:**
 
