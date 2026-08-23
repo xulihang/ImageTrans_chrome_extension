@@ -2,7 +2,7 @@
 
 > **Languages / 语言:** [English](README.md) · [简体中文](README_zh.md)
 
-Translate images on webpages — across all of them in a row, or just one frame you grab. Supports translation of all kinds of images, optimized for comics, manga, manhua, webtoons and doujinshi.
+Translate images on webpages — you can translate all images on a page at once, or a single image or a selected region. Supports translation of all kinds of images, optimized for comics, manga, manhua, webtoons and doujinshi.
 
 It can be used in two ways:
 
