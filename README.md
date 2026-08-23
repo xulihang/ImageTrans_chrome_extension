@@ -79,6 +79,16 @@ Look for these in the popup and through keyboard shortcuts:
 * **Camera translate** — allow camera access and translate what it sees.
 * **Start/Stop Auto Translating** — automatically translate the images currently in the viewport.
 
+### Translate a whole page by scrolling (auto-translate)
+
+Instead of translating every image one by one, turn on auto-translate and just scroll:
+
+1. In the **Options** page → **Automation**, check **Auto-scroll during auto-translate** so the extension keeps translating the next images as you scroll.
+2. Open the extension popup and press **Start Auto Translating**.
+3. Scroll through the page. Images that come into view are translated automatically — there's no need to click each one.
+
+Scroll through the whole page and the images translate as they appear on screen.
+
 ## Configuration
 
 The **Options** page groups settings into a few sections:
