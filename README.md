@@ -2,7 +2,7 @@
 
 > **Languages / 语言:** [English](README.md) · [简体中文](README_zh.md)
 
-Translate images on webpages — across all of them in a row, or just one frame you grab. Built for comics, manga, manhua, webtoons and doujinshi.
+Translate images on webpages — across all of them in a row, or just one frame you grab. Supports translation of all kinds of images, optimized for comics, manga, manhua, webtoons and doujinshi.
 
 It can be used in two ways:
 
@@ -79,7 +79,7 @@ On Android, use Kiwi Browser or Microsoft Edge. On iOS, use Orion Browser.
 
 Look for these in the popup and through keyboard shortcuts:
 
-* **Screen capture OCR** (**CTRL+SHIFT+L** on Windows, **CTRL+SHIFT+L** on Mac) — draw a region to recognize/translate it. The recognized area stays with your selection; copy text, read it aloud, or re-pick a new region.
+* **Screen capture OCR** (**CTRL+SHIFT+L**) — draw a region to recognize/translate it. The recognized area stays with your selection; copy text, read it aloud, or re-pick a new region.
 * **Camera translate** — allow camera access and translate what it sees.
 * **Start/Stop Auto Translating** — automatically translate the images currently in the viewport.
 
