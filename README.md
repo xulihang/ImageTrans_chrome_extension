@@ -40,7 +40,7 @@ Other versions:
 * **Whole image translation** — replace any image on a page with its translated version, keeping the original layout.
 * **Screen capture OCR & translation** — draw a rectangle over any area (images, scans, game screens) to recognize and translate the text in it. Recognized text is selectable and copiable.
 * **Camera translation** — point the camera at real-world text and translate it.
-* **Auto-translate** — automatically translate the images currently in your viewport, without touching the rest of the page. (If you enable auto-scroll, it keeps translating the next images as you move down the page.)
+* **Auto-translate** — automatically translate the images currently in your viewport, without touching the rest of the page. (If you enable auto-scroll, it automatically scrolls the page down to translate all the images.)
 * **Text to speech** — have the recognized source text and/or translation read aloud, separately or continuously.
 * **Learn-a-language extras** — Japanese furigana and Chinese pinyin annotations added to the source text.
 * **Translation cache & reader** — save the original image, translated image and text boxes locally, reuse cached results, and re-read them later in the built-in reader (also exportable as a ZIP).
