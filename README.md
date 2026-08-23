@@ -33,7 +33,7 @@ Other versions:
 3. Download [ImageTrans_wsServer.jar](https://github.com/xulihang/ImageTrans_wsServer/releases/download/builds/ImageTrans_wsServer.jar) and put it together with ImageTrans.
 4. (Optional. The function is already built into the extension.) Install and enable [Allow CORS](https://chromewebstore.google.com/detail/allow-cors-access-control/lhobafahddgcelffkeicbaginigeejlf) to remove restrictions on downloading images for some websites.
 
-For Android, use Kiwi Browser. For iOS, use Orion Browser.
+For Android, use Kiwi Browser or Microsoft Edge. For iOS, use Orion Browser.
 
 ## Usage
 
