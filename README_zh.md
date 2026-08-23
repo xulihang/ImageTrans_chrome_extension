@@ -6,7 +6,7 @@
 
 有两种使用方式：
 
-* **配合 [ImageTrans](https://www.basiccat.org/imagetrans) 桌面版** —— 由桌面软件在你自己的设备上完成文字识别与翻译，质量最好。
+* **配合 [ImageTrans](https://www.basiccat.org/imagetrans)** —— 由本地的 **ImageTrans 桌面程序**完成文字识别与翻译（通过其本地服务器中转），质量最好。
 * **完全在浏览器里完成** —— 用内置的本地 [PaddleOCR](https://www.paddlepaddle.org.cn/) 识别文字，再用自选的免费或 [OpenAI 兼容](https://platform.openai.com/docs) 翻译接口进行翻译，无需安装任何额外软件。
 
 识别、翻译和渲染都在你的设备本地完成——数据不会上传到我们这边，也不需要订阅付费。
@@ -26,7 +26,7 @@
 * [功能特性](#功能特性)
 * [安装](#安装)
 * [用法](#用法)
-* [浏览器模式与 ImageTrans 桌面版对比](#浏览器模式与-imagetrans-桌面版对比)
+* [本地 PaddleOCR 与 ImageTrans 服务器对比](#本地-paddleocr-与-imagetrans-服务器对比)
 * [配置](#配置)
 * [其他功能](#其他功能)
 * [受支持的网站](#受支持的网站)
@@ -55,7 +55,7 @@
 
 ## 用法
 
-### 配合 ImageTrans（桌面版）
+### 配合 ImageTrans 服务器
 
 1. 将 ImageTrans 扩展固定到工具栏。
 2. 打开 ImageTrans，点击菜单栏 **工具 → 服务器** 打开服务器程序，点击 **启动服务器** 按钮，然后点击 **重新连接** 按钮。如果希望 ImageTrans 以静默方式执行任务，请勾选静默翻译。
@@ -88,11 +88,11 @@
 2. 打开扩展弹窗，点击 **开始自动翻译**。
 3. 向下滚动页面即可。进入视口的图片会自动翻译，无需逐张点击。
 
-## 浏览器模式与 ImageTrans 桌面版对比
+## 本地 PaddleOCR 与 ImageTrans 服务器对比
 
-无论是完全在浏览器里（本地模式）还是使用 [ImageTrans](https://www.basiccat.org/imagetrans/) 桌面版，都能完成 OCR、翻译和文字渲染，也都能接入自定义 API。桌面版是一个功能完备得多的工具，更适合做高要求的精细工作：
+无论是完全在浏览器里的本地模式（PaddleOCR）还是 [ImageTrans](https://www.basiccat.org/imagetrans/)——桌面版程序，扩展通过其服务器连接——都能完成 OCR、翻译和文字渲染，也都能接入自定义 API。ImageTrans 是一个功能完备得多的工具，更适合做高要求的精细工作：
 
-| | 浏览器（本地 PaddleOCR） | [ImageTrans](https://www.basiccat.org/imagetrans/) 桌面版 |
+| | 浏览器（本地 PaddleOCR） | [ImageTrans](https://www.basiccat.org/imagetrans/) |
 | :-- | :-- | :-- |
 | 基本 OCR / 翻译 / 文字渲染 | ✅ | ✅ |
 | 自定义（OpenAI 兼容）翻译 API | ✅ | ✅ |
@@ -109,7 +109,7 @@
 | 批处理自定义流水线、命令行与 API 服务器 | ❌ | ✅ |
 | 额外工具——PDF 转 Markdown 及可搜索 PDF、字幕提取（SRT）、扫描、实时屏幕翻译 | ❌ | ✅ |
 
-怎么选？如果你只是想在网页上快速翻译图片，浏览器扩展本身通常就够了——它的本地 OCR 模式完全在**浏览器内**运行，无需额外安装 ImageTrans 桌面程序，开箱即用，在大多数设备上都能使用（手机、平板、Chromebook 等）。若需要完整的功能集——最高的识别与翻译质量、干净的文字去除和专业的排版——请配合此扩展使用 ImageTrans 桌面版；而且扩展可以通过网络连接桌面版的服务器，其它设备也能共用这套桌面环境。（注意：iOS 不支持本地 OCR，因此在 iOS 上——如 Orion 浏览器——需要使用 ImageTrans 服务器模式。）
+怎么选？如果你只是想在网页上快速翻译图片，浏览器扩展本身通常就够了——它的本地 OCR 模式完全在**浏览器内**运行，无需额外安装 ImageTrans 程序，开箱即用，在大多数设备上都能使用（手机、平板、Chromebook 等）。若需要完整的功能集——最高的识别与翻译质量、干净的文字去除和专业的排版——请使用 ImageTrans，并让本扩展通过其服务器桥接连接；由于扩展通过网络连接，其它设备也能共用这套 ImageTrans。注意：iOS 不支持本地 OCR，因此在 iOS 上（如 Orion 浏览器）需要使用 ImageTrans 的服务器桥接。
 
 ## 配置
 

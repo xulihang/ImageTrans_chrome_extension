@@ -6,7 +6,7 @@ Translate images on webpages — across all of them in a row, or just one frame 
 
 It can be used in two ways:
 
-* **With [ImageTrans](https://www.basiccat.org/imagetrans)** — the desktop app does the recognition and translation on your own device, giving the highest quality.
+* **With [ImageTrans](https://www.basiccat.org/imagetrans)** — the local **ImageTrans desktop program** does the recognition and translation (relayed through its local server bridge), giving the highest quality.
 * **Fully in-browser** — using the built-in local [PaddleOCR](https://www.paddlepaddle.org.cn/) for text recognition and a free or [OpenAI-compatible](https://platform.openai.com/docs) translation API of your choice, with no extra software to install.
 
 Recognition, translation and rendering all happen on your machine — nothing is sent to us, and there's no subscription to pay.
@@ -26,7 +26,7 @@ Other versions:
 * [Features](#features)
 * [Installation](#installation)
 * [Usage](#usage)
-* [Browser mode vs. ImageTrans desktop](#browser-mode-vs-imagetrans-desktop)
+* [Local PaddleOCR vs. ImageTrans server](#local-paddleocr-vs-imagetrans-server)
 * [Configuration](#configuration)
 * [Extra Features](#extra-features)
 * [Supported Web Sites](#supported-web-sites)
@@ -55,7 +55,7 @@ On Android, use Kiwi Browser or Microsoft Edge. On iOS, use Orion Browser.
 
 ## Usage
 
-### With ImageTrans (desktop app)
+### With ImageTrans server
 
 1. Pin the ImageTrans extension to the toolbar.
 2. Open ImageTrans. Open the server through **Tools → Server**. Press the **Start the server** button and then the **Reconnect** button. Check **silent translation mode** if you want ImageTrans to do tasks silently.
@@ -90,11 +90,11 @@ Instead of translating every image one by one, turn on auto-translate and just s
 
 Scroll through the whole page and the images translate as they appear on screen.
 
-## Browser mode vs. ImageTrans desktop
+## Local PaddleOCR vs. ImageTrans server
 
-Both the fully in-browser (local) mode and the [ImageTrans](https://www.basiccat.org/imagetrans/) desktop app do OCR, translation and text rendering, and both let you plug in a custom API. The desktop version is a far more complete tool for demanding, high-quality work:
+Both the fully in-browser local mode (PaddleOCR) and [ImageTrans](https://www.basiccat.org/imagetrans/) — the desktop app, which the extension connects to through its server — do OCR, translation and text rendering, and both let you plug in a custom API. ImageTrans is a far more complete tool for demanding, high-quality work:
 
-| | Browser (local PaddleOCR) | [ImageTrans](https://www.basiccat.org/imagetrans/) desktop |
+| | Browser (local PaddleOCR) | [ImageTrans](https://www.basiccat.org/imagetrans/) |
 | :-- | :-- | :-- |
 | Basic OCR / translation / text rendering | ✅ | ✅ |
 | Custom (OpenAI-compatible) translation API | ✅ | ✅ |
@@ -111,7 +111,7 @@ Both the fully in-browser (local) mode and the [ImageTrans](https://www.basiccat
 | Batch processing with custom pipelines, command-line & API server | ❌ | ✅ |
 | Extra tools — PDF→Markdown & searchable PDF, subtitle extraction (SRT), scanning, real-time screen translation | ❌ | ✅ |
 
-How to choose? If you just want to translate images on web pages quickly, the browser extension alone is usually enough — its local OCR mode runs entirely **inside the browser**, with no separate ImageTrans desktop program to install, so it works out of the box on most devices (phones, tablets, Chromebooks, etc.). If you want the full toolset — the highest recognition and translation quality, clean text removal and professional typesetting — use the ImageTrans desktop app together with this extension; and since the extension can connect to it over the network, other devices can share that same desktop setup too. (Note: iOS doesn't support local OCR, so on iOS — e.g. Orion Browser — you need the ImageTrans server mode.)
+How to choose? If you just want to translate images on web pages quickly, the browser extension alone is usually enough — its local OCR mode runs entirely **inside the browser**, with no separate ImageTrans program to install, so it works out of the box on most devices (phones, tablets, Chromebooks, etc.). If you want the full toolset — the highest recognition and translation quality, clean text removal and professional typesetting — use ImageTrans and let this extension connect to it through its server bridge; and since the extension connects over the network, other devices can share that same ImageTrans setup too. (Note: iOS doesn't support local OCR, so on iOS — e.g. Orion Browser — you need the ImageTrans server bridge.)
 
 ## Configuration
 
