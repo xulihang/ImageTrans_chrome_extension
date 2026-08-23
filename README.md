@@ -31,7 +31,6 @@ Other versions:
 * [Usage](#usage)
 * [Local PaddleOCR vs. ImageTrans server](#local-paddleocr-vs-imagetrans-server)
 * [Configuration](#configuration)
-* [Extra Features](#extra-features)
 * [Supported Web Sites](#supported-web-sites)
 * [Video](#video)
 * [FAQ](#faq)
@@ -45,7 +44,8 @@ Other versions:
 * **Batch & automation** — translate freely any way you like; a floating translate button and keyboard shortcuts get you running faster.
 * **Text to speech** — have the recognized source text and/or translation read aloud, separately or continuously.
 * **Learn-a-language extras** — Japanese furigana and Chinese pinyin annotations added to the source text.
-* **Translation cache** — save the original image, translated image and text boxes locally, reuse cached results, and re-read them later in the built-in reader.
+* **Translation cache & reader** — save the original image, translated image and text boxes locally, reuse cached results, and re-read them later in the built-in reader (also exportable as a ZIP).
+* **Floating translate button** — a draggable on-page button for quick translation; its click action is configurable.
 
 ## Installation
 
@@ -129,13 +129,6 @@ The **Options** page groups settings into a few sections:
 * **Automation** — auto-scroll to the next untranslated image during auto-translate, show a floating translate button, and choose what it does when clicked.
 * **Language Learners** — add pinyin to Chinese source text and/or furigana to Japanese source text.
 * **Interface Language** — override the extension UI language independently of the browser (it can also be set per-usage on the popup and Options pages).
-
-## Extra Features
-
-* **Furigana / pinyin annotations** — useful for Japanese learners: add furigana to Japanese source text and pinyin to Chinese source text.
-* **Text to speech** — in screen-capture and camera results you can speak the source, the translation, or both, and auto-play through the full list.
-* **Floating translate button** — a draggable on-page button for quick translation; its click action is configurable.
-* **Translation cache & reader** — with saving enabled, each translation (original image, translated image, text boxes) is stored in IndexedDB. Cached results can be reused to avoid re-translating, and can be browsed in the built-in reader or exported as a ZIP.
 
 ## Supported Web Sites
 
