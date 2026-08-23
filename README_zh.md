@@ -126,6 +126,10 @@
 
 ## 常见问题
 
+* 翻译一张图大概需要多久？
+
+   这取决于你的硬件和配置。作为参考，把一张日语漫画图翻译成中文大约需要 **5 秒**，使用的是本地 PaddleOCR 模式（WebGPU 推理引擎）+ DeepSeek v4 Flash 翻译API，测试设备是铭凡 760 Plus 迷你主机（AMD Ryzen 5 7640HS）。
+
 * 提示 "Failed to connect to ImageTrans server"？
 
    检查一下是否正确运行了服务器。可以访问 <https://local.basiccat.org:51043/translator> 以检查它是不是在运行。如果你完全在浏览器里使用，请确认**翻译模式**没有设置为 ImageTrans。

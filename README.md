@@ -128,6 +128,10 @@ I've tested replacing images on the following sites:
 
 ## FAQ
 
+* How long does translating an image take?
+
+   It depends on your hardware and setup. As a reference, translating a Japanese manga page into Chinese takes roughly **5 seconds** using the local PaddleOCR mode (WebGPU inference engine) with DeepSeek v4 Flash as the translation model, measured on a Minisforum 760 Plus mini PC with an AMD Ryzen 5 7640HS.
+
 * Why does it say "Failed to connect to ImageTrans server"?
 
    Please check whether you are running the server. You can visit <https://local.basiccat.org:51043/translator> to see if it is running. If you're working fully in-browser, make sure **Translation Mode** is not set to ImageTrans.
