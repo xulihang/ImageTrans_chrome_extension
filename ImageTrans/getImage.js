@@ -978,6 +978,9 @@ async function ajaxOpenAI(src, img, checkData, showOverlay) {
                 alert(chrome.i18n.getMessage("alert_set_langpair"));
                 chrome.runtime.sendMessage("showOptions");
                 document.body.classList.remove("imagetrans-wait");
+                if (showOverlay && img) {
+                    hideTranslatingOverlay(img);
+                }
                 return;
             }
             boxes = await paddleOCR(dataURL, sourceLang);
@@ -1029,6 +1032,9 @@ async function ajaxOpenAI(src, img, checkData, showOverlay) {
         if (sourceTexts.length === 0 || sourceTexts.every(function(t) { return !t; })) {
             document.body.classList.remove("imagetrans-wait");
             alert(chrome.i18n.getMessage("alert_no_text"));
+            if (showOverlay && img) {
+                hideTranslatingOverlay(img);
+            }
             return;
         }
 
