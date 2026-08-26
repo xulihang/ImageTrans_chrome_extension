@@ -101,6 +101,8 @@ var ySpacing = 15;
 var saveTranslationResult = false;
 var useTranslationCache = false;
 var autoScroll = false;
+var resultDialogHost = null; // shadow host wrapping the OCR result dialog (isolates it from page CSS)
+var resultDialogEl = null; // the dialog element inside the shadow root, for annotateInDialog
 
 async function saveTranslationResultToDB(originalDataURL, translatedDataURL, imgMap) {
   if (!saveTranslationResult) return;
@@ -2593,7 +2595,7 @@ function attachImageClickHandler(img) {
 // so clicks on translated images are intercepted even when covered by other elements
 document.addEventListener('click', function(e) {
     // Don't intercept clicks when a dialog or overlay is already open
-    if (document.getElementById('imagetrans-sc-dialog')) return;
+    if (resultDialogHost) return;
     if (document.getElementById('imagetrans-sc-overlay-wrap')) return;
 
     for (var src in translatedBoxesMap) {
@@ -3604,10 +3606,7 @@ function cleanupScreenCaptureAll() {
         screenCaptureToolbar = null;
     }
     removeResizeHandles();
-    var existingDialog = document.getElementById('imagetrans-sc-dialog');
-    if (existingDialog) existingDialog.remove();
-    var existingBackdrop = document.getElementById('imagetrans-sc-backdrop');
-    if (existingBackdrop) existingBackdrop.remove();
+    closeResultDialog();
     screenCaptureRect = null;
 }
 
@@ -4580,7 +4579,7 @@ function displayResult(dataURL, boxes) {
 
 function annotateInDialog(boxes) {
     if (!addPinyinToSource && !addFuriganaToSource) return;
-    var dialog = document.getElementById('imagetrans-sc-dialog');
+    var dialog = resultDialogEl;
     if (!dialog) return;
     var sourceDivs = dialog.querySelectorAll('.imagetrans-source-text');
     for (var i = 0; i < boxes.length && i < sourceDivs.length; i++) {
@@ -5155,16 +5154,37 @@ function speakQueueItem(idx) {
     speakNext(texts, 0);
 }
 
+// Mount injected UI inside a Shadow DOM root so the page's stylesheet cannot
+// style it. The host is a full-viewport fixed div whose own styles are reset
+// with all:initial !important (safe here — unlike the image text overlay, this
+// host is never rasterized by html-to-image), so even inherited properties like
+// color and font come from their initial values instead of the page's body.
+function createShadowHost() {
+    var host = document.createElement('div');
+    host.style.cssText =
+        'all:initial !important;display:block !important;position:fixed !important;' +
+        'left:0 !important;top:0 !important;width:100% !important;height:100% !important;' +
+        'z-index:2147483647 !important;';
+    var shadow = host.attachShadow({ mode: 'open' });
+    document.documentElement.appendChild(host);
+    return shadow;
+}
+
+function closeResultDialog() {
+    if (resultDialogHost) {
+        resultDialogHost.remove();
+        resultDialogHost = null;
+    }
+    resultDialogEl = null;
+}
+
 function showResultDialog(dataURL, boxes, message, hideThumbnail) {
     // Save screen capture boxes for TTS
     if (ttsIsScreenCapture) {
         ttsScreenBoxes = boxes;
     }
 
-    var existingBackdrop = document.getElementById('imagetrans-sc-backdrop');
-    if (existingBackdrop) existingBackdrop.remove();
-    var existingDialog = document.getElementById('imagetrans-sc-dialog');
-    if (existingDialog) existingDialog.remove();
+    closeResultDialog();
 
     // Hide camera processing overlay if camera is active
     hideCameraProcessing();
@@ -5176,8 +5196,7 @@ function showResultDialog(dataURL, boxes, message, hideThumbnail) {
     backdrop.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:2147483647;background:rgba(0,0,0,0.3);';
     backdrop.addEventListener('click', function() {
         stopTTS(true);
-        backdrop.remove();
-        dialog.remove();
+        closeResultDialog();
         if (cameraShouldRestore) {
             cameraShouldRestore = false;
             startCameraCapture();
@@ -5201,8 +5220,7 @@ function showResultDialog(dataURL, boxes, message, hideThumbnail) {
     closeBtn.style.cssText = 'background:none;border:none;font-size:' + (isMobile ? '22px' : '18px') + ';cursor:pointer;color:#999;padding:' + (isMobile ? '4px' : '0') + ';line-height:1;min-width:32px;min-height:32px;';
     closeBtn.addEventListener('click', function() {
         stopTTS(true);
-        backdrop.remove();
-        dialog.remove();
+        closeResultDialog();
         if (cameraShouldRestore) {
             cameraShouldRestore = false;
             startCameraCapture();
@@ -5456,8 +5474,7 @@ function showResultDialog(dataURL, boxes, message, hideThumbnail) {
     btnContinue.style.cssText = 'padding:' + btnPad + ';background:#5cb85c;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:' + btnFont + ';white-space:nowrap;touch-action:manipulation;';
     btnContinue.addEventListener('click', function() {
         stopTTS(true);
-        backdrop.remove();
-        dialog.remove();
+        closeResultDialog();
         if (cameraShouldRestore) {
             cameraShouldRestore = false;
             startCameraCapture();
@@ -5476,8 +5493,7 @@ function showResultDialog(dataURL, boxes, message, hideThumbnail) {
     btnReOCR.style.cssText = 'padding:' + btnPad + ';background:#4A90D9;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:' + btnFont + ';white-space:nowrap;touch-action:manipulation;';
     btnReOCR.addEventListener('click', function() {
         stopTTS(true);
-        backdrop.remove();
-        dialog.remove();
+        closeResultDialog();
         if (cameraShouldRestore) {
             cameraShouldRestore = false;
             startCameraCapture();
@@ -5495,8 +5511,7 @@ function showResultDialog(dataURL, boxes, message, hideThumbnail) {
     btnClose.style.cssText = 'padding:' + btnPad + ';background:#fff;color:#333;border:1px solid #ccc;border-radius:4px;cursor:pointer;font-size:' + btnFont + ';white-space:nowrap;touch-action:manipulation;';
     btnClose.addEventListener('click', function() {
         stopTTS(true);
-        backdrop.remove();
-        dialog.remove();
+        closeResultDialog();
         if (cameraShouldRestore) {
             cameraShouldRestore = false;
             startCameraCapture();
@@ -5512,8 +5527,12 @@ function showResultDialog(dataURL, boxes, message, hideThumbnail) {
     dialog.appendChild(header);
     dialog.appendChild(body);
     dialog.appendChild(footer);
-    document.body.appendChild(backdrop);
-    document.body.appendChild(dialog);
+
+    var shadow = createShadowHost();
+    resultDialogHost = shadow.host;
+    resultDialogEl = dialog;
+    shadow.appendChild(backdrop);
+    shadow.appendChild(dialog);
 }
 
 // === Floating Translate Button ===
