@@ -1564,10 +1564,17 @@ function loadImageElement(base64Image) {
 // makes the inline styles beat any page rule (including the page's own
 // !important rules), so the captured image always shows black text on the
 // intended background.
+//
+// `all: initial` itself must stay NON-important: html-to-image clones each node
+// and re-applies the computed styles with non-important priority, and a leftover
+// `all: initial !important` in the clone would override all of those re-applied
+// values back to `initial` — blanking the text overlay. The explicit !important
+// longhands below still win over page rules, which is what protects the boxes.
 function importantCss(css) {
     return css.split(';').map(function(seg) {
         const s = seg.trim();
         if (!s) return '';
+        if (/^all\s*:/i.test(s)) return s;
         if (/!\s*important\s*$/i.test(s)) return s;
         return s + ' !important';
     }).join(';');
