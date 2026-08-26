@@ -55,6 +55,7 @@ var pickingWay = "1";
 var useCanvas = true;
 var renderTextInFrontend = false;
 var renderTextCSS = 'text-align: center;\nborder-radius: 10%;';
+var textRenderMode = 'dom'; // 'dom' | 'canvas' — front-end text rendering backend
 var textRepairMode = 'white'; // 'white' | 'background' | 'none'
 var minFontSize = 14;
 var password = "";
@@ -321,6 +322,7 @@ chrome.storage.sync.get({
     useCanvas: true,
     renderTextInFrontend: false,
     renderTextCSS: renderTextCSS,
+    textRenderMode: 'dom',
     minFontSize: 14,
     sourceLang: sourceLang,
     targetLang: targetLang,
@@ -383,6 +385,9 @@ chrome.storage.sync.get({
     }
     if (items.renderTextCSS != undefined) {
         renderTextCSS = items.renderTextCSS;
+    }
+    if (items.textRenderMode !== undefined) {
+        textRenderMode = items.textRenderMode;
     }
     if (items.textRepairMode !== undefined) {
         textRepairMode = items.textRepairMode;
@@ -1465,6 +1470,13 @@ function fillRoundRect(ctx, x, y, w, h, borderRadius) {
 }
 
 async function renderTranslatedImage(base64Image, boxes) {
+    // Canvas mode is the "safe" backend: it never picks up host-page styles, so
+    // users who hit issues like gray text boxes on pages with aggressive CSS can
+    // force it here. DOM mode (the default) is more capable (RTL bidi, vertical
+    // text, full user CSS) and falls back to canvas only when unavailable/errors.
+    if (textRenderMode === 'canvas') {
+        return renderTranslatedImageCanvas(base64Image, boxes);
+    }
     if (typeof htmlToImage === 'undefined' || !htmlToImage.toCanvas) {
         return renderTranslatedImageCanvas(base64Image, boxes);
     }
@@ -5730,6 +5742,7 @@ chrome.storage.onChanged.addListener(function(changes, areaName) {
     if (changes.useCanvas !== undefined) useCanvas = changes.useCanvas.newValue;
     if (changes.renderTextInFrontend !== undefined) renderTextInFrontend = changes.renderTextInFrontend.newValue;
     if (changes.renderTextCSS) renderTextCSS = changes.renderTextCSS.newValue;
+    if (changes.textRenderMode !== undefined) textRenderMode = changes.textRenderMode.newValue;
     if (changes.textRepairMode !== undefined) textRepairMode = changes.textRepairMode.newValue;
     if (changes.minFontSize !== undefined) minFontSize = changes.minFontSize.newValue;
     if (changes.sourceLang) sourceLang = changes.sourceLang.newValue;

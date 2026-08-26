@@ -310,6 +310,14 @@
         <input id="minFontSize" type="number" value="14" min="4" max="200" style="width:80px;" />
         <span style="font-size:12px;color:var(--text-secondary);" data-i18n="options_min_font_size_hint">Auto-fit font size will never go below this value.</span>
       </div>
+      <div class="form-row" style="flex-direction:column; align-items:flex-start;">
+        <label for="textRenderMode" data-i18n="options_text_render_mode">Front-end text rendering method</label>
+        <select id="textRenderMode" style="margin-top:4px;">
+          <option value="dom" data-i18n="options_text_render_dom">DOM</option>
+          <option value="canvas" data-i18n="options_text_render_canvas">Canvas</option>
+        </select>
+        <span style="font-size:12px;color:var(--text-secondary);" data-i18n="options_text_render_hint">DOM renders with real browser layout (best for RTL/vertical text and custom CSS) but can be affected by the page's styles. Canvas is more robust against page styles.</span>
+      </div>
       <div class="form-row" id="renderTextCSSSection" style="flex-direction:column; align-items:flex-start;">
         <label for="renderTextCSS" data-i18n="options_font_css">Font CSS (for front-end rendering)</label>
         <textarea id="renderTextCSS" rows="3" style="width:100%; font-family:monospace; font-size:12px;" placeholder="e.g. text-align: center; font-weight: bold;"></textarea>

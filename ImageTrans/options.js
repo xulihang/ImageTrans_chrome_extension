@@ -91,6 +91,7 @@ function save() {
   const renderTextInFrontend = document.getElementById("renderTextInFrontend").checked;
   const screenCaptureOverlay = document.getElementById("screenCaptureOverlay").checked;
   const renderTextCSS = document.getElementById("renderTextCSS").value;
+  const textRenderMode = document.getElementById("textRenderMode").value;
   const minFontSize = parseInt(document.getElementById("minFontSize").value) || 14;
   const imagetransInstanceDisplayName = document.getElementById("imagetransInstanceInput").value;
   const password = document.getElementById("imagetransPasswordInput").value;
@@ -140,6 +141,7 @@ function save() {
     renderTextInFrontend: renderTextInFrontend,
     screenCaptureOverlay: screenCaptureOverlay,
     renderTextCSS: renderTextCSS,
+    textRenderMode: textRenderMode,
     minFontSize: minFontSize,
     displayName: imagetransInstanceDisplayName,
     password: password,
@@ -188,6 +190,7 @@ function load() {
     renderTextInFrontend: false,
     screenCaptureOverlay: false,
     renderTextCSS: 'text-align: center;\nborder-radius: 10%;',
+    textRenderMode: 'dom',
     minFontSize: 14,
     displayName: "",
     password:"",
@@ -250,6 +253,7 @@ function load() {
     document.getElementById("renderTextInFrontend").checked = items.renderTextInFrontend;
     document.getElementById("screenCaptureOverlay").checked = items.screenCaptureOverlay;
     document.getElementById("renderTextCSS").value = items.renderTextCSS || '';
+    document.getElementById("textRenderMode").value = items.textRenderMode || 'dom';
     document.getElementById("minFontSize").value = items.minFontSize !== undefined ? items.minFontSize : 14;
     document.getElementById("imagetransInstanceInput").value = items.displayName;
     document.getElementById("imagetransPasswordInput").value = items.password;
