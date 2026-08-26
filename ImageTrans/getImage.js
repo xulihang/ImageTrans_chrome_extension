@@ -900,8 +900,11 @@ async function translateUsingMyMemory(source) {
         let url = "https://api.mymemory.translated.net/get?";
         url = url + "q=" + encodeURIComponent(source);
         url = url + "&langpair=" + sl + "|" + tl;
-        let response = await fetch(url);
-        let o = await response.json();
+        let resp = await fetchViaBackground(url);
+        let o = resp.data;
+        if (!resp.ok || !o || !o.responseData) {
+            return "";
+        }
         return o.responseData.translatedText;
     } catch (error) {
         console.error(error);
