@@ -1506,7 +1506,7 @@ function fitBoxFontSize(el, upperBound, minimum) {
     let best = lo;
     for (let i = 0; i < 12; i++) {
         const mid = (lo + hi) / 2;
-        el.style.fontSize = mid + 'px';
+        el.style.setProperty('font-size', mid + 'px', 'important');
         if (el.scrollWidth <= cw + tol && el.scrollHeight <= ch + tol) {
             best = mid;
             lo = mid;
@@ -1517,7 +1517,7 @@ function fitBoxFontSize(el, upperBound, minimum) {
     }
     const fit = Math.floor(best);
     const used = Math.max(min, fit);
-    el.style.fontSize = used + 'px';
+    el.style.setProperty('font-size', used + 'px', 'important');
     return { fit: fit, used: used };
 }
 
@@ -1545,6 +1545,22 @@ function loadImageElement(base64Image) {
 // on the result canvas and the rasterized text overlay is composited on top. The
 // container passed to html-to-image therefore holds only the text boxes with a
 // transparent background, letting the base image show through between them.
+//
+// html-to-image re-reads each node via getComputedStyle() and paints those
+// computed values, so the host page's stylesheet can override the inline text
+// styles below and turn the boxes gray. Marking every declaration !important
+// makes the inline styles beat any page rule (including the page's own
+// !important rules), so the captured image always shows black text on the
+// intended background.
+function importantCss(css) {
+    return css.split(';').map(function(seg) {
+        const s = seg.trim();
+        if (!s) return '';
+        if (/!\s*important\s*$/i.test(s)) return s;
+        return s + ' !important';
+    }).join(';');
+}
+
 async function renderTranslatedImageDOM(base64Image, boxes) {
     const img = await loadImageElement(base64Image);
     const natW = img.naturalWidth;
@@ -1556,17 +1572,19 @@ async function renderTranslatedImageDOM(base64Image, boxes) {
     // the captured node into an SVG foreignObject, and an off-screen offset on
     // that node would be carried over, producing a transparent output image.
     const wrapper = document.createElement('div');
-    wrapper.style.cssText =
+    wrapper.style.cssText = importantCss(
         'all:initial;display:block;position:fixed;left:-99999px;top:0;' +
-        'width:' + natW + 'px;height:' + natH + 'px;';
+        'width:' + natW + 'px;height:' + natH + 'px;'
+    );
 
     // Text-only overlay; a transparent background lets the base image show
     // through where there is no text box when composited in the final canvas.
     const container = document.createElement('div');
-    container.style.cssText =
+    container.style.cssText = importantCss(
         'all:initial;display:block;position:relative;left:0;top:0;' +
         'width:' + natW + 'px;height:' + natH + 'px;' +
-        'background-color:transparent;';
+        'background-color:transparent;'
+    );
 
     const clampBox = function(x, y, w, h) {
         x = Math.max(0, x);
@@ -1594,9 +1612,13 @@ async function renderTranslatedImageDOM(base64Image, boxes) {
     // clips at the box edge. When the minimum font size makes the text overflow,
     // the element is grown to the full text block and moved, so the background
     // paints over the whole overflow region too.
+    // -webkit-text-fill-color is inherited and is NOT always reset by `all:
+    // initial`; if a page sets it, the text would render gray even though
+    // `color` is black, so it is pinned explicitly.
     const textBaseCSS =
         'all:initial;position:absolute;display:block;box-sizing:border-box;margin:0;padding:2px;' +
-        'overflow:hidden;line-height:1.3;color:#000;background-color:#fff;font-family:sans-serif;';
+        'overflow:hidden;line-height:1.3;color:#000;-webkit-text-fill-color:#000;' +
+        'background-color:#fff;font-family:sans-serif;';
 
     wrapper.appendChild(container);
     (document.body || document.documentElement).appendChild(wrapper);
@@ -1618,20 +1640,22 @@ async function renderTranslatedImageDOM(base64Image, boxes) {
         // text block (so the overflow region keeps the background) and then moves
         // so that block stays inside the image.
         const el = document.createElement('div');
-        let elCSS = textBaseCSS +
+        let elCSS = importantCss(
+            textBaseCSS +
             'left:' + c.x + 'px;top:' + c.y + 'px;' +
             'width:' + c.w + 'px;height:' + c.h + 'px;' +
-            renderTextCSS;
+            renderTextCSS
+        );
         if (textRepairMode === 'none') {
             // Don't paint a background over the original text; just overlay.
-            elCSS += ';background-color:transparent;';
+            elCSS += ';background-color:transparent!important;';
         } else if (textRepairMode === 'background') {
             const detected = detectBackgroundColor(img, box);
-            if (detected) elCSS += ';background-color:' + detected;
+            if (detected) elCSS += ';background-color:' + detected + '!important;';
         }
         el.style.cssText = elCSS;
         if (!userCssHasDirection) {
-            el.style.direction = detectTextDirection(targetText);
+            el.style.setProperty('direction', detectTextDirection(targetText), 'important');
         }
         el.textContent = targetText;
         container.appendChild(el);
@@ -1645,14 +1669,14 @@ async function renderTranslatedImageDOM(base64Image, boxes) {
             // background even after the move.
             const textW = Math.min(el.scrollWidth, natW);
             const textH = Math.min(el.scrollHeight, natH);
-            el.style.width = textW + 'px';
-            el.style.height = textH + 'px';
+            el.style.setProperty('width', textW + 'px', 'important');
+            el.style.setProperty('height', textH + 'px', 'important');
             let nx = c.x;
             let ny = c.y;
             if (nx + textW > natW) nx = Math.max(0, natW - textW);
             if (ny + textH > natH) ny = Math.max(0, natH - textH);
-            if (nx !== c.x) el.style.left = nx + 'px';
-            if (ny !== c.y) el.style.top = ny + 'px';
+            if (nx !== c.x) el.style.setProperty('left', nx + 'px', 'important');
+            if (ny !== c.y) el.style.setProperty('top', ny + 'px', 'important');
         }
     }
 
