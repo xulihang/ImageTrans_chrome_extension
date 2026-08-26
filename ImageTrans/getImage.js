@@ -614,15 +614,26 @@ async function doFetch(url, options) {
     if (sendRequestsViaBackground) {
         return fetchViaBackground(url, options);
     }
-    const resp = await fetch(url, options);
-    let data;
-    const contentType = resp.headers.get('content-type') || '';
-    if (contentType.includes('application/json')) {
-        data = await resp.json();
-    } else {
-        data = await resp.text();
+    try {
+        const resp = await fetch(url, options);
+        // A CSP/CORS/network block can surface as a rejected promise, or in some
+        // Firefox paths resolve a synthetic response with no usable data. Fall
+        // back to the background in either case so page CSP (e.g. an <meta>
+        // default-src that excludes external hosts) can't silently break requests.
+        if (!resp || (typeof resp.status === 'number' && resp.status === 0) || resp.type === 'error' || resp.type === 'opaqueredirect') {
+            return fetchViaBackground(url, options);
+        }
+        let data;
+        const contentType = resp.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+            data = await resp.json();
+        } else {
+            data = await resp.text();
+        }
+        return { ok: resp.ok, status: resp.status, data: data };
+    } catch (e) {
+        return fetchViaBackground(url, options);
     }
-    return { ok: resp.ok, status: resp.status, data: data };
 }
 
 async function ajax(src,img,checkData,showOverlay){
