@@ -53,7 +53,7 @@ https://github.com/user-attachments/assets/7078e908-9526-4945-948f-458543a50d08
 3. （可选，配合 ImageTrans 使用时）下载 [ImageTrans_wsServer.jar](https://github.com/xulihang/ImageTrans_wsServer/releases/download/builds/ImageTrans_wsServer.jar) 并将其与 ImageTrans 放在一起。
 4. （可选，本插件已经包含该功能）安装并启用 [Allow CORS](https://chromewebstore.google.com/detail/allow-cors-access-control/lhobafahddgcelffkeicbaginigeejlf) 以移除某些站点对下载图片的限制。
 
-安卓系统请使用 Kiwi 浏览器或者 Microsoft Edge，iOS 系统请使用 Orion 浏览器。
+安卓系统请使用 Kiwi 浏览器或者 Microsoft Edge，iOS 系统请使用 Orion 浏览器（[自部署指南](https://www.basiccat.org/zh/use-self-hosted-imagetrans-server-with-self-signed-certificate-for-ios/)）。
 
 ## 用法
 
