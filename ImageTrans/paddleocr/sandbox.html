@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>ImageTrans PaddleOCR sandbox</title>
+</head>
+<body>
+<!--
+  Hosts the OCR stack (OpenCV + ONNX Runtime + PaddleOCR) for pages that can't
+  run it themselves.
+
+  The stack is normally injected into the host page's main world, where the
+  page's CSP applies — and sites like MangaDex send `script-src 'strict-dynamic'
+  'nonce-...'` with Trusted Types, which blocks both the WebAssembly compile that
+  OpenCV/ORT need and the `new Function()` emscripten uses to build error
+  objects. This page is listed under the manifest's `sandbox.pages`, so Chrome
+  serves it with the sandbox CSP (`script-src 'self' 'unsafe-inline'
+  'unsafe-eval'`) and a unique origin: eval and WebAssembly keep working, and the
+  host page's CSP no longer applies.
+
+  The trade-offs of the unique origin: no chrome.* APIs and no access to the
+  embedder's DOM. Everything therefore goes over postMessage — the content
+  script injects this page in a hidden iframe and drives it the same way it used
+  to drive the injected scripts. The inline scripts here only report readiness;
+  the protocol itself lives in page-ocr.js, which is unaware of where it runs.
+-->
+<script>
+  // Inline script is allowed by the sandbox CSP, and it has to be inline: a
+  // failed <script src> (the interesting failure) is reported via onerror.
+  function __imagetransScriptError(name) {
+    parent.postMessage({
+      source: 'imagetrans-extension',
+      type: 'SANDBOX_ERROR',
+      error: name + ' failed to load'
+    }, '*');
+  }
+</script>
+<!-- Parser-blocking and in order: page-ocr.js expects cv, ort and esearch-ocr. -->
+<script src="opencv.js" onerror="__imagetransScriptError('opencv.js')"></script>
+<script src="ort.min.js" onerror="__imagetransScriptError('ort.min.js')"></script>
+<script src="esearch-ocr/dist/esearch-ocr.umd.js" onerror="__imagetransScriptError('esearch-ocr')"></script>
+<script src="page-ocr.js" onerror="__imagetransScriptError('page-ocr.js')"></script>
+<script>
+  // Reached only when every script above ran; page-ocr.js's waitForDeps() is
+  // what actually waits for the libraries to finish initializing. The deps are
+  // reported back so that a sandbox which loads but can't initialize — a CSP or
+  // cross-origin surprise — shows up in the console instead of hanging.
+  parent.postMessage({
+    source: 'imagetrans-extension',
+    type: 'SANDBOX_READY',
+    deps: {
+      cv: typeof window.cv,
+      ort: typeof window.ort,
+      paddle: typeof window['esearch-ocr'],
+      // The whole point of the sandbox: dynamic code evaluation must work here,
+      // since the host page's CSP blocks it in the main world.
+      dynamicCode: (function() {
+        try {
+          new Function('return 1')();
+          return 'ok';
+        } catch (e) {
+          return e.name;
+        }
+      })()
+    }
+  }, '*');
+</script>
+</body>
+</html>

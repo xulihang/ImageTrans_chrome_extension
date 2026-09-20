@@ -64,6 +64,7 @@
         "kuromoji/kuroshiro.min.js",
         "kuromoji/kuroshiro-analyzer-kuromoji.min.js",
         "kuromoji/dict/*",
+        "paddleocr/sandbox.html",
         "paddleocr/opencv.js",
         "paddleocr/ort.min.js",
         "paddleocr/esearch-ocr/dist/esearch-ocr.umd.js",
@@ -79,5 +80,11 @@
       "matches": ["<all_urls>"]
     }
   ],
+  "sandbox": {
+    "pages": ["paddleocr/sandbox.html"]
+  },
+  "content_security_policy": {
+    "sandbox": "sandbox allow-scripts allow-forms allow-popups allow-modals; script-src 'self' chrome-extension: 'unsafe-inline' 'unsafe-eval'; child-src 'self';"
+  },
   "manifest_version": 3
 }

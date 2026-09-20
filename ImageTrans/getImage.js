@@ -2204,89 +2204,182 @@ function effectiveExecutionProvider() {
     return paddleExecutionProvider;
 }
 
+// The OCR side runs in a sandboxed extension page (paddleocr/sandbox.html)
+// embedded in a hidden iframe, so the host page's CSP — which on sites like
+// MangaDex forbids WebAssembly and eval — no longer applies to it. Both the
+// sandbox iframe and the page-injected fallback post to the page window, so one
+// listener serves either transport.
+var paddleSandboxFrame = null;
+var paddleBridgeInstalled = false;
+
+// OpenCV is ~10MB to load and parse, so this is generous. Falling back is always
+// safe: worst case the stack lands in the main world, as it did before.
+var PADDLE_SANDBOX_TIMEOUT = 20000;
+
+function postToPaddle(message) {
+    if (paddleSandboxFrame && paddleSandboxFrame.contentWindow) {
+        paddleSandboxFrame.contentWindow.postMessage(message, '*');
+    } else {
+        window.postMessage(message, '*');
+    }
+}
+
+// Messages from the sandbox iframe are dispatched on the page window as well, so
+// accept its window alongside our own.
+function isPaddleSource(source) {
+    return source === window || (!!paddleSandboxFrame && source === paddleSandboxFrame.contentWindow);
+}
+
+// Reply to whoever asked: the sandbox iframe when the stack runs there, our own
+// window when it was injected into the page.
+function replyToPaddleSource(event, message) {
+    var target = event.source;
+    if (target && target.postMessage) {
+        target.postMessage(message, '*');
+    } else {
+        window.postMessage(message, '*');
+    }
+}
+
+// Loads the OCR stack in a sandboxed extension page, and resolves once that page
+// reports its scripts have run. Rejects when the frame can't be created or
+// loaded — for instance if the page's frame-src forbids it — so the caller can
+// fall back to injecting into the page.
+function injectPaddleSandbox() {
+    return new Promise(function(resolve, reject) {
+        var frame = document.createElement('iframe');
+        frame.style.display = 'none';
+        frame.setAttribute('aria-hidden', 'true');
+        // The manifest's sandbox.pages entry is what gives this page its own
+        // origin and the relaxed CSP; the element needs no sandbox attribute.
+        frame.src = chrome.runtime.getURL('paddleocr/sandbox.html');
+
+        var timer = setTimeout(function() {
+            cleanup();
+            reject(new Error('sandbox page timed out'));
+        }, PADDLE_SANDBOX_TIMEOUT);
+
+        function cleanup() {
+            clearTimeout(timer);
+            window.removeEventListener('message', onMessage);
+            if (frame.parentNode) frame.parentNode.removeChild(frame);
+        }
+
+        function onMessage(event) {
+            if (!frame.contentWindow || event.source !== frame.contentWindow) return;
+            var data = event.data;
+            if (!data || data.source !== 'imagetrans-extension') return;
+            if (data.type === 'SANDBOX_READY') {
+                clearTimeout(timer);
+                window.removeEventListener('message', onMessage);
+                paddleSandboxFrame = frame;
+                console.log('[ImageTrans] PaddleOCR running in a sandboxed page', data.deps || '');
+                resolve();
+            } else if (data.type === 'SANDBOX_ERROR') {
+                cleanup();
+                reject(new Error(data.error || 'sandbox page failed to load'));
+            }
+        }
+
+        window.addEventListener('message', onMessage);
+        (document.body || document.documentElement).appendChild(frame);
+    });
+}
+
+function paddleMessageListener(event) {
+    if (!isPaddleSource(event.source)) return;
+    var data = event.data;
+    if (!data || data.source !== 'imagetrans-extension') return;
+
+    if (data.type === 'PADDLE_INIT_RESULT') {
+        if (data.success) {
+            paddleInitDone = true;
+            paddleCurrentModelKey = data.modelKey || 'default';
+            if (paddleInitResolver) {
+                paddleInitResolver.resolve(true);
+                paddleInitResolver = null;
+            }
+        } else {
+            if (paddleInitResolver) {
+                paddleInitResolver.reject(new Error('PaddleOCR init failed: ' + data.error));
+                paddleInitResolver = null;
+            }
+        }
+    } else if (data.type === 'PADDLE_OCR_RESULT') {
+        var pending = paddlePendingRequests[data.requestId];
+        if (pending) {
+            delete paddlePendingRequests[data.requestId];
+            if (data.success) {
+                if (pending.scale && pending.scale !== 1) {
+                    data.boxes.forEach(function(box) {
+                        box.geometry.X = Math.round(box.geometry.X / pending.scale);
+                        box.geometry.Y = Math.round(box.geometry.Y / pending.scale);
+                        box.geometry.width = Math.round(box.geometry.width / pending.scale);
+                        box.geometry.height = Math.round(box.geometry.height / pending.scale);
+                    });
+                }
+                console.log('OCR result for request ' + data.requestId, data.boxes);
+                pending.resolve(data.boxes);
+            } else {
+                pending.reject(new Error(data.error));
+            }
+        }
+    } else if (data.type === 'FETCH_MODEL') {
+        // Forward model fetch request to background service worker
+        // The SW handles caching (IndexedDB) and downloading
+        chrome.runtime.sendMessage({action: 'fetchModel', url: data.url}).then(function(response) {
+            replyToPaddleSource(event, {
+                source: 'imagetrans-extension',
+                type: 'FETCH_MODEL_RESULT',
+                requestId: data.requestId,
+                base64: response.ok ? response.base64 : null,
+                error: response.error || null
+            });
+        }).catch(function(err) {
+            replyToPaddleSource(event, {
+                source: 'imagetrans-extension',
+                type: 'FETCH_MODEL_RESULT',
+                requestId: data.requestId,
+                base64: null,
+                error: err.message
+            });
+        });
+    }
+}
+
+// Fallback for pages that can't host the sandbox iframe, and for the Firefox
+// build: inject the stack into the page's main world, where the page's CSP
+// applies.
+function injectPaddleLibrariesIntoPage() {
+    return Promise.all([
+        isFirefox
+            ? loadGzippedLibrary(chrome.runtime.getURL('paddleocr/opencv.js.gz'))
+            : loadLibrary(chrome.runtime.getURL('paddleocr/opencv.js'), 'text/javascript'),
+        loadLibrary(chrome.runtime.getURL('paddleocr/ort.min.js'), 'text/javascript')
+    ]).then(function() {
+        return loadLibrary(chrome.runtime.getURL('paddleocr/esearch-ocr/dist/esearch-ocr.umd.js'), 'text/javascript');
+    }).then(function() {
+        return loadLibrary(chrome.runtime.getURL('paddleocr/page-ocr.js'), 'text/javascript');
+    });
+}
+
 function injectPaddleLibraries() {
     if (paddleInjected) return Promise.resolve();
     paddleInjected = true;
 
-    return new Promise(function(resolve, reject) {
-        function messageListener(event) {
-            if (event.source !== window) return;
-            var data = event.data;
-            if (!data || data.source !== 'imagetrans-extension') return;
+    // Installed once and kept for the lifetime of the document, so a retry after
+    // a failure doesn't add a second listener.
+    if (!paddleBridgeInstalled) {
+        paddleBridgeInstalled = true;
+        window.addEventListener('message', paddleMessageListener);
+    }
 
-            if (data.type === 'PADDLE_INIT_RESULT') {
-                if (data.success) {
-                    paddleInitDone = true;
-                    paddleCurrentModelKey = data.modelKey || 'default';
-                    if (paddleInitResolver) {
-                        paddleInitResolver.resolve(true);
-                        paddleInitResolver = null;
-                    }
-                } else {
-                    if (paddleInitResolver) {
-                        paddleInitResolver.reject(new Error('PaddleOCR init failed: ' + data.error));
-                        paddleInitResolver = null;
-                    }
-                }
-            } else if (data.type === 'PADDLE_OCR_RESULT') {
-                var pending = paddlePendingRequests[data.requestId];
-                if (pending) {
-                    delete paddlePendingRequests[data.requestId];
-                    if (data.success) {
-                        if (pending.scale && pending.scale !== 1) {
-                            data.boxes.forEach(function(box) {
-                                box.geometry.X = Math.round(box.geometry.X / pending.scale);
-                                box.geometry.Y = Math.round(box.geometry.Y / pending.scale);
-                                box.geometry.width = Math.round(box.geometry.width / pending.scale);
-                                box.geometry.height = Math.round(box.geometry.height / pending.scale);
-                            });
-                        }
-                        console.log('OCR result for request ' + data.requestId, data.boxes);
-                        pending.resolve(data.boxes);
-                    } else {
-                        pending.reject(new Error(data.error));
-                    }
-                }
-            } else if (data.type === 'FETCH_MODEL') {
-                // Forward model fetch request to background service worker
-                // The SW handles caching (IndexedDB) and downloading
-                chrome.runtime.sendMessage({action: 'fetchModel', url: data.url}).then(function(response) {
-                    window.postMessage({
-                        source: 'imagetrans-extension',
-                        type: 'FETCH_MODEL_RESULT',
-                        requestId: data.requestId,
-                        base64: response.ok ? response.base64 : null,
-                        error: response.error || null
-                    }, '*');
-                }).catch(function(err) {
-                    window.postMessage({
-                        source: 'imagetrans-extension',
-                        type: 'FETCH_MODEL_RESULT',
-                        requestId: data.requestId,
-                        base64: null,
-                        error: err.message
-                    }, '*');
-                });
-            }
-        }
-        window.addEventListener('message', messageListener);
-
-        Promise.all([
-            isFirefox
-                ? loadGzippedLibrary(chrome.runtime.getURL('paddleocr/opencv.js.gz'))
-                : loadLibrary(chrome.runtime.getURL('paddleocr/opencv.js'), 'text/javascript'),
-            loadLibrary(chrome.runtime.getURL('paddleocr/ort.min.js'), 'text/javascript')
-        ]).then(function() {
-            return loadLibrary(chrome.runtime.getURL('paddleocr/esearch-ocr/dist/esearch-ocr.umd.js'), 'text/javascript');
-        }).then(function() {
-            return loadLibrary(chrome.runtime.getURL('paddleocr/page-ocr.js'), 'text/javascript');
-        }).then(function() {
-            resolve();
-        }).catch(function(err) {
-            paddleInjected = false;
-            window.removeEventListener('message', messageListener);
-            reject(err);
-        });
+    return injectPaddleSandbox().catch(function(err) {
+        console.warn('[ImageTrans] PaddleOCR sandbox unavailable (' + err.message + '); injecting into the page instead.');
+        return injectPaddleLibrariesIntoPage();
+    }).catch(function(err) {
+        paddleInjected = false;
+        throw err;
     });
 }
 
@@ -2296,20 +2389,30 @@ function ensurePaddleModel(sourceLang) {
     if (paddleCurrentModelKey === modelInfo.modelKey && paddleInitDone) {
         return Promise.resolve();
     }
-    return new Promise(function(resolve, reject) {
-        paddleInitResolver = {resolve: resolve, reject: reject};
-        window.postMessage({
-            source: 'imagetrans-extension',
-            type: 'PADDLE_INIT',
-            detPath: modelInfo.detUrl,
-            recPath: modelInfo.recUrl,
-            dicPath: modelInfo.dicUrl,
-            modelKey: modelInfo.modelKey,
-            wasmPath: chrome.runtime.getURL('paddleocr/'),
-            executionProvider: effectiveExecutionProvider(),
-            extraParams: paddleOCRParams,
-            requestId: 'init_' + modelInfo.modelKey
-        }, '*');
+    // Read the dictionary here rather than letting the OCR side fetch it, since
+    // a sandboxed page's unique origin may not be allowed to read extension
+    // URLs. A null dicText just makes it fetch the URL itself, as before.
+    return fetch(modelInfo.dicUrl).then(function(res) {
+        return res.text();
+    }).catch(function() {
+        return null;
+    }).then(function(dicText) {
+        return new Promise(function(resolve, reject) {
+            paddleInitResolver = {resolve: resolve, reject: reject};
+            postToPaddle({
+                source: 'imagetrans-extension',
+                type: 'PADDLE_INIT',
+                detPath: modelInfo.detUrl,
+                recPath: modelInfo.recUrl,
+                dicPath: modelInfo.dicUrl,
+                dicText: dicText,
+                modelKey: modelInfo.modelKey,
+                wasmPath: chrome.runtime.getURL('paddleocr/'),
+                executionProvider: effectiveExecutionProvider(),
+                extraParams: paddleOCRParams,
+                requestId: 'init_' + modelInfo.modelKey
+            });
+        });
     });
 }
 
@@ -2331,7 +2434,7 @@ function doPaddleOCRRequest(dataURL, sourceLang, scale) {
         if (useYOLO) {
             msg.yoloModelUrl = chrome.runtime.getURL('paddleocr/model.onnx');
         }
-        window.postMessage(msg, '*');
+        postToPaddle(msg);
     });
 }
 

@@ -1,6 +1,13 @@
 /**
- * Runs in the page context. Communicates with the content script via postMessage.
- * Handles PaddleOCR initialization and OCR requests.
+ * Runs on the OCR side of the content script bridge and communicates with it via
+ * postMessage. Handles PaddleOCR initialization and OCR requests.
+ *
+ * It normally executes in paddleocr/sandbox.html, a sandboxed extension page
+ * embedded in a hidden iframe that the content script injects, because sites
+ * with a strict CSP block WebAssembly and eval in the page's main world. When
+ * that sandbox can't be used the content script injects this script into the
+ * page itself instead, so everything below only relies on `window.parent` being
+ * either the embedder or, in a top-level document, the window itself.
  */
 (function() {
   'use strict';
@@ -9,6 +16,19 @@
   let paddleReady = false;
   let currentModelKey = null;
   let initPromise = null;
+
+  // Replies go to whichever window embedded us: in the sandbox that's the page
+  // hosting the iframe, and in a top-level document (paddleocr/test.html) it is
+  // the window itself.
+  function postToHost(message) {
+    (window.parent || window).postMessage(message, '*');
+  }
+
+  // The content script drives this script from the embedder window, so accept
+  // messages from there as well as from ourselves.
+  function isHostWindow(source) {
+    return source === window || source === window.parent;
+  }
 
   function isRemoteUrl(url) {
     return /^https?:\/\//i.test(url);
@@ -27,7 +47,7 @@
     return new Promise(function(resolve, reject) {
       var requestId = 'fetch_' + Date.now() + '_' + Math.random();
       function onMessage(event) {
-        if (event.source !== window) return;
+        if (!isHostWindow(event.source)) return;
         var data = event.data;
         if (!data || data.source !== 'imagetrans-extension') return;
         if (data.type === 'FETCH_MODEL_RESULT' && data.requestId === requestId) {
@@ -40,7 +60,7 @@
         }
       }
       window.addEventListener('message', onMessage);
-      window.postMessage({
+      postToHost({
         source: 'imagetrans-extension',
         type: 'FETCH_MODEL',
         url: url,
@@ -91,7 +111,7 @@
     return ['wasm'];
   }
 
-  async function init(detPath, recPath, dicUrl, modelKey, wasmPath, extraParams, executionProvider) {
+  async function init(detPath, recPath, dicUrl, modelKey, wasmPath, extraParams, executionProvider, dicText) {
     // Same model already loaded — reuse
     if (currentModelKey === modelKey && initPromise) return initPromise;
     // Switching to a different model — reset and re-init
@@ -150,9 +170,14 @@
         recInput = await fetchModelViaExtension(recPath);
       }
 
-      // dicUrl is always a small text file from the extension bundle, fetch directly
-      const res = await fetch(dicUrl);
-      const dic = await res.text();
+      // The content script sends the dictionary text along whenever it can read
+      // it from the extension bundle; fetching it here is the fallback, since a
+      // sandboxed page's unique origin may not be allowed to read extension URLs.
+      let dic = dicText;
+      if (dic == null) {
+        const res = await fetch(dicUrl);
+        dic = await res.text();
+      }
 
       await Paddle.init(Object.assign({
         detPath: detInput,
@@ -694,7 +719,7 @@
   }
 
   window.addEventListener('message', function(event) {
-    if (event.source !== window) return;
+    if (!isHostWindow(event.source)) return;
     const data = event.data;
     if (!data || data.source !== 'imagetrans-extension') return;
 
@@ -702,8 +727,8 @@
       case 'PADDLE_INIT':
         (async function() {
           try {
-            await init(data.detPath, data.recPath, data.dicPath, data.modelKey || 'default', data.wasmPath, data.extraParams, data.executionProvider);
-            window.postMessage({
+            await init(data.detPath, data.recPath, data.dicPath, data.modelKey || 'default', data.wasmPath, data.extraParams, data.executionProvider, data.dicText);
+            postToHost({
               source: 'imagetrans-extension',
               type: 'PADDLE_INIT_RESULT',
               success: true,
@@ -711,7 +736,7 @@
               requestId: data.requestId
             }, '*');
           } catch (err) {
-            window.postMessage({
+            postToHost({
               source: 'imagetrans-extension',
               type: 'PADDLE_INIT_RESULT',
               success: false,
@@ -729,7 +754,7 @@
               throw new Error('PaddleOCR not initialized');
             }
             const boxes = await doOCR(data.imageDataURL, data.sourceLang, data.xSpacing, data.ySpacing);
-            window.postMessage({
+            postToHost({
               source: 'imagetrans-extension',
               type: 'PADDLE_OCR_RESULT',
               success: true,
@@ -737,7 +762,7 @@
               requestId: data.requestId
             }, '*');
           } catch (err) {
-            window.postMessage({
+            postToHost({
               source: 'imagetrans-extension',
               type: 'PADDLE_OCR_RESULT',
               success: false,
@@ -755,7 +780,7 @@
               throw new Error('PaddleOCR not initialized');
             }
             const boxes = await doOCRYolo(data.imageDataURL, data.sourceLang, data.xSpacing, data.ySpacing, data.yoloModelUrl);
-            window.postMessage({
+            postToHost({
               source: 'imagetrans-extension',
               type: 'PADDLE_OCR_RESULT',
               success: true,
@@ -763,7 +788,7 @@
               requestId: data.requestId
             }, '*');
           } catch (err) {
-            window.postMessage({
+            postToHost({
               source: 'imagetrans-extension',
               type: 'PADDLE_OCR_RESULT',
               success: false,
