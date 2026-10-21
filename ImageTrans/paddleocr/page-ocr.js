@@ -111,6 +111,17 @@
     return ['wasm'];
   }
 
+  // ONNX Runtime's wasm module allows only one inference at a time: a second
+  // concurrent run throws "Session already started". Tall webtoon images are
+  // split into parts and their OCR requests are sent in parallel, so run the
+  // requests one after another instead of letting them overlap.
+  let workQueue = Promise.resolve();
+  function runQueued(task) {
+    var result = workQueue.then(task);
+    workQueue = result.catch(function() {});
+    return result;
+  }
+
   async function init(detPath, recPath, dicUrl, modelKey, wasmPath, extraParams, executionProvider, dicText) {
     // Same model already loaded — reuse
     if (currentModelKey === modelKey && initPromise) return initPromise;
@@ -725,7 +736,9 @@
 
     switch (data.type) {
       case 'PADDLE_INIT':
-        (async function() {
+        // Initialisation is queued as well: switching models while another
+        // request is still running would swap sessions out from under it.
+        runQueued(async function() {
           try {
             await init(data.detPath, data.recPath, data.dicPath, data.modelKey || 'default', data.wasmPath, data.extraParams, data.executionProvider, data.dicText);
             postToHost({
@@ -744,11 +757,11 @@
               requestId: data.requestId
             }, '*');
           }
-        })();
+        });
         break;
 
       case 'PADDLE_OCR':
-        (async function() {
+        runQueued(async function() {
           try {
             if (!paddleReady) {
               throw new Error('PaddleOCR not initialized');
@@ -770,11 +783,11 @@
               requestId: data.requestId
             }, '*');
           }
-        })();
+        });
         break;
 
       case 'PADDLE_OCR_YOLO':
-        (async function() {
+        runQueued(async function() {
           try {
             if (!paddleReady) {
               throw new Error('PaddleOCR not initialized');
@@ -796,7 +809,7 @@
               requestId: data.requestId
             }, '*');
           }
-        })();
+        });
         break;
     }
   });
