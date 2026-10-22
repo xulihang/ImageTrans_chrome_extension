@@ -23,6 +23,7 @@ https://github.com/user-attachments/assets/7078e908-9526-4945-948f-458543a50d08
 
 * [Firefox 扩展](https://github.com/xulihang/ImageTrans_firefox_extension)
 * [在线图片翻译器（网页版）](https://www.basiccat.org/zh/online-image-translator/)
+* [ImageTrans安卓)](https://github.com/xulihang/ImageTrans-Android)。支持在安卓手机上启动一个本地服务器供浏览器插件使用，以提供更好的处理速度。此外也支持截图翻译、文件夹翻译等功能。
 
 ## 目录
 
