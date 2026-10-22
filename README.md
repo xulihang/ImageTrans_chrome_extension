@@ -23,7 +23,7 @@ Other versions:
 
 * [Firefox addon](https://github.com/xulihang/ImageTrans_firefox_extension)
 * [online image translator (web version)](https://www.basiccat.org/online-image-translator/)
-* [ImageTrans Android)](https://github.com/xulihang/ImageTrans-Android). It can be used as a local server for the browser extension to use to improve on-device processing speed. It also supports screen capture translation and document translation, etc.
+* [ImageTrans Android](https://github.com/xulihang/ImageTrans-Android). It can be used as a local server for the browser extension to use to improve on-device processing speed. It also supports screen capture translation and folder translation, etc.
 
 ## Table of Contents
 
