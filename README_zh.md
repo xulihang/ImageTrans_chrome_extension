@@ -56,6 +56,8 @@ https://github.com/user-attachments/assets/7078e908-9526-4945-948f-458543a50d08
 
 安卓系统请使用 Kiwi 浏览器或者 Microsoft Edge，iOS 系统请使用 Orion 浏览器（[自部署指南](https://www.basiccat.org/zh/use-self-hosted-imagetrans-server-with-self-signed-certificate-for-ios/)）。
 
+视频教程：<https://www.bilibili.com/video/BV1TKdPBcE5G/>
+
 ## 用法
 
 ### 配合 ImageTrans 服务器
