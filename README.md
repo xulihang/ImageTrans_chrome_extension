@@ -56,6 +56,8 @@ Other versions:
 
 On Android, use Kiwi Browser or Microsoft Edge. On iOS, use Orion Browser ([self-host guide](https://www.basiccat.org/use-self-hosted-imagetrans-server-with-self-signed-certificate-for-ios/)).
 
+Video guide: <https://www.youtube.com/watch?v=yUnzDWokpvg>
+
 ## Usage
 
 ### With ImageTrans server
